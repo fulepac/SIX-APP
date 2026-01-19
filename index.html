@@ -1,58 +1,59 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>REMONDO SIX – Softair Utility</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Remondo Softair</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 </head>
+
 <body>
 
-<h1>🎯 REMONDO SIX</h1>
+<h1>REMONDO SOFTAIR</h1>
 
-<div id="menu">
-  <label>Nome operatore</label>
-  <input type="text" id="playerName">
-
-  <label>Squadra</label>
-  <select id="teamSelect">
-    <option value="ALFA">TEAM ALFA</option>
-    <option value="BRAVO">TEAM BRAVO</option>
+<div id="login">
+  <input id="name" placeholder="Nome operatore">
+  <select id="team">
+    <option value="RED">🔴 ROSSI</option>
+    <option value="BLUE">🔵 BLU</option>
   </select>
-
-  <label>
-    <input type="checkbox" id="isMaster"> Sono il MASTER
-  </label>
-
-  <label>Password Master</label>
-  <input type="password" id="masterPassword">
-
-  <label>Durata partita (minuti)</label>
-  <input type="number" id="gameDuration" min="1" max="180">
-
-  <div class="buttons">
-    <button onclick="startGame()">▶ Avvia / Entra</button>
-    <button onclick="stopGame()">⛔ Fine (Master)</button>
-    <button onclick="resetGame()">♻ Reset Totale</button>
-    <button onclick="resetPlayer()">🔄 Reset Giocatore</button>
-  </div>
+  <input id="masterpass" placeholder="Password master (opzionale)">
+  <button onclick="joinGame()">ENTRA IN PARTITA</button>
 </div>
 
-<div id="timer">⏱️ In attesa…</div>
-<div id="status">📍 GPS in attesa…</div>
+<div id="masterPanel" class="hidden">
+  <h2>🎖 MASTER</h2>
+  <input type="number" id="matchTime" placeholder="Minuti partita">
+  <button onclick="startMatch()">▶ AVVIA</button>
+  <button onclick="stopMatch()">⏹ FINE</button>
+  <button onclick="resetAll()">♻ RESET TOTALE</button>
+</div>
+
+<div id="statusBox">
+  <h3 id="matchStatus">In attesa</h3>
+  <h2 id="timer">00:00</h2>
+</div>
+
+<div id="scoreBox">
+  🔴 <span id="redScore">0</span> |
+  🔵 <span id="blueScore">0</span>
+</div>
 
 <div id="map"></div>
 
-<h2>🏆 Obiettivi</h2>
-<ul id="scoreboard"></ul>
+<div class="lists">
+  <div>
+    <h3>🔴 ROSSI</h3>
+    <ul id="redPlayers"></ul>
+  </div>
+  <div>
+    <h3>🔵 BLU</h3>
+    <ul id="bluePlayers"></ul>
+  </div>
+</div>
 
-<h2>👥 Operatori Online</h2>
-<ul id="operators"></ul>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="script.js"></script>
-
 </body>
 </html>
