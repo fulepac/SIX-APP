@@ -30,18 +30,19 @@ async function saveData(d){
 }
 
 async function joinGame(){
- const name=document.getElementById("name").value;
- if(!name)return alert("Nome mancante");
+ const name=document.getElementById("name").value.trim();
+ if(!name) return alert("Inserisci nome");
 
- const data=await getData();
  playerId=crypto.randomUUID();
  team=document.getElementById("team").value;
  isMaster=document.getElementById("masterpass").value==="71325";
 
+ const data=await getData();
  if(isMaster) masterPanel.classList.remove("hidden");
 
  data.players[playerId]={name,team,active:true};
  await saveData(data);
+
  initMap();
 }
 
@@ -51,6 +52,7 @@ async function startMatch(){
   active:true,
   start:Date.now(),
   duration:matchTime.value*60,
+  capture:parseInt(captureTime.value),
   mode:mode.value
  };
  await saveData(data);
@@ -65,6 +67,7 @@ async function stopMatch(){
 async function resetAll(){
  await saveData({
   players:{},
+  objectives:objectives,
   match:{active:false},
   score:{RED:0,BLUE:0}
  });
@@ -74,9 +77,11 @@ async function resetAll(){
 function initMap(){
  map=L.map("map").setView([45.2382,8.8095],17);
  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
  objectives.forEach(o=>{
   L.circle([o.lat,o.lon],{radius:8}).addTo(map).bindPopup(o.name);
  });
+
  setInterval(update,2000);
 }
 
@@ -92,11 +97,19 @@ async function update(){
 
  redPlayers.innerHTML="";
  bluePlayers.innerHTML="";
+ objectiveList.innerHTML="";
 
  Object.values(d.players).forEach(p=>{
   const li=document.createElement("li");
   li.textContent=(p.active?"🟢 ":"⚪ ")+p.name;
   (p.team==="RED"?redPlayers:bluePlayers).appendChild(li);
+ });
+
+ objectives.forEach(o=>{
+  const li=document.createElement("li");
+  if(!o.owner) li.textContent=`⚪ ${o.name} - Libero`;
+  else li.textContent=`${o.owner==="RED"?"🔴":"🔵"} ${o.name}`;
+  objectiveList.appendChild(li);
  });
 
  redScore.innerText=d.score.RED;
