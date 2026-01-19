@@ -2,38 +2,50 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Remondo Softair</title>
+<title>Remondo Softair Online</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 </head>
 <body>
 
-<h1>REMONDO SOFTAIR</h1>
+<h1>REMONDO SOFTAIR ONLINE</h1>
 
-<div id="menu">
+<div id="login">
   <input id="playerName" placeholder="Nome operatore">
   <select id="teamSelect">
     <option value="ROSSI">ROSSI</option>
     <option value="BLU">BLU</option>
   </select>
-  <input id="gameDuration" type="number" placeholder="Durata partita (minuti)">
-  <input id="isMaster" type="checkbox"> Master
-  <button onclick="startGame()">ENTRA / AVVIA</button>
+  <input id="masterPass" placeholder="Password Master (opzionale)">
+  <button onclick="joinGame()">ENTRA</button>
 </div>
 
-<h3 id="status">⏳ In attesa</h3>
-<h2 id="timer">00:00</h2>
+<div id="masterPanel" class="hidden">
+  <h2>MASTER PANEL</h2>
+  <input type="number" id="gameDuration" placeholder="Durata partita (minuti)">
+  <button onclick="startGame()">AVVIA PARTITA</button>
+  <button onclick="stopGame()">FINE PARTITA</button>
+  <button onclick="resetAll()">RESET TOTALE</button>
+</div>
+
+<div id="statusPanel">
+  <h3 id="status">In attesa</h3>
+  <h2 id="timer">⏱️ 00:00</h2>
+  <div id="scoreBoard">
+    🔴 <span id="redPoints">0</span> | 🔵 <span id="bluePoints">0</span>
+  </div>
+</div>
 
 <div id="map"></div>
+
+<h3>Operatori Online</h3>
+<ul id="operatorsList"></ul>
 
 <h3>Obiettivi</h3>
 <ul id="scoreboard"></ul>
 
-<h3>Operatori Online</h3>
-<ul id="operators"></ul>
-
-</body>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="script.js"></script>
+</body>
 </html>
