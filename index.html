@@ -4,47 +4,48 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>REMONDO SIX 2.1 FC</title>
-<link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <h1>🎯 REMONDO SIX 2.1 FC</h1>
-
 <div id="menu">
   <label>Nome operatore:</label>
   <input type="text" id="playerName" placeholder="Es. Fulvio" value="">
 
   <label>Seleziona squadra:</label>
   <select id="teamSelect">
-    <option value="1">TEAM ALFA</option>
-    <option value="2">TEAM BRAVO</option>
+    <option value="ALFA">TEAM ALFA</option>
+    <option value="BRAVO">TEAM BRAVO</option>
   </select>
 
   <label>Durata partita (minuti):</label>
   <input type="number" id="gameDuration" value="2" min="1" max="60">
 
-  <label>Sei Master?</label>
-  <input type="checkbox" id="isMaster">
+  <label><input type="checkbox" id="isMaster"> Master</label>
 
-  <br><br>
-  <button id="startBtn">Avvia Partita</button>
-  <button id="stopBtn" style="display:none;">Ferma Partita</button>
+  <button onclick="startGame()">Avvia Partita</button>
+  <button onclick="stopGame()">Ferma Partita (Master)</button>
+  <button onclick="resetPlayer()">Reset Giocatore</button>
+
+  <h3>Gestione Obiettivi (prima di iniziare)</h3>
+  <input type="text" id="objName" placeholder="Nome Obiettivo">
+  <input type="number" id="objLat" placeholder="Latitudine">
+  <input type="number" id="objLon" placeholder="Longitudine">
+  <button onclick="addObjective(document.getElementById('objName').value, document.getElementById('objLat').value, document.getElementById('objLon').value)">Aggiungi Obiettivo</button>
 </div>
 
 <div id="timer">⏱️ In attesa…</div>
 <div id="status">GPS non attivo</div>
-
-<div id="map" style="height:400px;margin-top:10px;"></div>
+<div id="map"></div>
 
 <h2>🏆 Tabellone Obiettivi</h2>
 <ul id="scoreboard"></ul>
 
-<h2>🕹️ Operatori Online</h2>
+<h2>👤 Operatori Online</h2>
 <ul id="operators"></ul>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="script.js"></script>
-
 </body>
 </html>
