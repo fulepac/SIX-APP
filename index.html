@@ -7,60 +7,52 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 </head>
-
 <body>
 
 <h1>REMONDO SOFTAIR</h1>
 
+<!-- LOGIN SEMPRE VISIBILE -->
 <div id="login">
-  <input id="name" placeholder="Nome operatore">
-  <select id="team">
-    <option value="RED">🔴 ROSSI</option>
-    <option value="BLUE">🔵 BLU</option>
+  <input id="playerName" placeholder="Nome operatore">
+  <select id="teamSelect">
+    <option value="RED">🔴 Rossi</option>
+    <option value="BLUE">🔵 Blu</option>
   </select>
-  <input id="masterpass" placeholder="Password master">
+  <input id="masterPass" placeholder="Password master">
   <button onclick="joinGame()">ENTRA IN PARTITA</button>
 </div>
 
+<!-- MASTER MENU -->
 <div id="masterPanel" class="hidden">
-  <h2>🎖 MASTER</h2>
+  <h2>🎖 CONTROLLO MASTER</h2>
+
   <label>Durata partita (min)</label>
-  <input id="matchTime" type="number" value="30">
+  <input id="gameDuration" type="number" value="30">
 
   <label>Tempo conquista OBJ (sec)</label>
   <input id="captureTime" type="number" value="20">
 
-  <select id="mode">
-    <option value="CONQUEST">Conquista</option>
-    <option value="TOURNAMENT">Torneo</option>
-  </select>
-
-  <button onclick="startMatch()">▶ AVVIA</button>
-  <button onclick="stopMatch()">⏹ FINE</button>
-  <button onclick="resetAll()">♻ RESET</button>
+  <button onclick="startGame()">▶ AVVIA PARTITA</button>
+  <button onclick="endGame()">⏹ FINE PARTITA</button>
+  <button onclick="resetGame()">♻ RESET TOTALE</button>
 </div>
 
-<h2 id="status">In attesa</h2>
-<h1 id="timer">00:00</h1>
-
-<div id="score">
-  🔴 <span id="redScore">0</span> |
-  🔵 <span id="blueScore">0</span>
-</div>
+<h2 id="status">⏳ In attesa avvio</h2>
+<h1 id="timer">--:--</h1>
 
 <h2>🎯 OBIETTIVI</h2>
 <ul id="objectiveList"></ul>
 
 <div id="map"></div>
 
-<div class="lists">
+<div class="teams">
   <div>
-    <h3>🔴 ROSSI</h3>
-    <ul id="redPlayers"></ul>
+    <h3>🔴 Rossi</h3>
+    <ul id="redList"></ul>
   </div>
   <div>
-    <h3>🔵 BLU</h3>
-    <ul id="bluePlayers"></ul>
+    <h3>🔵 Blu</h3>
+    <ul id="blueList"></ul>
   </div>
 </div>
 
