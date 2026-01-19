@@ -14,41 +14,26 @@
 <div id="menu">
   <input id="playerName" placeholder="Nome operatore">
   <select id="teamSelect">
-    <option value="RED">ROSSI</option>
-    <option value="BLUE">BLU</option>
+    <option value="ROSSI">ROSSI</option>
+    <option value="BLU">BLU</option>
   </select>
-  <input id="masterPass" placeholder="Password master (opzionale)">
   <input id="gameDuration" type="number" placeholder="Durata partita (minuti)">
-  <button onclick="joinGame()">ENTRA / JOIN</button>
-</div>
-
-<div id="masterPanel" class="hidden">
-  <button onclick="startGame()">AVVIA PARTITA</button>
-  <button onclick="endGame()">FINE PARTITA</button>
-  <button onclick="resetAll()">RESET COMPLETO</button>
+  <input id="isMaster" type="checkbox"> Master
+  <button onclick="startGame()">ENTRA / AVVIA</button>
 </div>
 
 <h3 id="status">⏳ In attesa</h3>
 <h2 id="timer">00:00</h2>
 
-<div id="score">
-  🔴 <span id="redScore">0</span> | 🔵 <span id="blueScore">0</span>
-</div>
-
 <div id="map"></div>
 
 <h3>Obiettivi</h3>
-<ul id="objectiveList"></ul>
+<ul id="scoreboard"></ul>
 
 <h3>Operatori Online</h3>
-<div id="operators">
-  <h4>ROSSI</h4>
-  <ul id="redList"></ul>
-  <h4>BLU</h4>
-  <ul id="blueList"></ul>
-</div>
+<ul id="operators"></ul>
 
+</body>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="script.js"></script>
-</body>
 </html>
