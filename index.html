@@ -24,11 +24,17 @@
 
 <div id="masterPanel" class="hidden">
   <h2>🎖 MASTER</h2>
-  <input id="matchTime" type="number" placeholder="Minuti">
+  <label>Durata partita (min)</label>
+  <input id="matchTime" type="number" value="30">
+
+  <label>Tempo conquista OBJ (sec)</label>
+  <input id="captureTime" type="number" value="20">
+
   <select id="mode">
     <option value="CONQUEST">Conquista</option>
     <option value="TOURNAMENT">Torneo</option>
   </select>
+
   <button onclick="startMatch()">▶ AVVIA</button>
   <button onclick="stopMatch()">⏹ FINE</button>
   <button onclick="resetAll()">♻ RESET</button>
@@ -41,6 +47,9 @@
   🔴 <span id="redScore">0</span> |
   🔵 <span id="blueScore">0</span>
 </div>
+
+<h2>🎯 OBIETTIVI</h2>
+<ul id="objectiveList"></ul>
 
 <div id="map"></div>
 
