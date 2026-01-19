@@ -1,179 +1,104 @@
-// ================= CONFIG =================
-const BIN_ID = "696d4940ae596e708fe53514";
-const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
-const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
-const MASTER_PASSWORD = "71325";
+const BIN_ID="696d4940ae596e708fe53514";
+const SECRET_KEY="$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
+const API=`https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-// ================= STATO =================
-let gameStarted = false;
-let isMaster = false;
-let gameTime = 0;
-let timerInterval = null;
+let playerId, team, isMaster=false;
+let map;
 
-let playerName = "";
-let playerTeam = "";
-let playerMarker = null;
+const objectives=[
+ {name:"PF1",lat:45.238376,lon:8.810060,owner:null},
+ {name:"PF2",lat:45.237648,lon:8.810941,owner:null},
+ {name:"PF3",lat:45.238634,lon:8.808772,owner:null},
+ {name:"PF4",lat:45.237771,lon:8.809208,owner:null},
+ {name:"PF5",lat:45.237995,lon:8.808303,owner:null}
+];
 
-let operators = [];
-let globalState = null;
-
-// ================= MAPPA =================
-const map = L.map("map").setView([45.237763, 8.809708], 18);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
-
-// ================= OBIETTIVI =================
-const objectives = [
-  {name:"PF1", lat:45.238376, lon:8.810060},
-  {name:"PF2", lat:45.237648, lon:8.810941},
-  {name:"PF3", lat:45.238634, lon:8.808772},
-  {name:"PF4", lat:45.237771, lon:8.809208},
-  {name:"PF5", lat:45.237995, lon:8.808303}
-].map(o => ({...o, owner:null, operator:null, radius:6, marker:null}));
-
-objectives.forEach(o => {
-  o.marker = L.circle([o.lat,o.lon], {
-    radius:o.radius,
-    color:"white",
-    fillOpacity:0.4
-  }).addTo(map).bindPopup(`${o.name} - Libero`);
-});
-
-// ================= JSONBIN =================
-async function fetchState() {
-  const res = await fetch(JSONBIN_URL + "/latest", {
-    headers: { "X-Master-Key": SECRET_KEY }
-  });
-  const data = await res.json();
-  globalState = data.record;
-
-  if (globalState.started) {
-    gameStarted = true;
-    gameTime = globalState.timer;
-    operators = globalState.operators || [];
-    updateOperatorsList();
-    updateTimerUI();
-  }
+async function getData(){
+ const r=await fetch(API,{headers:{"X-Master-Key":SECRET_KEY}});
+ return (await r.json()).record;
 }
 
-async function saveState() {
-  await fetch(JSONBIN_URL, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Master-Key": SECRET_KEY
-    },
-    body: JSON.stringify({
-      started: gameStarted,
-      timer: gameTime,
-      operators
-    })
-  });
+async function saveData(d){
+ await fetch(API,{
+  method:"PUT",
+  headers:{
+   "Content-Type":"application/json",
+   "X-Master-Key":SECRET_KEY
+  },
+  body:JSON.stringify(d)
+ });
 }
 
-// ================= START =================
-async function startGame() {
-  playerName = playerName || document.getElementById("playerName").value.trim();
-  playerTeam = document.getElementById("teamSelect").value;
+async function joinGame(){
+ const name=document.getElementById("name").value;
+ if(!name)return alert("Nome mancante");
 
-  if (!playerName) return alert("Inserisci nome");
+ const data=await getData();
+ playerId=crypto.randomUUID();
+ team=document.getElementById("team").value;
+ isMaster=document.getElementById("masterpass").value==="71325";
 
-  const wantMaster = document.getElementById("isMaster").checked;
-  const pwd = document.getElementById("masterPassword").value;
+ if(isMaster) masterPanel.classList.remove("hidden");
 
-  if (wantMaster) {
-    if (pwd !== MASTER_PASSWORD) {
-      alert("❌ Password Master errata");
-      return;
-    }
-    isMaster = true;
-  }
-
-  await fetchState();
-
-  if (isMaster && !gameStarted) {
-    const min = parseInt(document.getElementById("gameDuration").value);
-    if (!min) return alert("Inserisci durata");
-
-    gameTime = min * 60;
-    gameStarted = true;
-    startTimer();
-  }
-
-  if (!operators.find(o => o.name === playerName)) {
-    operators.push({ name:playerName, team:playerTeam, master:isMaster });
-  }
-
-  lockInputs();
-  await saveState();
+ data.players[playerId]={name,team,active:true};
+ await saveData(data);
+ initMap();
 }
 
-// ================= TIMER =================
-function startTimer() {
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(async () => {
-    if (!gameStarted) return;
-    if (gameTime <= 0) {
-      clearInterval(timerInterval);
-      document.getElementById("timer").innerText = "⛔ PARTITA TERMINATA";
-      gameStarted = false;
-      await saveState();
-      return;
-    }
-    gameTime--;
-    updateTimerUI();
-    await saveState();
-  },1000);
+async function startMatch(){
+ const data=await getData();
+ data.match={
+  active:true,
+  start:Date.now(),
+  duration:matchTime.value*60,
+  mode:mode.value
+ };
+ await saveData(data);
 }
 
-function updateTimerUI() {
-  const m = Math.floor(gameTime/60);
-  const s = gameTime%60;
-  document.getElementById("timer").innerText = `⏱️ ${m}:${s.toString().padStart(2,"0")}`;
+async function stopMatch(){
+ const data=await getData();
+ data.match.active=false;
+ await saveData(data);
 }
 
-// ================= STOP / RESET =================
-async function stopGame() {
-  if (!isMaster) return alert("Solo Master");
-  gameStarted = false;
-  clearInterval(timerInterval);
-  document.getElementById("timer").innerText = "⛔ PARTITA TERMINATA";
-  await saveState();
+async function resetAll(){
+ await saveData({
+  players:{},
+  match:{active:false},
+  score:{RED:0,BLUE:0}
+ });
+ location.reload();
 }
 
-async function resetGame() {
-  if (!isMaster) return alert("Solo Master");
-  gameStarted = false;
-  gameTime = 0;
-  operators = [];
-  document.getElementById("timer").innerText = "⏱️ In attesa…";
-  await saveState();
-  updateOperatorsList();
+function initMap(){
+ map=L.map("map").setView([45.2382,8.8095],17);
+ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+ objectives.forEach(o=>{
+  L.circle([o.lat,o.lon],{radius:8}).addTo(map).bindPopup(o.name);
+ });
+ setInterval(update,2000);
 }
 
-function resetPlayer() { location.reload(); }
+async function update(){
+ const d=await getData();
 
-// ================= GPS =================
-navigator.geolocation.watchPosition(pos=>{
-  const lat=pos.coords.latitude, lon=pos.coords.longitude;
-  document.getElementById("status").innerText = `📍 ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-  if (!playerMarker) playerMarker = L.marker([lat,lon]).addTo(map);
-  else playerMarker.setLatLng([lat,lon]);
-});
+ status.innerText=d.match.active?"PARTITA IN CORSO":"IN ATTESA";
 
-// ================= UI =================
-function updateOperatorsList() {
-  const ul = document.getElementById("operators");
-  ul.innerHTML = "";
-  operators.forEach(o=>{
-    const li=document.createElement("li");
-    li.innerText = `${o.name} - ${o.team}${o.master?" 👑":""}`;
-    ul.appendChild(li);
-  });
+ if(d.match.active){
+  const t=d.match.duration-Math.floor((Date.now()-d.match.start)/1000);
+  timer.innerText=`${Math.floor(t/60)}:${(t%60).toString().padStart(2,"0")}`;
+ }
+
+ redPlayers.innerHTML="";
+ bluePlayers.innerHTML="";
+
+ Object.values(d.players).forEach(p=>{
+  const li=document.createElement("li");
+  li.textContent=(p.active?"🟢 ":"⚪ ")+p.name;
+  (p.team==="RED"?redPlayers:bluePlayers).appendChild(li);
+ });
+
+ redScore.innerText=d.score.RED;
+ blueScore.innerText=d.score.BLUE;
 }
-
-function lockInputs() {
-  ["playerName","teamSelect","gameDuration","isMaster","masterPassword"]
-    .forEach(id=>document.getElementById(id).disabled=true);
-}
-
-setInterval(fetchState,3000);
