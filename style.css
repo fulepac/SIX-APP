@@ -1,47 +1,34 @@
 body {
-  margin: 0;
-  background: #0e0e0e;
-  color: #eee;
-  font-family: Arial, sans-serif;
-  text-align: center;
-}
-
-#login, #masterPanel {
-  padding: 10px;
+  background:#0c0c0c;
+  color:#eee;
+  font-family:Arial;
+  margin:0;
+  text-align:center;
 }
 
 input, select, button {
-  padding: 8px;
-  margin: 5px;
+  padding:8px;
+  margin:4px;
 }
 
 button {
-  background: #333;
-  color: white;
-  border: 1px solid #666;
-}
-
-.hidden {
-  display: none;
+  background:#222;
+  color:white;
+  border:1px solid #555;
 }
 
 #map {
-  height: 45vh;
-  width: 100%;
-  margin-top: 10px;
+  height:45vh;
+  width:100%;
+  margin-top:10px;
 }
+
+.hidden { display:none; }
 
 .lists {
-  display: flex;
-  justify-content: space-around;
-  padding: 10px;
+  display:flex;
+  justify-content:space-around;
 }
 
-ul {
-  list-style: none;
-  padding: 0;
-}
-
-li {
-  padding: 4px;
-}
+ul { list-style:none; padding:0; }
+li { padding:4px; }
