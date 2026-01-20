@@ -11,7 +11,7 @@
 
     <header>
         <h1>🎯 REMONDO SIX</h1>
-        <div id="status">GPS IN ATTESA...</div>
+        <div id="gameStatusBanner" class="status-banner">CONTROLLO...</div>
     </header>
 
     <div id="menu">
@@ -20,11 +20,24 @@
             <option value="RED">TEAM ROSSO</option>
             <option value="BLUE">TEAM BLU</option>
         </select>
+
         <div class="master-zone">
-            <label><input type="checkbox" id="isMaster"> MASTER MODE</label>
-            <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
-            <input id="gameDuration" type="number" placeholder="MINUTI PARTITA" value="30">
+            <label><input type="checkbox" id="isMaster" onchange="toggleMasterTools()"> MASTER MODE</label>
+            <div id="masterTools" style="display:none;">
+                <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
+                <input id="gameDuration" type="number" placeholder="MINUTI PARTITA" value="30">
+                
+                <div class="obj-creator">
+                    <h4>🔨 CONFIG OBIETTIVI</h4>
+                    <input id="newObjName" placeholder="NOME (es: ALPHA)">
+                    <input id="newObjLat" placeholder="LATITUDINE">
+                    <input id="newObjLon" placeholder="LONGITUDINE">
+                    <button type="button" onclick="addCustomObjective()">➕ AGGIUNGI</button>
+                    <ul id="customObjList"></ul>
+                </div>
+            </div>
         </div>
+
         <button class="btn-main" onclick="startGame()">▶ AVVIA / ENTRA</button>
     </div>
 
@@ -43,7 +56,7 @@
         </div>
 
         <div class="info-section">
-            <h3>👥 OPERATORI ONLINE</h3>
+            <h3>👥 OPERATORI</h3>
             <ul id="operators"></ul>
         </div>
     </div>
