@@ -2,16 +2,20 @@ const BIN_ID="696d4940ae596e708fe53514";
 const SECRET_KEY="$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
 const URL=`https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
+const CAPTURE_TIME = 180000;     // 3 minuti
+const SCORE_INTERVAL = 30000;   // 30 secondi
+
 let me=null,team=null,isMaster=false,joined=false;
 let myPos=null,myMarker=null;
 
-const CAPTURE_TIME = 180000; // 3 minuti
+// 🔊 SUONO CONQUISTA
+const captureSound = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
 
 // MAPPA
 const map=L.map("map").setView([45.237763,8.809708],18);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-// OBJ FISSI
+// OBIETTIVI
 const objectivesData={
  PF1:[45.238376,8.810060],
  PF2:[45.237648,8.810941],
@@ -21,11 +25,11 @@ const objectivesData={
 };
 
 const objMarkers={};
-
 Object.entries(objectivesData).forEach(([n,p])=>{
  objMarkers[n]=L.circle(p,{radius:6,color:"white",fillOpacity:0.4}).addTo(map);
 });
 
+// API
 async function api(method,data){
  return fetch(URL,{
   method,
@@ -39,11 +43,8 @@ async function api(method,data){
 
 // LOGIN
 async function login(){
- const name=nameEl.value.trim();
- const pin=pinEl.value.trim();
+ me=nameEl.value.trim()+"#"+pinEl.value.trim();
  team=teamSelect.value;
- if(pin.length<4) return alert("PIN minimo 4 cifre");
- me=name+"#"+pin;
  isMaster=masterPass.value==="71325";
  loginBox.classList.add("hidden");
  playerPanel.classList.remove("hidden");
@@ -51,7 +52,7 @@ async function login(){
  setInterval(sync,2000);
 }
 
-// ENTRA PARTITA
+// JOIN
 async function joinGame(){
  let d=(await api("GET")).record;
  d.players[me]={team,joined:true};
@@ -59,20 +60,17 @@ async function joinGame(){
  joined=true;
 }
 
-// ESCI
-async function leaveGame(){
- let d=(await api("GET")).record;
- delete d.players[me];
- await api("PUT",{record:d});
- joined=false;
-}
-
 // MASTER
 async function startGame(){
  let d=(await api("GET")).record;
- d.game.started=true;
- d.game.startTime=Date.now();
- d.game.duration=+duration.value*60;
+ d.game={
+  started:true,
+  startTime:Date.now(),
+  duration:+duration.value*60,
+  mode:modeSelect.value,
+  score:{RED:0,BLUE:0},
+  lastScoreTick:Date.now()
+ };
  await api("PUT",{record:d});
 }
 
@@ -87,71 +85,62 @@ navigator.geolocation.watchPosition(p=>{
  myPos=[p.coords.latitude,p.coords.longitude];
  if(!myMarker) myMarker=L.marker(myPos).addTo(map);
  else myMarker.setLatLng(myPos);
-},()=>{}, {enableHighAccuracy:true});
+},{},{enableHighAccuracy:true});
 
-// DISTANZA
-function dist(a,b){
- return map.distance(a,b);
-}
+function dist(a,b){ return map.distance(a,b); }
 
 // SYNC
 async function sync(){
  let d=(await api("GET")).record;
+ const now=Date.now();
 
  // TIMER
  if(d.game.started){
-  let left=d.game.duration-(Date.now()-d.game.startTime)/1000;
+  let left=d.game.duration-(now-d.game.startTime)/1000;
   timer.textContent=left>0
    ?`⏱️ ${Math.floor(left/60)}:${Math.floor(left%60).toString().padStart(2,"0")}`
    :"⛔ FINE PARTITA";
- } else timer.textContent="⏱️ In attesa";
+ }
 
- // PLAYER LIST
- players.innerHTML="";
- Object.entries(d.players).forEach(([p,v])=>{
-  let li=document.createElement("li");
-  li.textContent=`${p} (${v.team})`;
-  players.appendChild(li);
- });
+ // SCORE
+ if(d.game.started && now-d.game.lastScoreTick>=SCORE_INTERVAL){
+  Object.values(d.objectives).forEach(o=>{
+   if(o.owner) d.game.score[o.owner]++;
+  });
+  d.game.lastScoreTick=now;
+ }
 
- // OBJ LOGIC
+ scoreBox.textContent=`🔴 RED ${d.game.score.RED} | 🔵 BLUE ${d.game.score.BLUE}`;
+
+ // OBIETTIVI
  if(joined && myPos && d.game.started){
   Object.entries(objectivesData).forEach(([name,pos])=>{
-   const o=d.objectives[name];
-   const inside=dist(myPos,pos)<=6;
-
-   if(inside){
-    if(!o.owner){
-     if(!o.capturingBy){
-      o.capturingBy=team;
-      o.captureStart=Date.now();
-     } else if(o.capturingBy===team){
-      if(Date.now()-o.captureStart>=CAPTURE_TIME){
-       o.owner=team;
-       o.capturingBy=null;
-       o.captureStart=null;
-      }
-     }
+   let o=d.objectives[name];
+   if(dist(myPos,pos)<=6){
+    if(!o.owner && !o.capturingBy){
+     o.capturingBy=team;
+     o.captureStart=now;
     }
-   } else {
-    if(o.capturingBy===team){
+    if(o.capturingBy===team && now-o.captureStart>=CAPTURE_TIME){
+     o.owner=team;
      o.capturingBy=null;
      o.captureStart=null;
+     captureSound.play();
     }
    }
   });
-  await api("PUT",{record:d});
  }
 
- // UI OBJ
+ // UI
  objectives.innerHTML="";
  Object.entries(d.objectives).forEach(([k,v])=>{
   let li=document.createElement("li");
   li.textContent=`${k}: ${v.owner||"Libero"}`;
   objectives.appendChild(li);
-
   objMarkers[k].setStyle({
-   color: v.owner==="RED"?"red":v.owner==="BLUE"?"blue":"white"
+   color:v.owner==="RED"?"red":v.owner==="BLUE"?"blue":"white"
   });
  });
+
+ await api("PUT",{record:d});
 }
