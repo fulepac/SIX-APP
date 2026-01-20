@@ -11,7 +11,7 @@
 
     <header>
         <h1>🎯 REMONDO SIX</h1>
-        <div id="gameStatusBanner" class="status-banner">CONTROLLO...</div>
+        <div id="gameStatusBanner" class="status-banner">CONTROLLO SERVER...</div>
     </header>
 
     <div id="menu">
@@ -26,18 +26,18 @@
             
             <div id="masterTools" style="display:none;">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
-                <input id="gameDuration" type="number" placeholder="MINUTI" value="30">
+                <input id="gameDuration" type="number" placeholder="DURATA (MIN)" value="30">
                 
                 <div class="obj-manager">
                     <h4>📍 GESTIONE 10 SLOT OBIETTIVI</h4>
-                    <p style="font-size:0.6rem; color:#888;">Modifica e seleziona quelli da attivare:</p>
+                    <p style="font-size:0.6rem; color:#888;">Seleziona e modifica gli obiettivi attivi:</p>
                     <div id="objSlotContainer" class="slot-container">
                         </div>
                 </div>
             </div>
         </div>
 
-        <button class="btn-main" onclick="startGame()">▶ AVVIA PARTITA / ENTRA</button>
+        <button class="btn-main" onclick="startGame()">▶ AVVIA / ENTRA</button>
     </div>
 
     <div id="game-ui" style="display:none;">
@@ -55,7 +55,7 @@
         </div>
 
         <div class="info-section">
-            <h3>👥 TEAM ONLINE</h3>
+            <h3>👥 COMPAGNI ONLINE</h3>
             <ul id="operators"></ul>
         </div>
     </div>
@@ -63,7 +63,7 @@
     <div id="radar"></div>
 
     <div id="master-controls" style="display:none;">
-        <button class="btn-danger" onclick="resetBin()">🔥 RESET COMPLETO</button>
+        <button class="btn-danger" onclick="resetBin()">🔥 RESET COMPLETO PARTITA</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
