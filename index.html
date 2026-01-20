@@ -25,15 +25,17 @@
             <label><input type="checkbox" id="isMaster" onchange="toggleMasterTools()"> MASTER MODE</label>
             <div id="masterTools" style="display:none;">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
-                <input id="gameDuration" type="number" placeholder="MINUTI PARTITA" value="30">
+                <input id="gameDuration" type="number" placeholder="MINUTI" value="30">
                 
                 <div class="obj-creator">
-                    <h4>🔨 CONFIG OBIETTIVI</h4>
-                    <input id="newObjName" placeholder="NOME (es: ALPHA)">
+                    <h4>📍 GESTIONE OBIETTIVI</h4>
+                    <div id="defaultObjList" class="scroll-list">
+                        </div>
+                    <hr>
+                    <input id="newObjName" placeholder="NOME NUOVO OBJ">
                     <input id="newObjLat" placeholder="LATITUDINE">
                     <input id="newObjLon" placeholder="LONGITUDINE">
-                    <button type="button" onclick="addCustomObjective()">➕ AGGIUNGI</button>
-                    <ul id="customObjList"></ul>
+                    <button type="button" onclick="addCustomObjective()">➕ AGGIUNGI EXTRA</button>
                 </div>
             </div>
         </div>
@@ -44,19 +46,16 @@
     <div id="game-ui" style="display:none;">
         <div id="timer">⏱️ --:--</div>
         <div id="score">🔴 0 | 🔵 0</div>
-        
         <div class="map-container">
             <button onclick="centerMap()" class="btn-center">🎯 CENTRA</button>
             <div id="map"></div>
         </div>
-
         <div class="info-section">
-            <h3>📍 OBIETTIVI</h3>
+            <h3>📍 OBIETTIVI ATTIVI</h3>
             <ul id="scoreboard"></ul>
         </div>
-
         <div class="info-section">
-            <h3>👥 OPERATORI</h3>
+            <h3>👥 OPERATORI (TEAM)</h3>
             <ul id="operators"></ul>
         </div>
     </div>
