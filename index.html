@@ -23,24 +23,21 @@
 
         <div class="master-zone">
             <label><input type="checkbox" id="isMaster" onchange="toggleMasterTools()"> MASTER MODE</label>
+            
             <div id="masterTools" style="display:none;">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
                 <input id="gameDuration" type="number" placeholder="MINUTI" value="30">
                 
-                <div class="obj-creator">
-                    <h4>📍 GESTIONE OBIETTIVI</h4>
-                    <div id="defaultObjList" class="scroll-list">
+                <div class="obj-manager">
+                    <h4>📍 GESTIONE 10 SLOT OBIETTIVI</h4>
+                    <p style="font-size:0.6rem; color:#888;">Modifica e seleziona quelli da attivare:</p>
+                    <div id="objSlotContainer" class="slot-container">
                         </div>
-                    <hr>
-                    <input id="newObjName" placeholder="NOME NUOVO OBJ">
-                    <input id="newObjLat" placeholder="LATITUDINE">
-                    <input id="newObjLon" placeholder="LONGITUDINE">
-                    <button type="button" onclick="addCustomObjective()">➕ AGGIUNGI EXTRA</button>
                 </div>
             </div>
         </div>
 
-        <button class="btn-main" onclick="startGame()">▶ AVVIA / ENTRA</button>
+        <button class="btn-main" onclick="startGame()">▶ AVVIA PARTITA / ENTRA</button>
     </div>
 
     <div id="game-ui" style="display:none;">
@@ -55,7 +52,7 @@
             <ul id="scoreboard"></ul>
         </div>
         <div class="info-section">
-            <h3>👥 OPERATORI (TEAM)</h3>
+            <h3>👥 TEAM ONLINE</h3>
             <ul id="operators"></ul>
         </div>
     </div>
