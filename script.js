@@ -5,8 +5,21 @@ const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 let state = { isMaster: false, playerName: "", playerTeam: "", playerMarker: null };
 let allyMarkers = {}; 
 let activeObjMarkers = [];
+let lastObjStatus = {}; 
 
-// COORDINATE STORICHE DEFINITE
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(freq, duration) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
 const DEFAULT_COORDS = [
     {name:"PF1", lat:45.238376, lon:8.810060, active: true},
     {name:"PF2", lat:45.237648, lon:8.810941, active: true},
@@ -15,32 +28,24 @@ const DEFAULT_COORDS = [
     {name:"PF5", lat:45.237995, lon:8.808303, active: true}
 ];
 
-// Inizializzazione dei 10 Slot
 function initSlotUI() {
     const container = document.getElementById("objSlotContainer");
     if (!container) return;
-    container.innerHTML = ""; // Pulisce prima di generare
-
+    container.innerHTML = "";
     for (let i = 0; i < 10; i++) {
-        // Se l'indice è < 5 usa i default, altrimenti slot vuoti
         const data = DEFAULT_COORDS[i] || { name: `OBJ${i+1}`, lat: 0.0, lon: 0.0, active: false };
-        
         container.innerHTML += `
             <div class="obj-slot" id="slot-${i}">
                 <span>${i+1}</span>
                 <input type="checkbox" class="s-active" ${data.active ? 'checked' : ''}>
-                <input type="text" class="s-name" value="${data.name}" placeholder="Nome">
+                <input type="text" class="s-name" value="${data.name}">
                 <input type="number" class="s-lat" value="${data.lat}" step="0.000001">
                 <input type="number" class="s-lon" value="${data.lon}" step="0.000001">
             </div>`;
     }
 }
 
-// Chiamata immediata all'avvio dello script
-window.onload = () => {
-    initSlotUI();
-    checkStatus();
-};
+window.onload = () => { initSlotUI(); checkStatus(); };
 
 const map = L.map("map").setView([45.237763, 8.809708], 18);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
@@ -50,45 +55,35 @@ async function checkStatus() {
         const res = await fetch(`${JSONBIN_URL}/latest`, { headers: { "X-Master-Key": SECRET_KEY }, cache: 'no-store' });
         const { record } = await res.json();
         const b = document.getElementById("gameStatusBanner");
-        if (record.game?.started) { 
-            b.innerText="⚠️ PARTITA IN CORSO"; b.className="status-banner status-active"; 
-        } else { 
-            b.innerText="✅ CAMPO DISPONIBILE"; b.className="status-banner status-waiting"; 
-        }
+        if (record.game?.started) { b.innerText="⚠️ PARTITA IN CORSO"; b.className="status-banner status-active"; }
+        else { b.innerText="✅ CAMPO DISPONIBILE"; b.className="status-banner status-waiting"; }
     } catch(e){}
 }
 
-function toggleMasterTools() { 
-    document.getElementById("masterTools").style.display = document.getElementById("isMaster").checked ? "block" : "none"; 
-}
-
+function toggleMasterTools() { document.getElementById("masterTools").style.display = document.getElementById("isMaster").checked ? "block" : "none"; }
 function getDist(la1, lo1, la2, lo2) {
     const R = 6371e3;
     const dLat = (la2-la1)*Math.PI/180; const dLon = (lo2-lo1)*Math.PI/180;
     const a = Math.sin(dLat/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-
 function centerMap() { if (state.playerMarker) map.setView(state.playerMarker.getLatLng(), 18); }
 
 async function startGame() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
     state.playerTeam = document.getElementById("teamSelect").value;
     state.isMaster = document.getElementById("isMaster").checked;
-    
-    if (!state.playerName) return alert("INSERISCI NOME OPERATORE");
-    if (state.isMaster && document.getElementById("masterPass").value !== "71325") return alert("PASSWORD MASTER ERRATA");
-
+    if (!state.playerName) return alert("INSERISCI NOME");
+    if (state.isMaster && document.getElementById("masterPass").value !== "71325") return alert("PASS ERRATA");
     document.getElementById("menu").style.display="none"; 
     document.getElementById("game-ui").style.display="block";
     if(state.isMaster) document.getElementById("master-controls").style.display="block";
-
     navigator.geolocation.watchPosition(p => {
         const {latitude:la, longitude:lo} = p.coords;
-        if(!state.playerMarker) state.playerMarker = L.marker([la,lo]).addTo(map).bindTooltip("TU ("+state.playerName+")", {permanent:true});
+        if(!state.playerMarker) state.playerMarker = L.marker([la,lo]).addTo(map).bindTooltip("TU", {permanent:true});
         else state.playerMarker.setLatLng([la,lo]);
     }, null, {enableHighAccuracy:true});
-
     setInterval(sync, 4000);
 }
 
@@ -97,22 +92,11 @@ async function sync() {
     try {
         const res = await fetch(`${JSONBIN_URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
         const { record } = await res.json();
-        
         if(!record.players) record.players = {};
-        record.players[state.playerName] = { 
-            team: state.playerTeam, 
-            lat: state.playerMarker.getLatLng().lat, 
-            lon: state.playerMarker.getLatLng().lng, 
-            last: Date.now() 
-        };
-
+        record.players[state.playerName] = { team: state.playerTeam, lat: state.playerMarker.getLatLng().lat, lon: state.playerMarker.getLatLng().lng, last: Date.now() };
         if(state.isMaster) {
             processLogic(record);
-            await fetch(JSONBIN_URL, { 
-                method:"PUT", 
-                headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, 
-                body: JSON.stringify(record)
-            });
+            await fetch(JSONBIN_URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
         }
         updateUI(record);
     } catch(e){}
@@ -120,26 +104,18 @@ async function sync() {
 
 function processLogic(r) {
     if (!r.game.started) {
-        r.game.started = true; 
-        r.game.start = Date.now();
+        r.game.started = true; r.game.start = Date.now();
         r.game.duration = (parseInt(document.getElementById("gameDuration").value)||30)*60;
-        r.game.score = {RED:0, BLUE:0}; 
-        r.game.lastTick = Date.now();
-        
+        r.game.score = {RED:0, BLUE:0}; r.game.lastTick = Date.now();
         let finalObjs = [];
         for(let i=0; i<10; i++){
             const row = document.getElementById(`slot-${i}`);
             if(row && row.querySelector(".s-active").checked) {
-                finalObjs.push({
-                    name: row.querySelector(".s-name").value.toUpperCase() || `OBJ${i+1}`,
-                    lat: parseFloat(row.querySelector(".s-lat").value),
-                    lon: parseFloat(row.querySelector(".s-lon").value)
-                });
+                finalObjs.push({ name: row.querySelector(".s-name").value.toUpperCase()||`OBJ${i+1}`, lat: parseFloat(row.querySelector(".s-lat").value), lon: parseFloat(row.querySelector(".s-lon").value) });
             }
         }
         r.objectives = finalObjs.map(o => ({...o, owner:"LIBERO", start:null, teamConquering:null}));
     }
-
     r.objectives.forEach(obj => {
         const nearby = Object.values(r.players).filter(p => (Date.now()-p.last < 10000) && getDist(obj.lat, obj.lon, p.lat, p.lon) < 15);
         const teams = [...new Set(nearby.map(p => p.team))];
@@ -150,7 +126,6 @@ function processLogic(r) {
             }
         } else { obj.teamConquering = null; obj.start = null; }
     });
-
     if(Date.now() - r.game.lastTick > 30000) {
         r.objectives.forEach(o => { if(o.owner!=="LIBERO") r.game.score[o.owner]++; });
         r.game.lastTick = Date.now();
@@ -162,13 +137,24 @@ function updateUI(r) {
     const rem = r.game.duration - Math.floor((Date.now()-r.game.start)/1000);
     document.getElementById("timer").innerText = rem>0 ? `⏱️ ${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,"0")}` : "FINE";
     document.getElementById("score").innerHTML = `<span style="color:red">RED: ${r.game.score.RED}</span> | <span style="color:cyan">BLUE: ${r.game.score.BLUE}</span>`;
-    
     const sb = document.getElementById("scoreboard"); sb.innerHTML = "";
     activeObjMarkers.forEach(m => map.removeLayer(m)); activeObjMarkers = [];
 
     r.objectives.forEach(obj => {
         const col = obj.owner === "RED" ? "red" : obj.owner === "BLUE" ? "#00ffff" : "white";
         let status = obj.owner;
+        
+        if(obj.teamConquering && !lastObjStatus[obj.name+"_conq"]) { 
+            playSound(440, 0.2); 
+            lastObjStatus[obj.name+"_conq"] = true; 
+        }
+        if(!obj.teamConquering) lastObjStatus[obj.name+"_conq"] = false;
+
+        if(obj.owner !== lastObjStatus[obj.name+"_owner"]) {
+            if(lastObjStatus[obj.name+"_owner"]) playSound(880, 0.8);
+            lastObjStatus[obj.name+"_owner"] = obj.owner;
+        }
+
         if(obj.teamConquering) status = `CATTURA ${obj.teamConquering} (${Math.floor((Date.now()-obj.start)/1000)}s)`;
         sb.innerHTML += `<li style="border-left:5px solid ${col}">${obj.name}: ${status}</li>`;
         activeObjMarkers.push(L.circle([obj.lat, obj.lon], {radius:12, color:col, fillOpacity:0.3}).addTo(map));
@@ -193,8 +179,8 @@ function updateUI(r) {
             const d = getDist(myPos.lat, myPos.lng, p.lat, p.lon);
             if(d < 100) {
                 const dot = document.createElement("div"); dot.className = "dot "+p.team;
-                dot.style.left = (70 + (p.lon-myPos.lng)*40000)+"px"; 
-                dot.style.top = (70 - (p.lat-myPos.lat)*40000)+"px";
+                dot.style.left = (65 + (p.lon-myPos.lng)*40000)+"px"; 
+                dot.style.top = (65 - (p.lat-myPos.lat)*40000)+"px";
                 rad.appendChild(dot);
             }
         }
