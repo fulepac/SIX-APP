@@ -278,4 +278,36 @@ async function resetBin() {
             objectives: [],
             config: { teams: state.teamsConfig }
         };
-        await fetch(
+        await fetch(JSONBIN_URL, {
+            method:"PUT",
+            headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY},
+            body: JSON.stringify(cleanState)
+        });
+        location.reload();
+    }
+}
+
+function initSlotUI() {
+    const container = document.getElementById("objSlotContainer");
+    if(!container) return;
+    const defaults = [
+        {n:"SETTORE ALPHA", la:45.23837, lo:8.81006},
+        {n:"SETTORE BRAVO", la:45.23764, lo:8.81094},
+        {n:"SETTORE CHARLIE", la:45.23863, lo:8.80877}
+    ];
+    for (let i=0; i<10; i++) {
+        const d = defaults[i] || {n:`SETTORE ${i+1}`, la:0, lo:0};
+        container.innerHTML += `
+            <div class="obj-slot">
+                <input type="checkbox" class="s-active" ${i<3?'checked':''}>
+                <input type="text" class="s-name" value="${d.n}" style="width:70px">
+                <input type="number" class="s-lat" value="${d.la}" step="0.00001" style="width:80px">
+                <input type="number" class="s-lon" value="${d.lo}" step="0.00001" style="width:80px">
+            </div>`;
+    }
+}
+
+window.onload = () => {
+    initSlotUI();
+    checkStatus();
+};
