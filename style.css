@@ -1,35 +1,64 @@
 * { box-sizing: border-box; outline: none; }
-body { background: #0d0e0d; color: #00ff41; font-family: 'Courier New', monospace; margin: 0; padding: 10px; text-align: center; text-transform: uppercase; }
+body {
+    background: #0a0a0a; color: #00ff00; font-family: 'Courier New', monospace;
+    margin: 0; padding: 10px; text-align: center; text-transform: uppercase;
+}
+header { border-bottom: 2px solid #00ff00; margin-bottom: 10px; }
 
-header { border-bottom: 2px solid #00ff41; margin-bottom: 10px; }
-.status-banner { background: #222; padding: 8px; font-size: 0.7rem; border: 1px solid #444; margin-bottom: 10px; }
-.status-active { color: #ff0000; border-color: #ff0000; animation: blink 2s infinite; }
+.status-banner {
+    background: #222; padding: 10px; margin: 10px 0; border-radius: 5px;
+    font-weight: bold; border: 1px solid #444; font-size: 0.8rem;
+}
+.status-active { background: #440000; color: #ff0000; border-color: #ff0000; animation: blink 2s infinite; }
+.status-waiting { background: #003300; color: #00ff00; border-color: #00ff00; }
+
 @keyframes blink { 50% { opacity: 0.5; } }
 
-/* MENU INIZIALE */
-#role-selection { display: flex; flex-direction: column; gap: 15px; padding: 20px 0; }
-.btn-role { padding: 25px; font-weight: bold; border-radius: 8px; cursor: pointer; border: 2px solid; font-size: 1rem; }
-.btn-role.player { background: #002200; border-color: #00ff41; color: #00ff41; }
-.btn-role.master { background: #221100; border-color: #ffaa00; color: #ffaa00; }
-.btn-info { background: #1a1a1a; border: 1px solid #444; color: #aaa; padding: 12px; border-radius: 8px; }
+#menu { display: flex; flex-direction: column; gap: 10px; background: #111; padding: 15px; border: 1px solid #333; }
+input, select, button {
+    background: #1a1a1a; border: 1px solid #00ff00; color: #00ff00;
+    padding: 12px; font-size: 0.9rem; border-radius: 5px; margin-bottom: 5px; width: 100%;
+}
 
-/* MODAL */
-.modal { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); }
-.modal-content { background: #111; margin: 15% auto; padding: 20px; border: 1px solid #00ff41; width: 85%; text-align: left; }
-.close { float: right; color: red; font-size: 24px; cursor: pointer; }
+.slot-container {
+    max-height: 250px; overflow-y: auto; background: #000;
+    border: 1px solid #333; padding: 5px; margin-top: 5px;
+}
+.obj-slot {
+    display: flex; flex-wrap: nowrap; gap: 4px; padding: 8px 2px;
+    border-bottom: 1px solid #222; align-items: center; justify-content: space-between;
+}
+.obj-slot span { font-size: 0.6rem; color: #888; width: 15px; }
+.obj-slot input[type="text"] { width: 60px; font-size: 0.6rem; padding: 4px; height: 30px; }
+.obj-slot input[type="number"] { width: 75px; font-size: 0.6rem; padding: 4px; height: 30px; }
+.obj-slot input[type="checkbox"] { width: 25px; height: 25px; cursor: pointer; }
 
-/* UI GIOCO */
-#map { height: 400px; width: 100%; border: 1px solid #00ff41; border-radius: 8px; }
-.map-container { position: relative; margin: 10px 0; }
-.btn-center { position: absolute; top: 10px; right: 10px; z-index: 1000; background: rgba(0,0,0,0.8); color: #00ff41; border: 1px solid #00ff41; padding: 8px; border-radius: 5px; }
+.btn-main { background: #004400; font-weight: bold; border-width: 2px; margin-top: 10px; }
+.btn-danger { background: #440000; color: #ff0000; border: 1px solid #ff0000; width: 100%; margin-top: 20px; }
 
-#top-bar { display: flex; flex-direction: column; background: #000; border: 1px solid #333; padding: 10px; margin-bottom: 5px; }
-#timer { font-size: 2rem; color: #ff0000; font-weight: bold; }
-#score-container { display: flex; justify-content: center; gap: 10px; font-size: 0.8rem; margin-top: 5px; }
+#timer { font-size: 2.5rem; color: #ff0000; font-weight: bold; }
+#score { font-size: 1.2rem; background: #222; padding: 8px; border-radius: 5px; margin-bottom: 10px; }
 
-#sosBtn { background: #330000; border: 2px solid #ff0000; color: #ff0000; padding: 15px; font-weight: bold; border-radius: 8px; width: 100%; cursor: pointer; }
-#sosBtn.active { background: red; color: white; }
+.map-container { position: relative; width: 100%; }
+#map { height: 350px; width: 100%; border: 2px solid #00ff00; border-radius: 10px; filter: invert(100%) hue-rotate(180deg) brightness(0.8); }
+.btn-center { position: absolute; top: 10px; right: 10px; z-index: 1000; background: rgba(0,0,0,0.8); padding: 8px; font-size: 0.7rem; width: auto; }
 
-input, select { background: #000; border: 1px solid #00ff41; color: #00ff41; padding: 10px; width: 100%; margin: 5px 0; }
-.btn-main { background: #00ff41; color: #000; font-weight: bold; padding: 15px; width: 100%; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
-.team-slot { display: flex; gap: 5px; margin-bottom: 5px; }
+.info-section { text-align: left; background: #111; padding: 10px; margin-top: 10px; border-radius: 5px; border: 1px solid #222; }
+ul { list-style: none; padding: 0; }
+li { padding: 8px 5px; border-bottom: 1px solid #222; font-size: 0.8rem; }
+
+#radar { 
+    width: 130px; height: 130px; border: 2px solid #00ff00; border-radius: 50%; 
+    background: radial-gradient(circle, #002200 0%, #000 75%); 
+    position: fixed; bottom: 15px; right: 15px; z-index: 1000; overflow: hidden; 
+}
+#radar::after { 
+    content: ""; position: absolute; width: 100%; height: 100%; top: 0; left: 0; 
+    background: conic-gradient(from 0deg, rgba(0,255,0,0.2) 0deg, transparent 90deg); 
+    animation: sweep 3s linear infinite; 
+}
+@keyframes sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; z-index: 1001; transform: translate(-50%, -50%); }
+.dot.RED { background: #ff0000; box-shadow: 0 0 5px #ff0000; }
+.dot.BLUE { background: #00ffff; box-shadow: 0 0 5px #00ffff; }
