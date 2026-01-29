@@ -20,15 +20,20 @@
             <option value="RED">TEAM ROSSO</option>
             <option value="BLUE">TEAM BLU</option>
         </select>
+
         <div class="master-zone">
             <label><input type="checkbox" id="isMaster" onchange="toggleMasterTools()"> MASTER MODE</label>
             <div id="masterTools" style="display:none;">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
                 <input id="gameDuration" type="number" placeholder="DURATA (MIN)" value="30">
-                <div id="objSlotContainer" class="slot-container"></div>
+                <div class="obj-manager">
+                    <h4>📍 GESTIONE 10 SLOT OBIETTIVI</h4>
+                    <div id="objSlotContainer" class="slot-container"></div>
+                </div>
             </div>
         </div>
-        <button onclick="startGame()">▶ AVVIA / ENTRA</button>
+
+        <button class="btn-main" onclick="startGame()">▶ AVVIA / ENTRA</button>
     </div>
 
     <div id="game-ui" style="display:none;">
@@ -39,11 +44,9 @@
             <div id="map-rotate-wrapper">
                 <div id="map"></div>
             </div>
-            
             <div id="compass-ui">
                 <div id="compass-needle">N</div>
             </div>
-            
             <button onclick="centerMap()" class="btn-center">🎯 CENTRA</button>
         </div>
 
