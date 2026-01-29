@@ -10,7 +10,7 @@
 <body>
     <header>
         <h1>🎯 REMONDO SIX</h1>
-        <div id="statusBanner" class="status-banner">SINCRO SERVER...</div>
+        <div id="statusBanner" class="status-banner">SINCRO...</div>
     </header>
 
     <div id="menu">
@@ -20,26 +20,25 @@
             <option value="BLUE">TEAM BLU</option>
         </select>
 
-        <div class="master-zone">
-            <label><input type="checkbox" id="isMaster" onchange="toggleMaster()"> MASTER MODE</label>
+        <div style="border:1px solid #444; padding:10px; margin:10px 0;">
+            <label>
+                <input type="checkbox" id="isMaster" onchange="toggleMasterTools()"> MASTER MODE
+            </label>
             <div id="masterTools" style="display:none; margin-top:10px;">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
+                <hr>
+                <div id="objSlotContainer"></div>
             </div>
         </div>
 
-        <button class="btn-main" onclick="startGame()">▶ ENTRA IN PARTITA</button>
+        <button onclick="startGame()" style="background:#004400; font-weight:bold;">▶ ENTRA IN PARTITA</button>
     </div>
 
     <div id="game-ui" style="display:none;">
         <div class="map-outer">
             <div id="map"></div>
-            <div id="compass-ui"><div id="compass-needle">N</div></div>
-            <button onclick="centerMap()" class="btn-center">🎯</button>
         </div>
-        <div class="info-section">
-            <h3>📍 OBIETTIVI</h3>
-            <ul id="scoreboard"></ul>
-        </div>
+        <div id="scoreboard" style="text-align:left; padding:10px;"></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
