@@ -1,7 +1,7 @@
 const BIN_ID = "696d4940ae596e708fe53514";
 const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
 const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
-const MASTER_PWD = "71325"; // CAMBIA QUI LA TUA PASSWORD
+const PWD_CORRECT = "71325"; 
 
 let state = { isMaster: false, playerName: "", playerTeam: "", playerMarker: null };
 let allyMarkers = {}; 
@@ -12,20 +12,20 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function beep() {
     const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
     o.connect(g); g.connect(audioCtx.destination);
-    o.frequency.value = 850; g.gain.value = 0.1;
-    o.start(); o.stop(audioCtx.currentTime + 0.15);
+    o.frequency.value = 900; g.gain.value = 0.1;
+    o.start(); o.stop(audioCtx.currentTime + 0.2);
 }
 
-// Inizializzazione Mappa
+// Setup Mappa
 const map = L.map("map", { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
 function checkMasterPass() {
-    const val = document.getElementById("masterPass").value;
-    if(val === MASTER_PWD) {
+    const input = document.getElementById("masterPass").value;
+    if(input === PWD_CORRECT) {
         state.isMaster = true;
         document.getElementById("masterTools").style.display = "block";
-        document.getElementById("passwordArea").style.display = "none";
+        document.getElementById("masterPass").style.background = "#004400";
         document.getElementById("mainBtn").innerText = "▶ AVVIA PARTITA (MASTER)";
     }
 }
@@ -56,14 +56,14 @@ function initSlotUI() {
 async function startGame() {
     state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
     state.playerTeam = document.getElementById("teamSelect").value;
-    if(!state.playerName) return alert("INSERISCI NOME OPERATORE");
+    if(!state.playerName) return alert("INSERISCI NOME OPERATORE!");
     if(audioCtx.state === 'suspended') audioCtx.resume();
 
     document.getElementById("menu").style.display="none"; 
     document.getElementById("game-ui").style.display="block";
     
-    // FIX MAPPA: Forza il ridisegno dopo che il div diventa visibile
-    setTimeout(() => { map.invalidateSize(); }, 500);
+    // IMPORTANTE: Forza il caricamento grafico della mappa
+    setTimeout(() => { map.invalidateSize(); }, 600);
 
     navigator.geolocation.watchPosition(p => {
         const {latitude:la, longitude:lo} = p.coords;
@@ -71,7 +71,7 @@ async function startGame() {
             state.playerMarker = L.marker([la,lo]).addTo(map).bindTooltip("IO", {permanent:true});
             map.setView([la,lo], 18);
         } else state.playerMarker.setLatLng([la,lo]);
-    }, null, {enableHighAccuracy:true});
+    }, () => alert("GPS NON DISPONIBILE"), {enableHighAccuracy:true});
 
     setInterval(sync, 4000);
 }
@@ -83,9 +83,10 @@ async function sync() {
         const { record } = await res.json();
         
         const banner = document.getElementById("gameStatusBanner");
-        banner.innerText = record.game.started ? "PARTITA IN CORSO" : "ATTESA AVVIO MASTER";
+        banner.innerText = record.game.started ? "OPERAZIONE IN CORSO" : "ATTESA MASTER...";
         banner.className = record.game.started ? "status-banner status-active" : "status-banner";
         
+        if(!record.players) record.players = {};
         record.players[state.playerName] = { team: state.playerTeam, lat: state.playerMarker.getLatLng().lat, lon: state.playerMarker.getLatLng().lng, last: Date.now() };
         
         if(state.isMaster) {
@@ -103,7 +104,9 @@ async function sync() {
             await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
         }
         updateUI(record);
-    } catch(e){}
+    } catch(e) {
+        document.getElementById("gameStatusBanner").innerText = "ERRORE CONNESSIONE";
+    }
 }
 
 function updateUI(r) {
@@ -111,7 +114,7 @@ function updateUI(r) {
     const t2 = r.game.teamNames?.BLUE || "BLUE";
     document.getElementById("score").innerHTML = `🔴 ${t1}: ${r.game.score.RED} | 🔵 ${t2}: ${r.game.score.BLUE}`;
     
-    // Lista compagni e Marker
+    // VISIBILITÀ: Solo compagni di squadra
     const pList = document.getElementById("playerList"); pList.innerHTML = "";
     Object.entries(r.players).forEach(([name, p]) => {
         if(Date.now() - p.last < 15000 && p.team === state.playerTeam) {
@@ -120,10 +123,12 @@ function updateUI(r) {
                 if(!allyMarkers[name]) allyMarkers[name] = L.circleMarker([p.lat, p.lon], {radius:7, color: p.team==='RED'?'red':'cyan', fillOpacity:1}).addTo(map);
                 else allyMarkers[name].setLatLng([p.lat, p.lon]);
             }
+        } else {
+            // Rimuovi se offline o nemico
+            if(allyMarkers[name]) { map.removeLayer(allyMarkers[name]); delete allyMarkers[name]; }
         }
     });
 
-    // Obiettivi
     const sb = document.getElementById("scoreboard"); sb.innerHTML = "";
     activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
     r.objectives.forEach(obj => {
@@ -131,13 +136,13 @@ function updateUI(r) {
         lastOwners[obj.name] = obj.owner;
         const oName = obj.owner === "RED" ? t1 : (obj.owner === "BLUE" ? t2 : "LIBERO");
         sb.innerHTML += `<li>${obj.name}: <strong>${oName}</strong></li>`;
-        activeMarkers.push(L.circle([obj.lat, obj.lon], {radius:12, color: obj.owner==='RED'?'red':obj.owner==='BLUE'?'cyan':'white'}).addTo(map));
+        activeMarkers.push(L.circle([obj.lat, obj.lon], {radius:15, color: obj.owner==='RED'?'red':obj.owner==='BLUE'?'cyan':'white'}).addTo(map));
     });
 }
 
 async function resetBin() { 
     if(!state.isMaster) return;
-    if(confirm("RESET TOTALE?")) { 
+    if(confirm("VUOI CANCELLARE TUTTO E RESETTARE IL SERVER?")) { 
         await fetch(URL, {method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{started:false, score:{RED:0,BLUE:0}}, players:{}, objectives:[]})}); 
         location.reload(); 
     }
