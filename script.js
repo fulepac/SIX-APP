@@ -3,12 +3,12 @@ const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e
 const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 let state = { isMaster: false, playerName: "", playerTeam: "", playerMarker: null };
-let activeObjMarkers = [];
+let activeMarkers = [];
 
 const map = L.map("map", { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
-const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
-function reloadMap() { satLayer.redraw(); map.invalidateSize(); }
+function reloadMap() { location.reload(); }
 function centerMap() { if (state.playerMarker) map.setView(state.playerMarker.getLatLng(), 18); }
 
 function handleOrientation(e) {
@@ -25,11 +25,11 @@ function initSlotUI() {
     container.innerHTML = "";
     for (let i = 0; i < 10; i++) {
         const d = DEFAULTS[i] || { n: `OBJ${i+1}`, la: 0, lo: 0 };
-        container.innerHTML += `<div style="display:flex; gap:2px; margin-bottom:5px;">
+        container.innerHTML += `<div class="obj-slot">
             <input type="checkbox" class="s-active" ${i<3?'checked':''}>
-            <input type="text" class="s-name" value="${d.n}" style="width:40px;">
-            <input type="text" class="s-lat" value="${d.la}" style="width:70px;">
-            <input type="text" class="s-lon" value="${d.lo}" style="width:70px;">
+            <input type="text" class="s-name" value="${d.n}">
+            <input type="text" class="s-lat" value="${d.la}">
+            <input type="text" class="s-lon" value="${d.lo}">
         </div>`;
     }
 }
@@ -38,10 +38,10 @@ async function startGame() {
     state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
     state.playerTeam = document.getElementById("teamSelect").value;
     state.isMaster = document.getElementById("isMaster").checked;
-    if(!state.playerName) return alert("NOME MANCANTE");
+    if(!state.playerName) return alert("INSERISCI NOME");
 
     if(window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission().then(res => { if(res==='granted') window.addEventListener('deviceorientation', handleOrientation); });
+        DeviceOrientationEvent.requestPermission().then(r => { if(r==='granted') window.addEventListener('deviceorientation', handleOrientation); });
     } else { window.addEventListener('deviceorientation', handleOrientation); }
 
     document.getElementById("menu").style.display="none"; 
@@ -50,7 +50,7 @@ async function startGame() {
 
     navigator.geolocation.watchPosition(p => {
         const {latitude:la, longitude:lo} = p.coords;
-        if(!state.playerMarker) state.playerMarker = L.marker([la,lo]).addTo(map).bindTooltip("TU", {permanent:true});
+        if(!state.playerMarker) state.playerMarker = L.marker([la,lo]).addTo(map).bindTooltip(state.playerName, {permanent:true});
         else state.playerMarker.setLatLng([la,lo]);
     }, null, {enableHighAccuracy:true});
 
@@ -59,24 +59,27 @@ async function startGame() {
 
 function processLogic(r) {
     if (!r.game.started) {
-        r.game.started = true; r.game.start = Date.now(); r.game.score = {RED:0, BLUE:0}; r.game.lastTick = Date.now();
+        r.game.started = true;
+        r.game.start = Date.now();
+        r.game.score = {RED:0, BLUE:0};
+        r.game.teamNames = { RED: document.getElementById("team1Name").value, BLUE: document.getElementById("team2Name").value };
+        r.game.conquerTime = parseInt(document.getElementById("conquerTime").value) * 60000;
         r.objectives = [];
-        document.querySelectorAll(".s-active").forEach((cb, i) => {
-            if(cb.checked) {
-                const parent = cb.parentElement;
-                r.objectives.push({ name: parent.querySelector(".s-name").value, lat: parseFloat(parent.querySelector(".s-lat").value), lon: parseFloat(parent.querySelector(".s-lon").value), owner:"LIBERO", start:null, teamConquering:null });
+        document.querySelectorAll(".obj-slot").forEach(s => {
+            if(s.querySelector(".s-active").checked) {
+                r.objectives.push({ name: s.querySelector(".s-name").value, lat: parseFloat(s.querySelector(".s-lat").value), lon: parseFloat(s.querySelector(".s-lon").value), owner:"LIBERO", start:null, teamConquering:null });
             }
         });
     }
 
     r.objectives.forEach(obj => {
-        const playersNear = Object.values(r.players).filter(p => (Date.now()-p.last < 10000) && getDist(obj.lat, obj.lon, p.lat, p.lon) < 15);
-        const teams = [...new Set(playersNear.map(p => p.team))];
+        const near = Object.values(r.players).filter(p => (Date.now()-p.last < 10000) && getDist(obj.lat, obj.lon, p.lat, p.lon) < 15);
+        const teams = [...new Set(near.map(p => p.team))];
         if (teams.length === 1) {
             const t = teams[0];
             if (obj.owner !== t) {
                 if (obj.teamConquering !== t) { obj.start = Date.now(); obj.teamConquering = t; }
-                else if (Date.now() - obj.start > 180000) { obj.owner = t; obj.teamConquering = null; }
+                else if (Date.now() - obj.start > r.game.conquerTime) { obj.owner = t; obj.teamConquering = null; }
             }
         } else { obj.teamConquering = null; obj.start = null; }
     });
@@ -92,7 +95,13 @@ async function sync() {
     try {
         const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
         const { record } = await res.json();
+        
+        // Notifica Stato
+        const banner = document.getElementById("gameStatusBanner");
+        if(record.game.started) { banner.innerText = "PARTITA IN CORSO"; banner.className = "status-banner status-active"; }
+        
         record.players[state.playerName] = { team: state.playerTeam, lat: state.playerMarker.getLatLng().lat, lon: state.playerMarker.getLatLng().lng, last: Date.now() };
+        
         if(state.isMaster) {
             processLogic(record);
             await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
@@ -105,13 +114,27 @@ function updateUI(r) {
     const elapsed = Math.floor((Date.now()-r.game.start)/1000);
     const total = (parseInt(document.getElementById("gameDuration").value)||30)*60;
     document.getElementById("timer").innerText = (total-elapsed)>0 ? `⏱️ ${Math.floor((total-elapsed)/60)}:${((total-elapsed)%60).toString().padStart(2,"0")}` : "FINE";
-    document.getElementById("score").innerHTML = `🔴 ${r.game.score.RED} | 🔵 ${r.game.score.BLUE}`;
+    
+    const t1 = r.game.teamNames?.RED || "RED";
+    const t2 = r.game.teamNames?.BLUE || "BLUE";
+    document.getElementById("score").innerHTML = `🔴 ${t1}: ${r.game.score.RED} | 🔵 ${t2}: ${r.game.score.BLUE}`;
+    
+    // Lista Giocatori
+    const pList = document.getElementById("playerList"); pList.innerHTML = "";
+    Object.entries(r.players).forEach(([name, p]) => {
+        if(Date.now() - p.last < 15000) {
+            pList.innerHTML += `<li><span>${name}</span> <span style="color:${p.team==='RED'?'red':'cyan'}">${p.team==='RED'?t1:t2}</span></li>`;
+        }
+    });
+
+    // Scoreboard Obiettivi
     const sb = document.getElementById("scoreboard"); sb.innerHTML = "";
-    activeObjMarkers.forEach(m => map.removeLayer(m)); activeObjMarkers = [];
+    activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
     r.objectives.forEach(obj => {
-        let col = obj.owner === "RED" ? "red" : obj.owner === "BLUE" ? "cyan" : "white";
-        sb.innerHTML += `<li>${obj.name}: ${obj.teamConquering ? 'CATTURA '+obj.teamConquering : obj.owner}</li>`;
-        activeObjMarkers.push(L.circle([obj.lat, obj.lon], {radius:12, color:col}).addTo(map));
+        let label = obj.owner === "LIBERO" ? "LIBERO" : (obj.owner === "RED" ? t1 : t2);
+        if(obj.teamConquering) label = `CATTURA: ${obj.teamConquering==='RED'?t1:t2}`;
+        sb.innerHTML += `<li>${obj.name}: <strong>${label}</strong></li>`;
+        activeMarkers.push(L.circle([obj.lat, obj.lon], {radius:12, color: obj.owner==='RED'?'red':obj.owner==='BLUE'?'cyan':'white'}).addTo(map));
     });
 }
 
@@ -121,5 +144,5 @@ function getDist(la1, lo1, la2, lo2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 function toggleMasterTools() { document.getElementById("masterTools").style.display = document.getElementById("isMaster").checked ? "block" : "none"; }
-async function resetBin() { if(confirm("RESET TOTALE?")) { await fetch(URL, {method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{started:false}, players:{}, objectives:[]})}); location.reload(); }}
+async function resetBin() { if(confirm("RESET SERVER?")) { await fetch(URL, {method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{started:false}, players:{}, objectives:[]})}); location.reload(); }}
 window.onload = initSlotUI;
