@@ -3,57 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>REMONDO SIX TACTICAL</title>
+    <title>REMONDO SIX</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <h1>🎯 REMONDO SIX</h1>
-        <div id="gameStatusBanner" class="status-banner">SINCRO SERVER...</div>
+        <div id="status" class="status-banner">SINCRO IN CORSO...</div>
     </header>
 
     <div id="menu">
-        <input id="playerName" placeholder="IL TUO NOME">
+        <input id="playerName" placeholder="NOME OPERATORE">
         <select id="teamSelect">
             <option value="RED">TEAM ROSSO</option>
             <option value="BLUE">TEAM BLU</option>
         </select>
 
-        <div class="master-zone">
-            <label><input type="checkbox" id="isMaster" onchange="toggleMasterTools()"> MODALITÀ MASTER</label>
-            <div id="masterTools" style="display:none;">
-                <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
-                <input id="gameDuration" type="number" placeholder="DURATA (MIN)" value="30">
-                <div class="slot-container" id="objSlotContainer">
-                    </div>
+        <div class="master-zone" style="border: 1px solid #444; padding: 10px; margin: 10px 0;">
+            <label>
+                <input type="checkbox" id="isMaster" onclick="toggleMasterTools()"> 👑 MODALITÀ MASTER
+            </label>
+            
+            <div id="masterTools" style="display:none; margin-top:10px;">
+                <input id="masterPass" type="password" placeholder="PASSWORD (71325)">
+                <input id="gameDuration" type="number" value="30" placeholder="MINUTI">
+                <div id="objSlotContainer" class="slot-container"></div>
+                <button class="btn-danger" onclick="resetBin()" style="margin-top:10px; background:#400;">🔥 RESET SERVER</button>
             </div>
         </div>
-        <button class="btn-main" onclick="startGame()">▶ AVVIA OPERAZIONE</button>
+
+        <button class="btn-main" onclick="startGame()">▶ ENTRA IN AZIONE</button>
     </div>
 
     <div id="game-ui" style="display:none;">
-        <div id="timer">⏱️ --:--</div>
-        <div id="score">🔴 0 | 🔵 0</div>
-        
+        <div id="timer">⏱️ 00:00</div>
         <div class="map-outer">
-            <div id="map-rotate-wrapper">
-                <div id="map"></div>
-            </div>
-            <div id="compass-ui">
-                <div id="compass-needle">N</div>
-            </div>
-            <button onclick="centerMap()" class="btn-center">🎯 CENTRA</button>
+            <div id="map-rotate-wrapper"><div id="map"></div></div>
+            <div id="compass-ui"><div id="compass-needle">N</div></div>
+            <button onclick="centerMap()" class="btn-center">🎯</button>
         </div>
-
-        <div class="info-section">
-            <h3>📍 OBIETTIVI</h3>
-            <ul id="scoreboard"></ul>
-        </div>
-    </div>
-
-    <div id="master-controls" style="display:none;">
-        <button class="btn-danger" onclick="resetBin()">🔥 RESET TOTALE PARTITA</button>
+        <ul id="scoreboard" class="info-section"></ul>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
