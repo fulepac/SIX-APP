@@ -4,19 +4,34 @@ const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 let state = { isMaster: false, playerName: "", playerTeam: "", playerMarker: null };
 let activeMarkers = [];
+let allyMarkers = {}; // Gestione icone compagni
+let lastObjOwners = {};
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function beep() {
+    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.frequency.value = 800; g.gain.value = 0.1;
+    o.start(); o.stop(audioCtx.currentTime + 0.2);
+}
 
 const map = L.map("map", { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
-function reloadMap() { location.reload(); }
+function reloadMap() { map.eachLayer(l => { if(l instanceof L.TileLayer) l.redraw(); }); map.invalidateSize(); }
 function centerMap() { if (state.playerMarker) map.setView(state.playerMarker.getLatLng(), 18); }
 
 function handleOrientation(e) {
-    let heading = e.webkitCompassHeading || (360 - e.alpha);
-    if (heading) {
-        document.getElementById("map-rotate-wrapper").style.transform = `rotate(${-heading}deg)`;
-        document.getElementById("compass-needle").style.transform = `rotate(${-heading}deg)`;
+    let h = e.webkitCompassHeading || (360 - e.alpha);
+    if (h) {
+        document.getElementById("map-rotate-wrapper").style.transform = `rotate(${-h}deg)`;
+        document.getElementById("compass-needle").style.transform = `rotate(${-h}deg)`;
     }
+}
+
+function updateTeamLabels() {
+    document.getElementById("optTeam1").innerText = (document.getElementById("team1Name").value || "RED") + " (ROSSO)";
+    document.getElementById("optTeam2").innerText = (document.getElementById("team2Name").value || "BLUE") + " (BLU)";
 }
 
 function initSlotUI() {
@@ -38,7 +53,8 @@ async function startGame() {
     state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
     state.playerTeam = document.getElementById("teamSelect").value;
     state.isMaster = document.getElementById("isMaster").checked;
-    if(!state.playerName) return alert("INSERISCI NOME");
+    if(!state.playerName) return alert("NOME OPERATORE?");
+    if(audioCtx.state === 'suspended') audioCtx.resume();
 
     if(window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission().then(r => { if(r==='granted') window.addEventListener('deviceorientation', handleOrientation); });
@@ -50,7 +66,7 @@ async function startGame() {
 
     navigator.geolocation.watchPosition(p => {
         const {latitude:la, longitude:lo} = p.coords;
-        if(!state.playerMarker) state.playerMarker = L.marker([la,lo]).addTo(map).bindTooltip(state.playerName, {permanent:true});
+        if(!state.playerMarker) state.playerMarker = L.marker([la,lo]).addTo(map).bindTooltip("IO", {permanent:true});
         else state.playerMarker.setLatLng([la,lo]);
     }, null, {enableHighAccuracy:true});
 
@@ -59,11 +75,9 @@ async function startGame() {
 
 function processLogic(r) {
     if (!r.game.started) {
-        r.game.started = true;
-        r.game.start = Date.now();
-        r.game.score = {RED:0, BLUE:0};
+        r.game.started = true; r.game.start = Date.now(); r.game.score = {RED:0, BLUE:0};
         r.game.teamNames = { RED: document.getElementById("team1Name").value, BLUE: document.getElementById("team2Name").value };
-        r.game.conquerTime = parseInt(document.getElementById("conquerTime").value) * 60000;
+        r.game.conquerTime = (parseInt(document.getElementById("conquerTime").value)||3) * 60000;
         r.objectives = [];
         document.querySelectorAll(".obj-slot").forEach(s => {
             if(s.querySelector(".s-active").checked) {
@@ -71,7 +85,6 @@ function processLogic(r) {
             }
         });
     }
-
     r.objectives.forEach(obj => {
         const near = Object.values(r.players).filter(p => (Date.now()-p.last < 10000) && getDist(obj.lat, obj.lon, p.lat, p.lon) < 15);
         const teams = [...new Set(near.map(p => p.team))];
@@ -83,7 +96,6 @@ function processLogic(r) {
             }
         } else { obj.teamConquering = null; obj.start = null; }
     });
-
     if(Date.now() - r.game.lastTick > 30000) {
         r.objectives.forEach(o => { if(o.owner!=="LIBERO") r.game.score[o.owner]++; });
         r.game.lastTick = Date.now();
@@ -96,7 +108,6 @@ async function sync() {
         const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
         const { record } = await res.json();
         
-        // Notifica Stato
         const banner = document.getElementById("gameStatusBanner");
         if(record.game.started) { banner.innerText = "PARTITA IN CORSO"; banner.className = "status-banner status-active"; }
         
@@ -119,18 +130,44 @@ function updateUI(r) {
     const t2 = r.game.teamNames?.BLUE || "BLUE";
     document.getElementById("score").innerHTML = `🔴 ${t1}: ${r.game.score.RED} | 🔵 ${t2}: ${r.game.score.BLUE}`;
     
-    // Lista Giocatori
+    // Lista Compagni e Radar (Solo stessa squadra)
     const pList = document.getElementById("playerList"); pList.innerHTML = "";
+    const rad = document.getElementById("radar"); rad.innerHTML = "";
+    const myPos = state.playerMarker.getLatLng();
+
     Object.entries(r.players).forEach(([name, p]) => {
         if(Date.now() - p.last < 15000) {
-            pList.innerHTML += `<li><span>${name}</span> <span style="color:${p.team==='RED'?'red':'cyan'}">${p.team==='RED'?t1:t2}</span></li>`;
+            if(p.team === state.playerTeam) {
+                // Lista testuale
+                pList.innerHTML += `<li><span>${name}</span> <span style="color:${p.team==='RED'?'red':'cyan'}">ONLINE</span></li>`;
+                
+                // Marker su Mappa (escluso se stesso)
+                if(name !== state.playerName) {
+                    if(!allyMarkers[name]) allyMarkers[name] = L.circleMarker([p.lat, p.lon], {radius:6, color: p.team==='RED'?'red':'cyan', fillOpacity:1}).addTo(map).bindTooltip(name, {permanent:true});
+                    else allyMarkers[name].setLatLng([p.lat, p.lon]);
+
+                    // Radar
+                    const d = getDist(myPos.lat, myPos.lng, p.lat, p.lon);
+                    if(d < 100) {
+                        const dot = document.createElement("div"); dot.className = "dot "+p.team;
+                        dot.style.left = (50 + (p.lon-myPos.lng)*45000)+"px"; dot.style.top = (50 - (p.lat-myPos.lat)*45000)+"px";
+                        rad.appendChild(dot);
+                    }
+                }
+            } else {
+                // Se è un nemico, rimuovi eventuale marker se esisteva (sicurezza)
+                if(allyMarkers[name]) { map.removeLayer(allyMarkers[name]); delete allyMarkers[name]; }
+            }
+        } else {
+            if(allyMarkers[name]) { map.removeLayer(allyMarkers[name]); delete allyMarkers[name]; }
         }
     });
 
-    // Scoreboard Obiettivi
     const sb = document.getElementById("scoreboard"); sb.innerHTML = "";
     activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
     r.objectives.forEach(obj => {
+        if(lastObjectiveOwners[obj.name] && lastObjectiveOwners[obj.name] !== obj.owner) beep();
+        lastObjectiveOwners[obj.name] = obj.owner;
         let label = obj.owner === "LIBERO" ? "LIBERO" : (obj.owner === "RED" ? t1 : t2);
         if(obj.teamConquering) label = `CATTURA: ${obj.teamConquering==='RED'?t1:t2}`;
         sb.innerHTML += `<li>${obj.name}: <strong>${label}</strong></li>`;
