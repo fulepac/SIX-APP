@@ -1,17 +1,41 @@
 const BIN_ID = "696d4940ae596e708fe53514";
 const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
-const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 let state = { isMaster: false, playerName: "", playerTeam: "", playerMarker: null };
 let allyMarkers = {}; 
 let activeObjMarkers = [];
-const CONQUER_TIME = 180000; // 3 minuti
+let lastObjStatus = {}; 
+const CONQUER_TIME = 180000; // 3 MINUTI
 
-// MAPPA SATELLITARE ESRI
+// AUDIO
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(freq, duration) {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
+const DEFAULT_COORDS = [
+    {name:"PF1", lat:45.238376, lon:8.810060, active: true},
+    {name:"PF2", lat:45.237648, lon:8.810941, active: true},
+    {name:"PF3", lat:45.238634, lon:8.808772, active: true},
+    {name:"PF4", lat:45.237771, lon:8.809208, active: true},
+    {name:"PF5", lat:45.237995, lon:8.808303, active: true}
+];
+
+// MAPPA SATELLITARE TATTICA
 const map = L.map("map", { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
-// BUSSOLA E ROTAZIONE
+// BUSSOLA
 function handleOrientation(e) {
     let heading = e.webkitCompassHeading || (360 - e.alpha);
     if (heading) {
@@ -20,38 +44,36 @@ function handleOrientation(e) {
     }
 }
 
-function toggleMasterTools() {
-    document.getElementById("masterTools").style.display = document.getElementById("isMaster").checked ? "block" : "none";
-}
-
 function initSlotUI() {
     const container = document.getElementById("objSlotContainer");
-    const DEFAULTS = [
-        {n:"PF1", la:45.238376, lo:8.810060}, {n:"PF2", la:45.237648, lo:8.810941},
-        {n:"PF3", la:45.238634, lo:8.808772}, {n:"PF4", la:45.237771, lo:8.809208},
-        {n:"PF5", la:45.237995, lo:8.808303}
-    ];
+    if (!container) return;
+    container.innerHTML = "";
     for (let i = 0; i < 10; i++) {
-        const d = DEFAULTS[i] || { n: `OBJ${i+1}`, la: 0, lo: 0 };
-        container.innerHTML += `<div class="obj-slot" id="slot-${i}">
-            <input type="checkbox" class="s-active" ${i<5?'checked':''}>
-            <input type="text" class="s-name" value="${d.n}" style="width:50px">
-            <input type="number" class="s-lat" value="${d.la}" style="width:70px">
-            <input type="number" class="s-lon" value="${d.lo}" style="width:70px">
-        </div>`;
+        const data = DEFAULT_COORDS[i] || { name: `OBJ${i+1}`, lat: 0.0, lon: 0.0, active: false };
+        container.innerHTML += `
+            <div class="obj-slot" id="slot-${i}">
+                <input type="checkbox" class="s-active" ${data.active ? 'checked' : ''}>
+                <input type="text" class="s-name" value="${data.name}" style="width:50px">
+                <input type="number" class="s-lat" value="${data.lat}" step="0.000001" style="width:75px">
+                <input type="number" class="s-lon" value="${data.lon}" step="0.000001" style="width:75px">
+            </div>`;
     }
 }
 
 async function startGame() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
     state.playerTeam = document.getElementById("teamSelect").value;
     state.isMaster = document.getElementById("isMaster").checked;
-
+    
     if (!state.playerName) return alert("INSERISCI NOME");
     if (state.isMaster && document.getElementById("masterPass").value !== "71325") return alert("PASS ERRATA");
 
+    // Richiesta permessi bussola (iOS)
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission().then(r => { if(r==='granted') window.addEventListener('deviceorientation', handleOrientation); });
+        DeviceOrientationEvent.requestPermission().then(res => {
+            if (res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+        });
     } else { window.addEventListener('deviceorientation', handleOrientation); }
 
     document.getElementById("menu").style.display="none"; 
@@ -70,6 +92,7 @@ async function startGame() {
 function processLogic(r) {
     if (!r.game.started) {
         r.game.started = true; r.game.start = Date.now();
+        r.game.duration = (parseInt(document.getElementById("gameDuration").value)||30)*60;
         r.game.score = {RED:0, BLUE:0}; r.game.lastTick = Date.now();
         let finalObjs = [];
         for(let i=0; i<10; i++){
@@ -85,14 +108,17 @@ function processLogic(r) {
         const nearby = Object.values(r.players).filter(p => (Date.now()-p.last < 10000) && getDist(obj.lat, obj.lon, p.lat, p.lon) < 15);
         const teamsPresent = [...new Set(nearby.map(p => p.team))];
 
-        // LOGICA TATTICA: Solo se una squadra è sola nell'area
+        // LOGICA: Solo una squadra presente per conquistare/perdere
         if (teamsPresent.length === 1) {
-            const teamInArea = teamsPresent[0];
-            if (obj.owner !== teamInArea) {
-                if (obj.teamConquering !== teamInArea) { obj.start = Date.now(); obj.teamConquering = teamInArea; }
-                else if (Date.now() - obj.start > CONQUER_TIME) { obj.owner = teamInArea; obj.teamConquering = null; }
+            const currentTeam = teamsPresent[0];
+            if (obj.owner !== currentTeam) {
+                if (obj.teamConquering !== currentTeam) { obj.start = Date.now(); obj.teamConquering = currentTeam; }
+                else if (Date.now() - obj.start > CONQUER_TIME) { obj.owner = currentTeam; obj.teamConquering = null; obj.start = null; }
             } else { obj.teamConquering = null; obj.start = null; }
-        } else { obj.teamConquering = null; obj.start = null; }
+        } else {
+            // Se presenti entrambe o nessuna, il timer si ferma (rimane a chi lo aveva o al primo arrivato)
+            obj.teamConquering = null; obj.start = null;
+        }
     });
 
     if(Date.now() - r.game.lastTick > 30000) {
@@ -104,13 +130,13 @@ function processLogic(r) {
 async function sync() {
     if(!state.playerMarker) return;
     try {
-        const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
+        const res = await fetch(`${JSONBIN_URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
         const { record } = await res.json();
         if(!record.players) record.players = {};
         record.players[state.playerName] = { team: state.playerTeam, lat: state.playerMarker.getLatLng().lat, lon: state.playerMarker.getLatLng().lng, last: Date.now() };
         if(state.isMaster) {
             processLogic(record);
-            await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
+            await fetch(JSONBIN_URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
         }
         updateUI(record);
     } catch(e){}
@@ -118,7 +144,7 @@ async function sync() {
 
 function updateUI(r) {
     if(!r.game?.score) return;
-    const rem = (parseInt(document.getElementById("gameDuration").value || 30) * 60) - Math.floor((Date.now()-r.game.start)/1000);
+    const rem = r.game.duration - Math.floor((Date.now()-r.game.start)/1000);
     document.getElementById("timer").innerText = rem>0 ? `⏱️ ${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,"0")}` : "FINE";
     document.getElementById("score").innerHTML = `<span style="color:red">RED: ${r.game.score.RED}</span> | <span style="color:cyan">BLUE: ${r.game.score.BLUE}</span>`;
     
@@ -126,39 +152,69 @@ function updateUI(r) {
     activeObjMarkers.forEach(m => map.removeLayer(m)); activeObjMarkers = [];
 
     r.objectives.forEach(obj => {
-        const col = obj.owner === "RED" ? "red" : obj.owner === "BLUE" ? "cyan" : "white";
+        const col = obj.owner === "RED" ? "red" : obj.owner === "BLUE" ? "#00ffff" : "white";
         let status = obj.owner;
-        if(obj.teamConquering) status = `CATTURA ${obj.teamConquering} (${Math.floor((Date.now()-obj.start)/1000)}s)`;
-        sb.innerHTML += `<li>${obj.name}: ${status}</li>`;
-        activeObjMarkers.push(L.circle([obj.lat, obj.lon], {radius:12, color:col}).addTo(map));
+
+        if(obj.teamConquering) {
+            status = `CATTURA ${obj.teamConquering} (${Math.floor((Date.now()-obj.start)/1000)}s)`;
+            if(!lastObjStatus[obj.name+"_conq"]) { playSound(440, 0.2); lastObjStatus[obj.name+"_conq"] = true; }
+        } else { lastObjStatus[obj.name+"_conq"] = false; }
+
+        if(obj.owner !== lastObjStatus[obj.name+"_owner"]) {
+            if(lastObjStatus[obj.name+"_owner"]) playSound(880, 0.8);
+            lastObjStatus[obj.name+"_owner"] = obj.owner;
+        }
+
+        sb.innerHTML += `<li style="border-left:5px solid ${col}">${obj.name}: ${status}</li>`;
+        activeObjMarkers.push(L.circle([obj.lat, obj.lon], {radius:12, color:col, fillOpacity:0.3}).addTo(map));
     });
 
-    // Radar
+    const opList = document.getElementById("operators"); opList.innerHTML = "";
     const rad = document.getElementById("radar"); rad.querySelectorAll(".dot").forEach(d => d.remove());
     const myPos = state.playerMarker.getLatLng();
+
     Object.entries(r.players).forEach(([name, p]) => {
-        if(name !== state.playerName && Date.now()-p.last < 20000) {
+        if(Date.now()-p.last > 20000) { if(allyMarkers[name]) {map.removeLayer(allyMarkers[name]); delete allyMarkers[name];} return; }
+        if(p.team === state.playerTeam) {
+            opList.innerHTML += `<li><span style="color:${p.team==='RED'?'red':'#00ffff'}">●</span> ${name}</li>`;
+            if(name !== state.playerName) {
+                if(!allyMarkers[name]) allyMarkers[name] = L.circleMarker([p.lat, p.lon], {radius:6, fillColor:p.team==='RED'?'red':'#00ffff', color:"#fff", weight:2, fillOpacity:1}).addTo(map).bindTooltip(name);
+                else allyMarkers[name].setLatLng([p.lat, p.lon]);
+            }
+        }
+        if(name !== state.playerName) {
             const d = getDist(myPos.lat, myPos.lng, p.lat, p.lon);
             if(d < 100) {
                 const dot = document.createElement("div"); dot.className = "dot "+p.team;
-                dot.style.left = (55 + (p.lon-myPos.lng)*45000)+"px"; 
-                dot.style.top = (55 - (p.lat-myPos.lat)*45000)+"px";
+                dot.style.left = (65 + (p.lon-myPos.lng)*40000)+"px"; 
+                dot.style.top = (65 - (p.lat-myPos.lat)*40000)+"px";
                 rad.appendChild(dot);
             }
         }
     });
 }
 
+function toggleMasterTools() { document.getElementById("masterTools").style.display = document.getElementById("isMaster").checked ? "block" : "none"; }
 function getDist(la1, lo1, la2, lo2) {
-    const R = 6371e3; const dLat = (la2-la1)*Math.PI/180; const dLon = (lo2-lo1)*Math.PI/180;
+    const R = 6371e3;
+    const dLat = (la2-la1)*Math.PI/180; const dLon = (lo2-lo1)*Math.PI/180;
     const a = Math.sin(dLat/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 function centerMap() { if (state.playerMarker) map.setView(state.playerMarker.getLatLng(), 18); }
 async function resetBin() { 
     if(confirm("RESET TOTALE?")) { 
-        await fetch(URL, {method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{started:false}, players:{}, objectives:[]})}); 
+        await fetch(JSONBIN_URL, {method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{started:false}, players:{}, objectives:[]})}); 
         location.reload(); 
     } 
 }
-window.onload = () => { initSlotUI(); };
+async function checkStatus() {
+    try {
+        const res = await fetch(`${JSONBIN_URL}/latest`, { headers: { "X-Master-Key": SECRET_KEY }, cache: 'no-store' });
+        const { record } = await res.json();
+        const b = document.getElementById("gameStatusBanner");
+        if (record.game?.started) { b.innerText="⚠️ PARTITA IN CORSO"; b.className="status-banner status-active"; }
+        else { b.innerText="✅ CAMPO DISPONIBILE"; b.className="status-banner status-waiting"; }
+    } catch(e){}
+}
+window.onload = () => { initSlotUI(); checkStatus(); };
