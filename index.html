@@ -23,14 +23,12 @@
 
         <div class="master-zone">
             <label><input type="checkbox" id="isMaster" onchange="toggleMasterTools()"> MASTER MODE</label>
-            
             <div id="masterTools" style="display:none;">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
                 <input id="gameDuration" type="number" placeholder="DURATA (MIN)" value="30">
                 <div id="objSlotContainer" class="slot-container"></div>
             </div>
         </div>
-
         <button class="btn-main" onclick="startGame()">▶ AVVIA / ENTRA</button>
     </div>
 
@@ -49,7 +47,7 @@
         </div>
 
         <div class="info-section">
-            <h3>📍 OBIETTIVI (CONQUISTA: 3 MIN)</h3>
+            <h3>📍 OBIETTIVI (180s PER CONQUISTA)</h3>
             <ul id="scoreboard"></ul>
         </div>
 
@@ -66,11 +64,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
