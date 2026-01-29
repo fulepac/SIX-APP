@@ -10,29 +10,29 @@
 <body>
     <header>
         <h1>🎯 REMONDO SIX</h1>
-        <div id="gameStatusBanner" class="status-banner">SISTEMA PRONTO</div>
+        <div id="gameStatusBanner" class="status-banner">SISTEMA OFFLINE</div>
     </header>
 
     <div id="menu">
         <input id="playerName" placeholder="NOME OPERATORE">
         <select id="teamSelect">
-            <option value="RED" id="optTeam1">SQUADRA 1 (ROSSO)</option>
-            <option value="BLUE" id="optTeam2">SQUADRA 2 (BLU)</option>
+            <option value="RED" id="optTeam1">TEAM ROSSO</option>
+            <option value="BLUE" id="optTeam2">TEAM BLU</option>
         </select>
-        
+
         <div class="master-zone">
             <label><input type="checkbox" id="isMaster" onchange="toggleMasterTools()"> MASTER MODE</label>
             <div id="masterTools" style="display:none;">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
                 <div class="m-row">
-                    <input id="team1Name" placeholder="NOME TEAM ROSSO" value="RED">
-                    <input id="team2Name" placeholder="NOME TEAM BLU" value="BLUE">
+                    <input id="team1Name" placeholder="NOME ROSSI" value="RED" oninput="updateTeamLabels()">
+                    <input id="team2Name" placeholder="NOME BLU" value="BLUE" oninput="updateTeamLabels()">
                 </div>
                 <div class="m-row">
                     <label>MINUTI CONQUISTA:</label>
-                    <input id="conquerTime" type="number" value="3" style="width:60px">
+                    <input id="conquerTime" type="number" value="3" style="width:50px">
                 </div>
-                <input id="gameDuration" type="number" value="30" placeholder="DURATA GARA (MIN)">
+                <input id="gameDuration" type="number" value="30">
                 <div id="objSlotContainer" class="slot-list"></div>
                 <button class="btn-danger" onclick="resetBin()">🔥 RESET SERVER</button>
             </div>
@@ -57,7 +57,7 @@
         </div>
 
         <div class="info-section">
-            <h3>👥 GIOCATORI ONLINE</h3>
+            <h3>👥 COMPAGNI ONLINE</h3>
             <ul id="playerList"></ul>
         </div>
     </div>
