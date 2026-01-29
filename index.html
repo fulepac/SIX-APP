@@ -1,31 +1,71 @@
-<div id="menu">
-    <input id="playerName" placeholder="NOME OPERATORE">
-    <select id="teamSelect">
-        <option value="RED">TEAM ROSSO</option>
-        <option value="BLUE">TEAM BLU</option>
-    </select>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>REMONDO SIX - TACTICAL</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🎯 REMONDO SIX</h1>
+        <div id="gameStatusBanner" class="status-banner">SISTEMA OFFLINE</div>
+    </header>
 
-    <div class="master-zone">
-        <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
-        
-        <div id="masterTools" style="display:none; border: 1px dashed #00ff00; padding: 10px; margin-top: 10px; background: #001100;">
-            <p style="color:yellow; font-size:0.7rem; margin-bottom:10px;">CONFIGURAZIONE MASTER ATTIVA</p>
+    <div id="menu">
+        <input id="playerName" placeholder="NOME OPERATORE">
+        <select id="teamSelect">
+            <option value="RED">TEAM ROSSO</option>
+            <option value="BLUE">TEAM BLU</option>
+        </select>
+
+        <div class="master-zone">
+            <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
             
-            <div class="m-row">
-                <label>DURATA GARA (MIN):</label>
-                <input id="gameDuration" type="number" value="30" style="width:60px">
-            </div>
-            <div class="m-row">
-                <label>TEMPO CATTURA (SEC):</label>
-                <input id="captureTime" type="number" value="180" style="width:60px">
-            </div>
-
-            <p style="font-size:0.6rem; color:#aaa; margin:10px 0 5px 0;">EDITA 10 OBIETTIVI (NOME | LAT | LON):</p>
-            <div id="objSlotContainer" class="slot-list">
+            <div id="masterTools" style="display:none;">
+                <div class="m-config-grid">
+                    <div class="m-row">
+                        <label>DURATA GARA (MIN):</label>
+                        <input id="gameDuration" type="number" value="30">
+                    </div>
+                    <div class="m-row">
+                        <label>TEMPO CATTURA (SEC):</label>
+                        <input id="captureTime" type="number" value="180">
+                    </div>
                 </div>
-            
-            <button class="btn-danger" onclick="resetBin()">🔥 RESET PARTITA (MANTIENE OBJ)</button>
+
+                <p style="font-size:0.7rem; color:yellow; margin:10px 0 5px 0;">CONFIGURAZIONE 10 OBIETTIVI:</p>
+                <div id="objSlotContainer" class="slot-list">
+                    </div>
+                
+                <button class="btn-danger" onclick="resetBin()">🔥 RESET PARTITA (MANTIENE OBJ)</button>
+            </div>
+        </div>
+        <button id="mainBtn" onclick="startGame()">▶ AVVIA / ENTRA IN PARTITA</button>
+    </div>
+
+    <div id="game-ui" style="display:none;">
+        <div id="timer" class="countdown-display">⏱️ --:--</div>
+        <div id="score">🔴 0 | 🔵 0</div>
+        
+        <div class="map-outer">
+            <div id="map"></div>
+            <button onclick="centerMap()" class="map-btn btn-gps">🎯</button>
+            <button onclick="reloadMap()" class="map-btn btn-reload">🔄</button>
+        </div>
+
+        <div class="info-section">
+            <h3>📍 STATO OBIETTIVI</h3>
+            <ul id="scoreboard"></ul>
+        </div>
+        <div class="info-section">
+            <h3>👥 SQUADRA</h3>
+            <ul id="playerList"></ul>
         </div>
     </div>
-    <button id="mainBtn" onclick="startGame()">▶ AVVIA / ENTRA IN PARTITA</button>
-</div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
