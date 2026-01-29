@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>REMONDO SIX - TACTICAL</title>
+    <title>REMONDO SIX</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <h1>🎯 REMONDO SIX</h1>
-        <div id="gameStatusBanner" class="status-banner">CONTROLLO SERVER...</div>
+        <div id="gameStatusBanner" class="status-banner">CONNETTENDO...</div>
     </header>
 
     <div id="menu">
@@ -22,12 +22,12 @@
         <div class="master-zone">
             <label><input type="checkbox" id="isMaster" onchange="toggleMasterTools()"> MASTER MODE</label>
             <div id="masterTools" style="display:none;">
-                <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
-                <input id="gameDuration" type="number" placeholder="DURATA (MIN)" value="30">
-                <div id="objSlotContainer" class="slot-container"></div>
+                <input id="masterPass" type="password" placeholder="PASS MASTER">
+                <input id="gameDuration" type="number" value="30">
+                <div id="objSlotContainer"></div>
             </div>
         </div>
-        <button class="btn-main" onclick="startGame()">▶ AVVIA / ENTRA</button>
+        <button onclick="startGame()">▶ AVVIA PARTITA</button>
     </div>
 
     <div id="game-ui" style="display:none;">
@@ -38,8 +38,8 @@
             <div id="map-rotate-wrapper">
                 <div id="map"></div>
             </div>
-            <button onclick="centerMap()" class="btn-map-ctrl btn-gps-top">🎯</button>
-            <button onclick="reloadMap()" class="btn-map-ctrl btn-reload-bottom">🔄</button>
+            <button onclick="centerMap()" class="btn-map-fixed btn-top-right">🎯</button>
+            <button onclick="reloadMap()" class="btn-map-fixed btn-bottom-right">🔄</button>
             <div id="compass-ui"><div id="compass-needle">N</div></div>
         </div>
 
@@ -51,7 +51,7 @@
 
     <div id="radar"></div>
     <div id="master-controls" style="display:none;">
-        <button class="btn-danger" onclick="resetBin()">🔥 RESET SERVER</button>
+        <button class="btn-danger" onclick="resetBin()">🔥 RESET PARTITA</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
