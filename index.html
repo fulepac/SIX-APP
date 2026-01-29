@@ -19,16 +19,12 @@
             <option value="RED">TEAM ROSSO</option>
             <option value="BLUE">TEAM BLU</option>
         </select>
-
         <div class="master-zone">
             <label><input type="checkbox" id="isMaster" onchange="toggleMasterTools()"> MASTER MODE</label>
             <div id="masterTools" style="display:none;">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
                 <input id="gameDuration" type="number" placeholder="DURATA (MIN)" value="30">
-                <div class="obj-manager">
-                    <h4>📍 GESTIONE 10 SLOT OBIETTIVI</h4>
-                    <div id="objSlotContainer" class="slot-container"></div>
-                </div>
+                <div id="objSlotContainer" class="slot-container"></div>
             </div>
         </div>
         <button class="btn-main" onclick="startGame()">▶ AVVIA / ENTRA</button>
@@ -40,25 +36,26 @@
         
         <div class="map-outer">
             <div id="map-rotate-wrapper">
-                <div id="map" style="width: 100%; height: 100%;"></div>
+                <div id="map"></div>
             </div>
+            <button onclick="centerMap()" class="btn-map-ctrl btn-gps-top">🎯</button>
+            <button onclick="reloadMap()" class="btn-map-ctrl btn-reload-bottom">🔄</button>
             <div id="compass-ui"><div id="compass-needle">N</div></div>
-            <button onclick="centerMap()" class="btn-center">🎯 CENTRA</button>
         </div>
 
         <div class="info-section">
-            <h3>📍 OBIETTIVI ATTIVI</h3>
+            <h3>📍 OBIETTIVI</h3>
             <ul id="scoreboard"></ul>
         </div>
         <div class="info-section">
-            <h3>👥 COMPAGNI ONLINE</h3>
+            <h3>👥 OPERATORI</h3>
             <ul id="operators"></ul>
         </div>
     </div>
 
     <div id="radar"></div>
     <div id="master-controls" style="display:none;">
-        <button class="btn-danger" onclick="resetBin()">🔥 RESET COMPLETO PARTITA</button>
+        <button class="btn-danger" onclick="resetBin()">🔥 RESET PARTITA</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
