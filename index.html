@@ -10,7 +10,7 @@
 <body>
     <header>
         <h1>🎯 REMONDO SIX</h1>
-        <div id="gameStatusBanner" class="status-banner">INIZIALIZZAZIONE...</div>
+        <div id="gameStatusBanner" class="status-banner">SISTEMA INIZIALIZZAZIONE...</div>
     </header>
 
     <div id="menu">
@@ -22,16 +22,11 @@
 
         <div class="master-zone">
             <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
-            
             <div id="masterTools" style="display:none; border: 1px dashed #00ff00; padding: 15px; margin-top: 10px; background: #001100;">
-                <p style="color:yellow; margin:0 0 10px 0; font-weight:bold;">CONFIGURAZIONE MASTER</p>
+                <p style="color:yellow; margin-bottom:10px; font-weight:bold;">CONFIGURAZIONE MASTER</p>
                 <div class="m-row">
-                    <input id="team1Name" placeholder="NOME TEAM 1" value="RED" oninput="updateTeamLabels()">
-                    <input id="team2Name" placeholder="NOME TEAM 2" value="BLUE" oninput="updateTeamLabels()">
-                </div>
-                <div class="m-row">
-                    <label>MINUTI CATTURA:</label>
-                    <input id="conquerTime" type="number" value="3" style="width:60px">
+                    <input id="team1Name" placeholder="NOME TEAM 1" value="ROSSI" oninput="updateTeamLabels()">
+                    <input id="team2Name" placeholder="NOME TEAM 2" value="BLU" oninput="updateTeamLabels()">
                 </div>
                 <div id="objSlotContainer" class="slot-list"></div>
                 <button class="btn-danger" onclick="resetBin()">🔥 RESET TOTALE SERVER</button>
@@ -45,7 +40,7 @@
         <div id="score">🔴 0 | 🔵 0</div>
         
         <div class="map-outer">
-            <div id="map-rotate-wrapper"><div id="map"></div></div>
+            <div id="map"></div>
             <button onclick="centerMap()" class="map-btn btn-gps">🎯</button>
             <button onclick="reloadMap()" class="map-btn btn-reload">🔄</button>
         </div>
