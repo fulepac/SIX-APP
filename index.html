@@ -10,7 +10,7 @@
 <body>
     <header>
         <h1>🎯 REMONDO SIX</h1>
-        <div id="gameStatusBanner" class="status-banner">SISTEMA OFFLINE</div>
+        <div id="gameStatusBanner" class="status-banner">INIZIALIZZAZIONE...</div>
     </header>
 
     <div id="menu">
@@ -21,19 +21,17 @@
         </select>
 
         <div class="master-zone">
-            <div id="passwordArea">
-                <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
-            </div>
+            <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
             
-            <div id="masterTools" style="display:none; border: 1px dashed #00ff00; padding: 10px; margin-top: 10px;">
-                <p style="color:yellow; font-size:0.7rem;">MODALITÀ MASTER ATTIVA</p>
+            <div id="masterTools" style="display:none; border: 1px dashed #00ff00; padding: 15px; margin-top: 10px; background: #001100;">
+                <p style="color:yellow; margin:0 0 10px 0; font-weight:bold;">CONFIGURAZIONE MASTER</p>
                 <div class="m-row">
-                    <input id="team1Name" placeholder="NOME ROSSI" value="RED" oninput="updateTeamLabels()">
-                    <input id="team2Name" placeholder="NOME BLU" value="BLUE" oninput="updateTeamLabels()">
+                    <input id="team1Name" placeholder="NOME TEAM 1" value="RED" oninput="updateTeamLabels()">
+                    <input id="team2Name" placeholder="NOME TEAM 2" value="BLUE" oninput="updateTeamLabels()">
                 </div>
                 <div class="m-row">
                     <label>MINUTI CATTURA:</label>
-                    <input id="conquerTime" type="number" value="3" style="width:50px">
+                    <input id="conquerTime" type="number" value="3" style="width:60px">
                 </div>
                 <div id="objSlotContainer" class="slot-list"></div>
                 <button class="btn-danger" onclick="resetBin()">🔥 RESET TOTALE SERVER</button>
@@ -50,7 +48,6 @@
             <div id="map-rotate-wrapper"><div id="map"></div></div>
             <button onclick="centerMap()" class="map-btn btn-gps">🎯</button>
             <button onclick="reloadMap()" class="map-btn btn-reload">🔄</button>
-            <div id="compass-ui"><div id="compass-needle">N</div></div>
         </div>
 
         <div class="info-section">
@@ -58,12 +55,10 @@
             <ul id="scoreboard"></ul>
         </div>
         <div class="info-section">
-            <h3>👥 COMPAGNI ONLINE</h3>
+            <h3>👥 COMPAGNI SQUADRA</h3>
             <ul id="playerList"></ul>
         </div>
     </div>
-
-    <div id="radar"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
