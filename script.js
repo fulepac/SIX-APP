@@ -8,16 +8,16 @@ let activeMarkers = [];
 let map;
 
 function initMap() {
-    map = L.map("map", { zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false }).setView([45.2377, 8.8097], 18);
+    // Sbloccata la mappa (dragging: true, zoomControl: true)
+    map = L.map("map", { zoomControl: true, attributionControl: false }).setView([45.2377, 8.8097], 18);
     L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'] }).addTo(map);
 }
 
-// Attiva bussola e avvia
 function enableSensorsAndStart() {
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission()
-            .then(res => { if (res === 'granted') { window.addEventListener('deviceorientation', handleRotation, true); startGame(); } })
-            .catch(console.error);
+        DeviceOrientationEvent.requestPermission().then(res => { 
+            if (res === 'granted') { window.addEventListener('deviceorientation', handleRotation, true); startGame(); } 
+        }).catch(console.error);
     } else {
         window.addEventListener('deviceorientation', handleRotation, true);
         startGame();
@@ -48,13 +48,12 @@ async function loadConfigFromServer() {
         container.innerHTML = "";
         for (let i = 0; i < 10; i++) {
             const o = (record.objectives && record.objectives[i]) ? record.objectives[i] : { name: `OBJ${i+1}`, lat: 0, lon: 0 };
-            container.innerHTML += `
-                <div class="obj-slot">
-                    <input type="checkbox" class="s-active" ${record.objectives && record.objectives[i] ? 'checked' : ''}>
-                    <input type="text" class="s-name" value="${o.name}">
-                    <input type="text" class="s-lat" value="${o.lat}">
-                    <input type="text" class="s-lon" value="${o.lon}">
-                </div>`;
+            container.innerHTML += `<div class="obj-slot">
+                <input type="checkbox" class="s-active" ${record.objectives && record.objectives[i] ? 'checked' : ''}>
+                <input type="text" class="s-name" value="${o.name}">
+                <input type="text" class="s-lat" value="${o.lat}">
+                <input type="text" class="s-lon" value="${o.lon}">
+            </div>`;
         }
     } catch(e) {}
 }
@@ -69,9 +68,10 @@ async function startGame() {
         map.invalidateSize();
         navigator.geolocation.watchPosition(p => {
             const pos = [p.coords.latitude, p.coords.longitude];
-            map.setView(pos, 18);
-            if(!state.playerMarker) state.playerMarker = L.circleMarker(pos, {radius: 5, color: '#fff', fillOpacity: 1}).addTo(map);
-            else state.playerMarker.setLatLng(pos);
+            if(!state.playerMarker) {
+                state.playerMarker = L.circleMarker(pos, {radius: 5, color: '#fff', fillOpacity: 1}).addTo(map);
+                map.setView(pos, 18);
+            } else { state.playerMarker.setLatLng(pos); }
         }, null, {enableHighAccuracy:true});
     }, 500);
     setInterval(sync, 4000);
@@ -107,8 +107,24 @@ function updateUI(r) {
         const s = Math.max(0, Math.floor((diff % 60000) / 1000));
         document.getElementById("timer").innerText = `⏱️ ${m}:${s.toString().padStart(2,'0')}`;
     }
+
     activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
+
+    // Aggiorna Lista Squadra (Solo compagni online)
+    const pList = document.getElementById("playerList"); pList.innerHTML = "";
+    Object.entries(r.players || {}).forEach(([name, p]) => {
+        if(Date.now() - p.last < 15000 && p.team === state.playerTeam) {
+            pList.innerHTML += `<li>${name} <span>OK</span></li>`;
+            if(name !== state.playerName) {
+                activeMarkers.push(L.circleMarker([p.lat, p.lon], {radius: 6, color: p.team==='RED'?'red':'cyan', fillOpacity:1}).addTo(map));
+            }
+        }
+    });
+
+    // Aggiorna Scoreboard Obiettivi
+    const sb = document.getElementById("scoreboard"); sb.innerHTML = "";
     (r.objectives || []).forEach(obj => {
+        sb.innerHTML += `<li>${obj.name} <span>${obj.owner}</span></li>`;
         let color = obj.owner === 'RED' ? 'red' : obj.owner === 'BLUE' ? 'cyan' : 'white';
         activeMarkers.push(L.circle([obj.lat, obj.lon], {radius: 15, color: color}).addTo(map).bindTooltip(obj.name, {permanent:true, direction:'top'}));
     });
