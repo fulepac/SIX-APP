@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>REMONDO SIX - TACTICAL</title>
+    <title>REMONDO SIX</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <header>
         <h1>🎯 REMONDO SIX</h1>
-        <div id="gameStatusBanner" class="status-banner">CONTROLLO SERVER...</div>
+        <div id="statusBanner" class="status-banner">SINCRO SERVER...</div>
     </header>
 
     <div id="menu">
@@ -20,40 +19,28 @@
             <option value="RED">TEAM ROSSO</option>
             <option value="BLUE">TEAM BLU</option>
         </select>
+
         <div class="master-zone">
-            <label><input type="checkbox" id="isMaster" onchange="toggleMasterTools()"> MASTER MODE</label>
-            <div id="masterTools" style="display:none;">
+            <label><input type="checkbox" id="isMaster" onchange="toggleMaster()"> MASTER MODE</label>
+            <div id="masterTools" style="display:none; margin-top:10px;">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER">
-                <input id="gameDuration" type="number" placeholder="DURATA (MIN)" value="30">
-                <div id="objSlotContainer" class="slot-container"></div>
             </div>
         </div>
-        <button onclick="startGame()">▶ AVVIA / ENTRA</button>
+
+        <button class="btn-main" onclick="startGame()">▶ ENTRA IN PARTITA</button>
     </div>
 
     <div id="game-ui" style="display:none;">
-        <div id="timer">⏱️ --:--</div>
-        <div id="score">🔴 0 | 🔵 0</div>
-        
-        <div class="map-container">
-            <div id="compass-ui">
-                <svg id="compass-arrow" viewBox="0 0 100 100">
-                    <polygon points="50,5 95,95 50,75 5,95" fill="red"/>
-                </svg>
-            </div>
-            <button onclick="centerMap()" class="btn-center">🎯 CENTRA</button>
-            <div id="map-rotate-container">
-                <div id="map"></div>
-            </div>
+        <div class="map-outer">
+            <div id="map"></div>
+            <div id="compass-ui"><div id="compass-needle">N</div></div>
+            <button onclick="centerMap()" class="btn-center">🎯</button>
         </div>
-
         <div class="info-section">
-            <h3>📍 OBIETTIVI (CONQUISTA 3 MIN)</h3>
+            <h3>📍 OBIETTIVI</h3>
             <ul id="scoreboard"></ul>
         </div>
     </div>
-
-    <div id="radar"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
