@@ -23,16 +23,19 @@
         <div class="master-zone">
             <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
             <div id="masterTools" style="display:none; border: 1px dashed #00ff00; padding: 10px; margin-top: 10px;">
-                <p style="color:yellow; font-size:0.7rem;">MODALITÀ MASTER ATTIVA (71325)</p>
                 <div class="m-row">
                     <input id="team1Name" placeholder="TEAM 1" value="ROSSI" oninput="updateLabels()">
                     <input id="team2Name" placeholder="TEAM 2" value="BLU" oninput="updateLabels()">
                 </div>
+                <div class="m-row">
+                    <label>DURATA GARA (MIN):</label>
+                    <input id="gameDuration" type="number" value="30" style="width:60px">
+                </div>
                 <div id="objSlotContainer" class="slot-list"></div>
-                <button class="btn-danger" onclick="resetBin()">🔥 RESET TOTALE</button>
+                <button class="btn-danger" onclick="resetBin()">🔥 RESET PARTITA (MANTIENE OBJ)</button>
             </div>
         </div>
-        <button id="mainBtn" onclick="startGame()">▶ ENTRA IN PARTITA</button>
+        <button id="mainBtn" onclick="startGame()">▶ AVVIA / ENTRA</button>
     </div>
 
     <div id="game-ui" style="display:none;">
