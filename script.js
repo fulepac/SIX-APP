@@ -8,8 +8,17 @@ let activeMarkers = [];
 let map;
 
 function initMap() {
-    map = L.map("map", { zoomControl: true, attributionControl: false }).setView([45.2377, 8.8097], 18);
-    L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'] }).addTo(map);
+    // Inizializzazione standard senza inversione dei comandi
+    map = L.map("map", { 
+        zoomControl: true, 
+        attributionControl: false,
+        dragging: true,
+        touchZoom: true
+    }).setView([45.2377, 8.8097], 18);
+    
+    L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { 
+        subdomains:['mt0','mt1','mt2','mt3'] 
+    }).addTo(map);
 }
 
 function enableSensorsAndStart() {
@@ -27,6 +36,7 @@ function handleRotation(e) {
     let compass = e.webkitCompassHeading || (360 - e.alpha);
     if (compass) {
         state.currentHeading = compass;
+        // Ruotiamo il contenitore visivo, Leaflet gestisce internamente il tocco correttamente
         document.getElementById("map-rotate").style.transform = `rotate(${-compass}deg)`;
         if (state.targetObj) updateNavigationDisplay();
     }
@@ -74,7 +84,7 @@ async function startGame() {
         navigator.geolocation.watchPosition(p => {
             const pos = [p.coords.latitude, p.coords.longitude];
             if(!state.playerMarker) {
-                state.playerMarker = L.circleMarker(pos, {radius: 6, color: '#fff', fillOpacity: 1, weight: 2}).addTo(map);
+                state.playerMarker = L.circleMarker(pos, {radius: 6, color: '#fff', fillOpacity: 1, weight: 2, zIndexOffset: 1000}).addTo(map);
                 map.setView(pos, 18);
             } else { 
                 state.playerMarker.setLatLng(pos); 
@@ -169,11 +179,13 @@ function updateNavigationDisplay() {
     const tPos = L.latLng(state.targetObj.lat, state.targetObj.lon);
     
     if(state.navLine) map.removeLayer(state.navLine);
+    // Linea bianca con zIndex alto per visibilità
     state.navLine = L.polyline([pPos, tPos], {
         color: 'white',
-        weight: 4,
+        weight: 5,
         dashArray: '10, 10',
-        className: 'nav-line-style'
+        className: 'nav-line-style',
+        zIndex: 1000
     }).addTo(map);
 
     const dist = pPos.distanceTo(tPos).toFixed(0);
