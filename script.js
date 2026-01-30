@@ -3,7 +3,7 @@ const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e
 const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 const PWD_MASTER = "71325";
 
-let state = { isMaster: false, playerName: "", playerTeam: "", playerMarker: null, currentHeading: 0, targetObj: null };
+let state = { isMaster: false, playerName: "", playerTeam: "", playerMarker: null, currentHeading: 0, targetObj: null, navLine: null };
 let activeMarkers = [];
 let map;
 
@@ -74,7 +74,7 @@ async function startGame() {
         navigator.geolocation.watchPosition(p => {
             const pos = [p.coords.latitude, p.coords.longitude];
             if(!state.playerMarker) {
-                state.playerMarker = L.circleMarker(pos, {radius: 5, color: '#fff', fillOpacity: 1}).addTo(map);
+                state.playerMarker = L.circleMarker(pos, {radius: 6, color: '#fff', fillOpacity: 1, weight: 2}).addTo(map);
                 map.setView(pos, 18);
             } else { 
                 state.playerMarker.setLatLng(pos); 
@@ -89,18 +89,14 @@ async function sync() {
     try {
         const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
         const { record } = await res.json();
-        
         if(!record.game) record.game = {};
-
         if(state.playerMarker) {
             if(!record.players) record.players = {};
             record.players[state.playerName] = { team: state.playerTeam, lat: state.playerMarker.getLatLng().lat, lon: state.playerMarker.getLatLng().lng, last: Date.now() };
         }
-        
         if(state.isMaster) {
             record.game.teamRedName = document.getElementById("teamRedName").value.toUpperCase();
             record.game.teamBlueName = document.getElementById("teamBlueName").value.toUpperCase();
-            
             if(!record.game.started) {
                 record.game.started = true;
                 record.game.endTime = Date.now() + (parseInt(document.getElementById("gameDuration").value) * 60000);
@@ -112,7 +108,6 @@ async function sync() {
                 });
             }
         }
-        
         await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
         updateUI(record);
     } catch(e) {}
@@ -125,8 +120,6 @@ function updateUI(r) {
         const s = Math.max(0, Math.floor((diff % 60000) / 1000));
         document.getElementById("timer").innerText = `⏱️ ${m}:${s.toString().padStart(2,'0')}`;
     }
-
-    // Aggiorna etichette team
     const redLabel = r.game.teamRedName || "TEAM ROSSO";
     const blueLabel = r.game.teamBlueName || "TEAM BLU";
     document.getElementById("optRed").innerText = redLabel;
@@ -151,9 +144,8 @@ function updateUI(r) {
         li.innerHTML = `${obj.name} <span>${obj.owner === 'RED' ? redLabel : obj.owner === 'BLUE' ? blueLabel : 'LIBERO'}</span>`;
         li.onclick = () => startNavigation(obj);
         sb.appendChild(li);
-
         let color = obj.owner === 'RED' ? 'red' : obj.owner === 'BLUE' ? 'cyan' : 'white';
-        let m = L.circle([obj.lat, obj.lon], {radius: 15, color: color}).addTo(map).bindTooltip(obj.name, {permanent:true, direction:'top'});
+        let m = L.circle([obj.lat, obj.lon], {radius: 15, color: color, weight: 3}).addTo(map).bindTooltip(obj.name, {permanent:true, direction:'top'});
         m.on('click', () => startNavigation(obj));
         activeMarkers.push(m);
     });
@@ -167,6 +159,7 @@ function startNavigation(obj) {
 
 function stopNavigation() {
     state.targetObj = null;
+    if(state.navLine) { map.removeLayer(state.navLine); state.navLine = null; }
     document.getElementById("nav-panel").style.display = "none";
 }
 
@@ -175,29 +168,38 @@ function updateNavigationDisplay() {
     const pPos = state.playerMarker.getLatLng();
     const tPos = L.latLng(state.targetObj.lat, state.targetObj.lon);
     
+    if(state.navLine) map.removeLayer(state.navLine);
+    state.navLine = L.polyline([pPos, tPos], {
+        color: 'white',
+        weight: 4,
+        dashArray: '10, 10',
+        className: 'nav-line-style'
+    }).addTo(map);
+
     const dist = pPos.distanceTo(tPos).toFixed(0);
+    const bearing = calculateBearing(pPos.lat, pPos.lng, tPos.lat, tPos.lon);
+    let relativeBearing = (bearing - state.currentHeading + 360) % 360;
     
-    // Calcolo angolo
-    const lat1 = pPos.lat * Math.PI / 180;
-    const lon1 = pPos.lng * Math.PI / 180;
-    const lat2 = tPos.lat * Math.PI / 180;
-    const lon2 = tPos.lng * Math.PI / 180;
+    document.getElementById("nav-info").innerText = `${state.targetObj.name}: ${dist}m ${getArrow(relativeBearing)}`;
+}
+
+function calculateBearing(lat1, lon1, lat2, lon2) {
+    lat1 *= Math.PI / 180; lon1 *= Math.PI / 180;
+    lat2 *= Math.PI / 180; lon2 *= Math.PI / 180;
     const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
     const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
-    let bearing = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-    
-    // Direzione relativa alla bussola
-    let relativeBearing = (bearing - state.currentHeading + 360) % 360;
-    let arrow = "⬆️";
-    if(relativeBearing > 22.5 && relativeBearing <= 67.5) arrow = "↗️";
-    else if(relativeBearing > 67.5 && relativeBearing <= 112.5) arrow = "➡️";
-    else if(relativeBearing > 112.5 && relativeBearing <= 157.5) arrow = "↘️";
-    else if(relativeBearing > 157.5 && relativeBearing <= 202.5) arrow = "⬇️";
-    else if(relativeBearing > 202.5 && relativeBearing <= 247.5) arrow = "↙️";
-    else if(relativeBearing > 247.5 && relativeBearing <= 292.5) arrow = "⬅️";
-    else if(relativeBearing > 292.5 && relativeBearing <= 337.5) arrow = "↖️";
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
 
-    document.getElementById("nav-info").innerText = `${state.targetObj.name}: ${dist}m ${arrow}`;
+function getArrow(rel) {
+    if(rel > 337.5 || rel <= 22.5) return "⬆️";
+    if(rel > 22.5 && rel <= 67.5) return "↗️";
+    if(rel > 67.5 && rel <= 112.5) return "➡️";
+    if(rel > 112.5 && rel <= 157.5) return "↘️";
+    if(rel > 157.5 && rel <= 202.5) return "⬇️";
+    if(rel > 202.5 && rel <= 247.5) return "↙️";
+    if(rel > 247.5 && rel <= 292.5) return "⬅️";
+    return "↖️";
 }
 
 async function resetBin() {
