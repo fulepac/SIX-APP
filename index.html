@@ -24,7 +24,7 @@
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">CONFIGURAZIONE MASTER</p>
+                    <p class="m-title">CONFIGURAZIONE GARA</p>
                     <div class="mode-selector">
                         <button id="btnDomination" class="mode-btn active" onclick="setGameMode('DOMINATION')">DOMINIO</button>
                         <button id="btnRecon" class="mode-btn" onclick="setGameMode('RECON')">RECON</button>
@@ -35,9 +35,9 @@
                         <div class="m-row"><label>NOME ROSSO:</label><input id="teamRedName" type="text" value="TEAM ROSSO"></div>
                         <div class="m-row"><label>NOME BLU:</label><input id="teamBlueName" type="text" value="TEAM BLU"></div>
                     </div>
-                    <p class="m-title">OBIETTIVI (ATTIVA E INSERISCI COORDINATE)</p>
+                    <p class="m-title">CONFIGURA 10 OBIETTIVI</p>
                     <div id="objSlotContainer" class="slot-list"></div>
-                    <button class="btn-danger" onclick="resetBin()">🔥 RESET PARTITA TOTALE</button>
+                    <button class="btn-danger" onclick="resetBin()">🔥 RESET TOTALE PARTITA</button>
                 </div>
             </div>
             <button id="mainBtn" class="btn-start" onclick="enableSensorsAndStart()">▶ ENTRA IN OPERAZIONE</button>
