@@ -1,8 +1,15 @@
 * { box-sizing: border-box; outline: none; }
 body { background: #000; color: #00ff00; font-family: monospace; margin: 0; padding: 10px; overflow-x: hidden; }
 
+header h1 { text-align: center; font-size: 1.5rem; margin: 10px 0; }
+.status-banner { text-align: center; font-size: 0.8rem; color: #aaa; margin-bottom: 10px; }
+
 #menu { background: #111; padding: 15px; border: 1px solid #333; display: flex; flex-direction: column; gap: 10px; width: 100%; }
 input, select, button { background: #1a1a1a; border: 1px solid #00ff00; color: #00ff00; padding: 12px; font-size: 0.9rem; width: 100%; border-radius: 4px; }
+
+.m-config-grid { display: grid; gap: 5px; }
+.m-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: #ccc; }
+.m-row input { width: 60%; padding: 5px; font-size: 0.7rem; }
 
 .slot-list { margin-top: 10px; max-height: 200px; overflow-y: auto; border: 1px solid #222; padding: 5px; background: #000; }
 .obj-slot { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px; margin-bottom: 8px; border-bottom: 1px solid #333; }
@@ -26,6 +33,6 @@ input, select, button { background: #1a1a1a; border: 1px solid #00ff00; color: #
 .info-section { background: #111; border: 1px solid #333; padding: 8px; text-align: left; }
 .info-section h3 { font-size: 0.7rem; margin: 0 0 5px 0; color: #aaa; border-bottom: 1px solid #333; }
 .data-list { list-style: none; padding: 0; margin: 0; font-size: 0.7rem; max-height: 100px; overflow-y: auto; }
-.data-list li { padding: 3px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; }
+.data-list li { padding: 3px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; cursor: pointer; }
 
 .btn-danger { color: red; border-color: red; margin-top: 10px; font-size: 0.7rem; padding: 5px; }
