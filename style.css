@@ -20,6 +20,7 @@ input, select, button { background: #1a1a1a; border: 1px solid #00ff00; color: #
 .btn-start { background: #00ff00; color: #000; font-weight: bold; margin-top: 10px; border: none; cursor: pointer; }
 
 .map-outer { position: relative; width: 100%; height: 380px; border: 2px solid #00ff00; border-radius: 10px; margin: 10px 0; background: #000; overflow: hidden; }
+/* Il contenitore map-rotate gestisce solo la rotazione visiva, non l'input */
 #map-rotate { width: 100%; height: 100%; transition: transform 0.1s linear; }
 #map { width: 100%; height: 100%; }
 #player-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; font-size: 20px; color: #fff; pointer-events: none; text-shadow: 0 0 5px #000; }
@@ -37,9 +38,11 @@ input, select, button { background: #1a1a1a; border: 1px solid #00ff00; color: #
 
 .btn-danger { color: red; border-color: red; margin-top: 10px; font-size: 0.7rem; padding: 8px; }
 
+/* Stile linea di navigazione */
 .nav-line-style {
     stroke-dasharray: 10, 10;
     animation: dash-move 1.5s linear infinite;
+    pointer-events: none;
 }
 @keyframes dash-move {
     from { stroke-dashoffset: 20; }
