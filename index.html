@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP v.4.3</title>
+    <title>SIX APP v.4.7</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header id="main-header">
-        <h1>🎯 SIX APP</h1>
-        <div class="credits">Creato da Fulvio v.4.6_300126</div>
-    </header>
-
     <div id="setup-screen">
+        <header id="main-header">
+            <h1 class="brand-title">SIX APP</h1>
+            <div class="credits">OPERATIONAL SYSTEM v.4.4</div>
+        </header>
+
         <div id="menu">
             <input id="playerName" placeholder="NOME OPERATORE">
             <select id="teamSelect">
@@ -24,22 +24,22 @@
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">MODALITÀ DI GIOCO</p>
+                    <p class="m-title">MODALITÀ</p>
                     <div class="mode-selector">
-                        <button id="btnDomination" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
-                        <button id="btnRecon" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
+                        <button id="btnDomination" type="button" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
+                        <button id="btnRecon" type="button" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
                     </div>
                     
                     <div class="m-config-grid">
-                        <div class="m-row"><label>DURATA (MIN):</label><input id="gameDuration" type="number" value="30"></div>
-                        <div class="m-row"><label>CATTURA (SEC):</label><input id="captureTime" type="number" value="180"></div>
+                        <div class="m-row"><span>MIN:</span><input id="gameDuration" type="number" value="30"></div>
+                        <div class="m-row"><span>SEC:</span><input id="captureTime" type="number" value="180"></div>
                     </div>
 
-                    <p class="m-title">CONFIGURA 10 OBIETTIVI</p>
+                    <p class="m-title">OBIETTIVI (CHECK PER ATTIVARE)</p>
                     <div id="objSlotContainer" class="slot-list"></div>
                     
-                    <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 SALVA E AVVIA PARTITA</button>
-                    <button class="btn-danger" onclick="resetBin()">🔥 RESET TOTALE PARTITA</button>
+                    <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 SALVA E AVVIA</button>
+                    <button class="btn-danger" onclick="resetBin()">🔥 RESET TOTALE</button>
                 </div>
             </div>
             
@@ -65,7 +65,7 @@
                 
                 <div id="nav-overlay" class="nav-hud" style="display:none;">
                     <div id="nav-text">NAVIGAZIONE...</div>
-                    <button onclick="stopNavigation()" class="nav-stop-btn">ANNULLA NAV</button>
+                    <button onclick="stopNavigation()" class="nav-stop-btn">ANNULLA</button>
                 </div>
             </div>
             <div class="map-controls-external">
@@ -82,11 +82,12 @@
                 <ul id="scoreboard" class="data-list"></ul>
             </div>
             <div class="info-section">
-                <h3>👥 SQUADRA</h3>
+                <h3>👥 TEAM RADAR</h3>
                 <ul id="playerList" class="data-list"></ul>
             </div>
         </div>
     </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
 </body>
