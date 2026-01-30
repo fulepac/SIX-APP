@@ -52,15 +52,9 @@ function checkMasterPass() {
 
 async function selectGameMode(m) {
     state.selectedMode = m;
-    // Aggiornamento visivo immediato dei tasti
     document.getElementById("btnDomination").classList.toggle("active", m === 'DOMINATION');
     document.getElementById("btnRecon").classList.toggle("active", m === 'RECON');
-    
-    // Se è il master a cambiare, sincronizza subito il database
-    if(state.isMaster) {
-        console.log("Master ha cambiato modalità in:", m);
-        await sync(true); 
-    }
+    if(state.isMaster) await sync(true);
 }
 
 async function loadConfigFromServer() {
@@ -92,9 +86,7 @@ function enableSensorsAndStart(isMasterAction) {
     state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
     state.playerTeam = document.getElementById("teamSelect").value;
     if(!state.playerName) return alert("INSERISCI NOME!");
-
     localStorage.setItem("six_app_session", JSON.stringify({name: state.playerName, team: state.playerTeam}));
-
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission().then(res => {
             if(res === 'granted') window.addEventListener('deviceorientation', handleRotation);
@@ -116,7 +108,6 @@ async function startGame() {
     document.getElementById("setup-screen").style.display = "none";
     document.getElementById("game-ui").style.display = "block";
     map.invalidateSize();
-
     if ("geolocation" in navigator) {
         navigator.geolocation.watchPosition(
             (p) => {
@@ -141,127 +132,70 @@ async function sync(forceMaster, duration) {
         const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
         let { record } = await res.json();
         if(!record.players) record.players = {};
-        
-        // Aggiorna posizione giocatore corrente
-        record.players[state.playerName] = { 
-            team: state.playerTeam, 
-            lat: state.playerMarker ? state.playerMarker.getLatLng().lat : 0, 
-            lon: state.playerMarker ? state.playerMarker.getLatLng().lng : 0, 
-            last: Date.now() 
-        };
+        record.players[state.playerName] = { team: state.playerTeam, lat: state.playerMarker?.getLatLng().lat || 0, lon: state.playerMarker?.getLatLng().lng || 0, last: Date.now() };
 
         if(state.isMaster || forceMaster) {
             record.game = { 
-                mode: state.selectedMode, 
-                scoreRed: record.game?.scoreRed || 0, 
-                scoreBlue: record.game?.scoreBlue || 0,
+                mode: state.selectedMode, scoreRed: record.game?.scoreRed || 0, scoreBlue: record.game?.scoreBlue || 0,
                 start: forceMaster ? (state.startTime || record.game?.start || Date.now()) : (record.game?.start || Date.now()),
                 duration: duration || record.game?.duration || 30
             };
-            
             let newObjs = [];
-            const slots = document.querySelectorAll(".obj-slot");
-            if(slots.length > 0) {
-                slots.forEach(s => {
-                    if(s.querySelector(".s-active").checked) {
-                        newObjs.push({ 
-                            name: s.querySelector(".s-name").value, 
-                            lat: parseFloat(s.querySelector(".s-lat").value), 
-                            lon: parseFloat(s.querySelector(".s-lon").value), 
-                            owner: "LIBERO" 
-                        });
-                    }
-                });
-                record.objectives = newObjs;
-            }
+            document.querySelectorAll(".obj-slot").forEach(s => {
+                if(s.querySelector(".s-active").checked) {
+                    newObjs.push({ name: s.querySelector(".s-name").value, lat: parseFloat(s.querySelector(".s-lat").value), lon: parseFloat(s.querySelector(".s-lon").value), owner: "LIBERO" });
+                }
+            });
+            if(newObjs.length > 0) record.objectives = newObjs;
         }
-        
-        await fetch(URL, { 
-            method:"PUT", 
-            headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, 
-            body: JSON.stringify(record)
-        });
-        
+        await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
         updateUI(record);
-    } catch(e) {
-        console.error("Errore sincronizzazione:", e);
-    }
+    } catch(e) {}
 }
 
 function updateUI(r) {
-    activeMarkers.forEach(m => map.removeLayer(m)); 
-    activeMarkers = [];
-    
+    activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
     const timerEl = document.getElementById("timer");
     const scorePanel = document.getElementById("score-panel");
+    const scoreboard = document.getElementById("scoreboard");
+    scoreboard.innerHTML = "";
 
-    // Gestione Modalità Gioco (DOMINIO vs RECON)
     if(r.game?.mode === 'DOMINATION') {
-        scorePanel.style.display = 'flex'; 
-        timerEl.style.display = 'block';
+        scorePanel.style.display = 'flex'; timerEl.style.display = 'block';
         document.getElementById("scoreRed").innerText = r.game.scoreRed || 0;
         document.getElementById("scoreBlue").innerText = r.game.scoreBlue || 0;
-        
         const elapsed = Math.floor((Date.now() - r.game.start) / 1000);
         const remain = ((r.game.duration || 30) * 60) - elapsed;
-        
-        if(remain > 0) {
-            const m = Math.floor(remain / 60); 
-            const s = remain % 60;
-            timerEl.innerText = `⏱️ ${m}:${s < 10 ? '0'+s : s}`;
-        } else { 
-            timerEl.innerText = "FINE MISSIONE"; 
-        }
+        timerEl.innerText = remain > 0 ? `⏱️ ${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}` : "FINE";
     } else {
-        scorePanel.style.display = 'none'; 
-        timerEl.style.display = 'none';
+        scorePanel.style.display = 'none'; timerEl.style.display = 'none';
     }
     
-    // Disegna Obiettivi
     (r.objectives || []).forEach(obj => {
         let color = obj.owner === 'RED' ? 'red' : obj.owner === 'BLUE' ? 'cyan' : 'white';
         let m = L.circle([obj.lat, obj.lon], {radius: 15, color: color, weight: 3}).addTo(map);
         m.bindTooltip(obj.name, {permanent:true, direction:'top', className:'obj-label'});
         m.on('click', () => startNavigation(obj));
         activeMarkers.push(m);
+        scoreboard.innerHTML += `<li onclick='startNavigation(${JSON.stringify(obj)})'>${obj.name} <span>${getDist(obj.lat, obj.lon)}m</span></li>`;
     });
 
-    // Radar Giocatori Team
-    const pList = document.getElementById("playerList"); 
-    pList.innerHTML = "";
+    const pList = document.getElementById("playerList"); pList.innerHTML = "";
     Object.entries(r.players || {}).forEach(([name, p]) => {
         if(Date.now() - p.last < 30000 && p.team === state.playerTeam && name !== state.playerName) {
             pList.innerHTML += `<li>${name} <span>${getDist(p.lat, p.lon)}m</span></li>`;
-            let pMarker = L.circleMarker([p.lat, p.lon], {
-                radius: 7, 
-                color: p.team==='RED'?'red':'#00ffff', 
-                fillColor: p.team==='RED'?'#f00':'#0ff', 
-                fillOpacity:0.8
-            }).addTo(map);
-            activeMarkers.push(pMarker);
+            activeMarkers.push(L.circleMarker([p.lat, p.lon], {radius: 7, color: p.team==='RED'?'red':'#00ffff', fillColor: p.team==='RED'?'#f00':'#0ff', fillOpacity:0.8}).addTo(map));
         }
     });
 }
 
-function startNavigation(obj) { 
-    state.targetObj = obj; 
-    document.getElementById("nav-overlay").style.display = "block"; 
-    updateNavigationLine(); 
-}
-
-function stopNavigation() { 
-    state.targetObj = null; 
-    if(state.navLine) map.removeLayer(state.navLine); 
-    state.navLine = null; 
-    document.getElementById("nav-overlay").style.display = "none"; 
-}
-
+function startNavigation(obj) { state.targetObj = obj; document.getElementById("nav-overlay").style.display = "flex"; updateNavigationLine(); }
+function stopNavigation() { state.targetObj = null; if(state.navLine) map.removeLayer(state.navLine); state.navLine = null; document.getElementById("nav-overlay").style.display = "none"; }
 function updateNavigationLine() {
     if(!state.targetObj || !state.playerMarker) return;
     const p1 = state.playerMarker.getLatLng();
     const p2 = [state.targetObj.lat, state.targetObj.lon];
-    const dist = getDist(p2[0], p2[1]);
-    document.getElementById("nav-text").innerText = `${state.targetObj.name}: ${dist}m`;
+    document.getElementById("nav-text").innerText = `${state.targetObj.name}: ${getDist(p2[0], p2[1])}m`;
     if(state.navLine) map.removeLayer(state.navLine);
     state.navLine = L.polyline([p1, p2], {color: 'yellow', weight: 4, dashArray: '10, 10'}).addTo(map);
 }
@@ -276,27 +210,11 @@ function getDist(lat2, lon2) {
     return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
-function centerMap() { 
-    state.autoCenter = true; 
-    if(state.playerMarker) map.panTo(state.playerMarker.getLatLng()); 
-}
-
-function exitGame() { 
-    if(confirm("SCOLLEGARTI?")) location.reload(); 
-}
-
+function centerMap() { state.autoCenter = true; if(state.playerMarker) map.panTo(state.playerMarker.getLatLng()); }
+function exitGame() { if(confirm("SCOLLEGARTI?")) location.reload(); }
 async function resetBin() {
-    if(confirm("ABORTIRE MISSIONE E RESETTARE TUTTO?")) {
-        const resetData = {
-            game: { mode: "DOMINATION", scoreRed: 0, scoreBlue: 0, start: Date.now(), duration: 30 },
-            players: {},
-            objectives: DEFAULT_OBJS
-        };
-        await fetch(URL, { 
-            method:"PUT", 
-            headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, 
-            body: JSON.stringify(resetData)
-        });
+    if(confirm("RESET?")) {
+        await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{mode:"DOMINATION",scoreRed:0,scoreBlue:0,start:Date.now(),duration:30},players:{},objectives:DEFAULT_OBJS})});
         location.reload();
     }
 }
