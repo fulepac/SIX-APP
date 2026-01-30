@@ -50,15 +50,14 @@ function checkMasterPass() {
     }
 }
 
-// CORREZIONE: Aggiunta sincronizzazione immediata al cambio modalità
+// FIX: Aggiunto l'invio immediato al server per sincronizzare la modalità scelta dal Master
 async function selectGameMode(m) {
     state.selectedMode = m;
     document.getElementById("btnDomination").classList.toggle("active", m === 'DOMINATION');
     document.getElementById("btnRecon").classList.toggle("active", m === 'RECON');
     
     if(state.isMaster) {
-        console.log("Cambio modalità Master:", m);
-        await sync(true); // Forza l'invio della modalità al database
+        await sync(true); // Forza la sincronizzazione immediata del tipo di gioco
     }
 }
 
@@ -145,19 +144,16 @@ async function sync(forceMaster, duration) {
         if(state.isMaster || forceMaster) {
             record.game = { 
                 mode: state.selectedMode, scoreRed: record.game?.scoreRed || 0, scoreBlue: record.game?.scoreBlue || 0,
-                start: forceMaster ? (state.startTime || record.game?.start || Date.now()) : (record.game?.start || Date.now()),
+                start: forceMaster ? (state.startTime || Date.now()) : (record.game?.start || Date.now()),
                 duration: duration || record.game?.duration || 30
             };
             let newObjs = [];
-            const slots = document.querySelectorAll(".obj-slot");
-            if(slots.length > 0) {
-                slots.forEach(s => {
-                    if(s.querySelector(".s-active").checked) {
-                        newObjs.push({ name: s.querySelector(".s-name").value, lat: parseFloat(s.querySelector(".s-lat").value), lon: parseFloat(s.querySelector(".s-lon").value), owner: "LIBERO" });
-                    }
-                });
-                record.objectives = newObjs;
-            }
+            document.querySelectorAll(".obj-slot").forEach(s => {
+                if(s.querySelector(".s-active").checked) {
+                    newObjs.push({ name: s.querySelector(".s-name").value, lat: parseFloat(s.querySelector(".s-lat").value), lon: parseFloat(s.querySelector(".s-lon").value), owner: "LIBERO" });
+                }
+            });
+            record.objectives = newObjs;
         }
         await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
         updateUI(record);
