@@ -10,7 +10,7 @@
 <body>
     <header id="main-header">
         <h1>🎯 SIX APP</h1>
-        <div class="credits">Creato da Fulvio v.4.5_300126</div>
+        <div class="credits">Creato da Fulvio v.4.6_300126</div>
     </header>
 
     <div id="setup-screen">
@@ -24,7 +24,7 @@
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">CONFIGURAZIONE GARA</p>
+                    <p class="m-title">MODALITÀ DI GIOCO</p>
                     <div class="mode-selector">
                         <button id="btnDomination" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
                         <button id="btnRecon" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
@@ -49,16 +49,24 @@
 
     <div id="game-ui" style="display:none;">
         <button class="exit-btn" onclick="exitGame()">ESCI</button>
+        
         <div class="top-bar">
             <div id="timer" class="countdown-display">⏱️ --:--</div>
-            <div class="score-display">
-                <span id="scoreRed" class="s-red">0</span> - <span id="scoreBlue" class="s-blue">0</span>
+            <div id="score-panel" class="score-display">
+                <div class="score-box red">R: <span id="scoreRed">0</span></div>
+                <div class="score-box blue">B: <span id="scoreBlue">0</span></div>
             </div>
         </div>
+
         <div class="map-system">
             <div class="map-main-container">
                 <div id="map-rotate"><div id="map"></div></div>
                 <div id="player-pointer">▲</div>
+                
+                <div id="nav-overlay" class="nav-hud" style="display:none;">
+                    <div id="nav-text">NAVIGAZIONE...</div>
+                    <button onclick="stopNavigation()" class="nav-stop-btn">ANNULLA NAV</button>
+                </div>
             </div>
             <div class="map-controls-external">
                 <button onclick="centerMap()" class="ext-btn">🎯</button>
@@ -67,6 +75,7 @@
                 <button onclick="location.reload()" class="ext-btn">🔄</button>
             </div>
         </div>
+
         <div class="game-info-container">
             <div class="info-section">
                 <h3>📍 OBIETTIVI</h3>
@@ -76,10 +85,6 @@
                 <h3>👥 SQUADRA</h3>
                 <ul id="playerList" class="data-list"></ul>
             </div>
-        </div>
-        <div id="nav-panel" style="display:none;">
-            <span id="nav-info">NAVIGAZIONE ATTIVA</span>
-            <button onclick="stopNavigation()" class="btn-cancel-nav">X</button>
         </div>
     </div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
