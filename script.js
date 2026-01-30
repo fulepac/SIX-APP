@@ -13,15 +13,8 @@ const DEFAULT_OBJS = [
 ];
 
 let state = { 
-    isMaster: false, 
-    playerName: "", 
-    playerTeam: "", 
-    playerMarker: null, 
-    autoCenter: true, 
-    selectedMode: "DOMINATION", 
-    targetObj: null, 
-    navLine: null,
-    startTime: null
+    isMaster: false, playerName: "", playerTeam: "", playerMarker: null, 
+    autoCenter: true, selectedMode: "DOMINATION", targetObj: null, navLine: null, startTime: null 
 };
 
 let activeMarkers = [];
@@ -36,6 +29,10 @@ window.onload = () => {
         document.getElementById("teamSelect").value = data.team || "RED";
     }
 };
+
+function toggleTutorial(show) {
+    document.getElementById("tutorial-overlay").style.display = show ? "flex" : "none";
+}
 
 function initMap() {
     map = L.map("map", { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
@@ -66,7 +63,6 @@ async function loadConfigFromServer() {
         const container = document.getElementById("objSlotContainer");
         container.innerHTML = "";
         const currentObjs = (record.objectives && record.objectives.length > 0) ? record.objectives : DEFAULT_OBJS;
-        
         for (let i = 0; i < 10; i++) {
             let o = currentObjs[i] || { name: `OBJ${i+1}`, lat: "", lon: "" };
             container.innerHTML += `
@@ -104,9 +100,8 @@ function enableSensorsAndStart(isMasterAction) {
 }
 
 async function saveAndStart() {
-    const duration = parseInt(document.getElementById("gameDuration").value) || 30;
     state.startTime = Date.now();
-    await sync(true, duration);
+    await sync(true, parseInt(document.getElementById("gameDuration").value));
     startGame();
 }
 
@@ -138,37 +133,23 @@ async function sync(forceMaster, duration) {
     try {
         const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
         let { record } = await res.json();
-        
         if(!record.players) record.players = {};
-        record.players[state.playerName] = { 
-            team: state.playerTeam, 
-            lat: state.playerMarker?.getLatLng().lat || 0, 
-            lon: state.playerMarker?.getLatLng().lng || 0, 
-            last: Date.now() 
-        };
+        record.players[state.playerName] = { team: state.playerTeam, lat: state.playerMarker?.getLatLng().lat || 0, lon: state.playerMarker?.getLatLng().lng || 0, last: Date.now() };
 
         if(state.isMaster || forceMaster) {
             record.game = { 
-                mode: state.selectedMode, 
-                scoreRed: record.game?.scoreRed || 0, 
-                scoreBlue: record.game?.scoreBlue || 0,
+                mode: state.selectedMode, scoreRed: record.game?.scoreRed || 0, scoreBlue: record.game?.scoreBlue || 0,
                 start: forceMaster ? state.startTime : (record.game?.start || Date.now()),
                 duration: duration || record.game?.duration || 30
             };
             let newObjs = [];
             document.querySelectorAll(".obj-slot").forEach(s => {
                 if(s.querySelector(".s-active").checked) {
-                    newObjs.push({
-                        name: s.querySelector(".s-name").value,
-                        lat: parseFloat(s.querySelector(".s-lat").value),
-                        lon: parseFloat(s.querySelector(".s-lon").value),
-                        owner: "LIBERO"
-                    });
+                    newObjs.push({ name: s.querySelector(".s-name").value, lat: parseFloat(s.querySelector(".s-lat").value), lon: parseFloat(s.querySelector(".s-lon").value), owner: "LIBERO" });
                 }
             });
             record.objectives = newObjs;
         }
-
         await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
         updateUI(record);
     } catch(e) {}
@@ -176,61 +157,41 @@ async function sync(forceMaster, duration) {
 
 function updateUI(r) {
     activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
-    
-    // Gestione Timer e Score
     const timerEl = document.getElementById("timer");
     const scorePanel = document.getElementById("score-panel");
 
     if(r.game?.mode === 'DOMINATION') {
-        scorePanel.style.display = 'flex';
-        timerEl.style.display = 'block';
+        scorePanel.style.display = 'flex'; timerEl.style.display = 'block';
         document.getElementById("scoreRed").innerText = r.game.scoreRed || 0;
         document.getElementById("scoreBlue").innerText = r.game.scoreBlue || 0;
-        
-        // Calcolo Tempo alla rovescia
         const elapsed = Math.floor((Date.now() - r.game.start) / 1000);
-        const totalSec = (r.game.duration || 30) * 60;
-        const remain = totalSec - elapsed;
+        const remain = ((r.game.duration || 30) * 60) - elapsed;
         if(remain > 0) {
-            const m = Math.floor(remain / 60);
-            const s = remain % 60;
+            const m = Math.floor(remain / 60); const s = remain % 60;
             timerEl.innerText = `⏱️ ${m}:${s < 10 ? '0'+s : s}`;
-        } else {
-            timerEl.innerText = "FINE OPERAZIONE";
-        }
+        } else { timerEl.innerText = "FINE MISSIONE"; }
     } else {
-        scorePanel.style.display = 'none';
-        timerEl.style.display = 'none';
+        scorePanel.style.display = 'none'; timerEl.style.display = 'none';
     }
     
-    // Obiettivi in Mappa
-    const sb = document.getElementById("scoreboard"); sb.innerHTML = "";
     (r.objectives || []).forEach(obj => {
-        const li = document.createElement("li");
-        li.innerHTML = `<b>${obj.name}</b> <span class="owner-${obj.owner}">${obj.owner}</span>`;
-        li.onclick = () => startNavigation(obj);
-        sb.appendChild(li);
         let color = obj.owner === 'RED' ? 'red' : obj.owner === 'BLUE' ? 'cyan' : 'white';
         let m = L.circle([obj.lat, obj.lon], {radius: 15, color: color, weight: 3}).addTo(map);
         m.bindTooltip(obj.name, {permanent:true, direction:'top', className:'obj-label'});
         activeMarkers.push(m);
     });
 
-    // Team Radar: Solo compagni di squadra in mappa
     const pList = document.getElementById("playerList"); pList.innerHTML = "";
     Object.entries(r.players || {}).forEach(([name, p]) => {
         if(Date.now() - p.last < 30000 && p.team === state.playerTeam && name !== state.playerName) {
             pList.innerHTML += `<li>${name} <span>${getDist(p.lat, p.lon)}m</span></li>`;
-            let tm = L.circleMarker([p.lat, p.lon], {radius: 7, color: p.team==='RED'?'red':'#00ffff', fillColor: p.team==='RED'?'#f00':'#0ff', fillOpacity:0.8, weight: 2}).addTo(map);
-            tm.bindTooltip(name, {permanent: false});
-            activeMarkers.push(tm);
+            activeMarkers.push(L.circleMarker([p.lat, p.lon], {radius: 7, color: p.team==='RED'?'red':'#00ffff', fillColor: p.team==='RED'?'#f00':'#0ff', fillOpacity:0.8}).addTo(map));
         }
     });
 }
 
 function startNavigation(obj) { state.targetObj = obj; document.getElementById("nav-overlay").style.display = "block"; updateNavigationLine(); }
 function stopNavigation() { state.targetObj = null; if(state.navLine) map.removeLayer(state.navLine); state.navLine = null; document.getElementById("nav-overlay").style.display = "none"; }
-
 function updateNavigationLine() {
     if(!state.targetObj || !state.playerMarker) return;
     const p1 = state.playerMarker.getLatLng();
@@ -238,7 +199,7 @@ function updateNavigationLine() {
     const dist = getDist(p2[0], p2[1]);
     document.getElementById("nav-text").innerText = `${state.targetObj.name}: ${dist}m`;
     if(state.navLine) map.removeLayer(state.navLine);
-    state.navLine = L.polyline([p1, p2], {color: 'yellow', weight: 4, dashArray: '10, 10', opacity: 0.8}).addTo(map);
+    state.navLine = L.polyline([p1, p2], {color: 'yellow', weight: 4, dashArray: '10, 10'}).addTo(map);
 }
 
 function getDist(lat2, lon2) {
@@ -252,5 +213,10 @@ function getDist(lat2, lon2) {
 }
 
 function centerMap() { state.autoCenter = true; if(state.playerMarker) map.panTo(state.playerMarker.getLatLng()); }
-function exitGame() { if(confirm("ABORTIRE MISSIONE?")) location.reload(); }
-async function resetBin() { if(confirm("FORMATTARE DATABASE?")) { await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{mode:"DOMINATION",scoreRed:0,scoreBlue:0,start:Date.now(),duration:30},players:{},objectives:DEFAULT_OBJS})}); location.reload(); } }
+function exitGame() { if(confirm("SCOLLEGARTI?")) location.reload(); }
+async function resetBin() {
+    if(confirm("ABORTIRE MISSIONE E RESETTARE TUTTO?")) {
+        await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{mode:"DOMINATION",scoreRed:0,scoreBlue:0,start:Date.now(),duration:30},players:{},objectives:DEFAULT_OBJS})});
+        location.reload();
+    }
+}
