@@ -10,7 +10,7 @@
 <body>
     <header id="main-header">
         <h1>🎯 SIX APP</h1>
-        <div class="credits">Creato da Fulvio Versione v.4.1_30126</div>
+        <div class="credits">Creato da Fulvio v.4.3_300126</div>
     </header>
 
     <div id="setup-screen">
@@ -37,10 +37,13 @@
                     </div>
                     <p class="m-title">CONFIGURA 10 OBIETTIVI</p>
                     <div id="objSlotContainer" class="slot-list"></div>
+                    
+                    <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 SALVA E AVVIA PARTITA</button>
                     <button class="btn-danger" onclick="resetBin()">🔥 RESET TOTALE PARTITA</button>
                 </div>
             </div>
-            <button id="mainBtn" class="btn-start" onclick="enableSensorsAndStart()">▶ ENTRA IN OPERAZIONE</button>
+            
+            <button id="playerStartBtn" class="btn-start" onclick="enableSensorsAndStart(false)">▶ ENTRA IN OPERAZIONE</button>
         </div>
     </div>
 
