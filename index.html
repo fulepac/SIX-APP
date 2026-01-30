@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP v.4.7</title>
+    <title>SIX APP v.4.9</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
@@ -11,7 +11,7 @@
     <div id="setup-screen">
         <header id="main-header">
             <h1 class="brand-title">SIX APP</h1>
-            <div class="credits">OPERATIONAL SYSTEM v.4.4</div>
+            <div class="credits">Creato da Fulvio v.4.9_)300126</div>
         </header>
 
         <div id="menu">
@@ -31,15 +31,15 @@
                     </div>
                     
                     <div class="m-config-grid">
-                        <div class="m-row"><span>MIN:</span><input id="gameDuration" type="number" value="30"></div>
-                        <div class="m-row"><span>SEC:</span><input id="captureTime" type="number" value="180"></div>
+                        <div class="m-row"><span>MINUTI:</span><input id="gameDuration" type="number" value="30"></div>
+                        <div class="m-row"><span>CATTURA (SEC):</span><input id="captureTime" type="number" value="180"></div>
                     </div>
 
                     <p class="m-title">OBIETTIVI (CHECK PER ATTIVARE)</p>
                     <div id="objSlotContainer" class="slot-list"></div>
                     
                     <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 SALVA E AVVIA</button>
-                    <button class="btn-danger" onclick="resetBin()">🔥 RESET TOTALE</button>
+                    <button class="btn-danger" onclick="resetBin()">🔥 RESET TOTALE DATABASE</button>
                 </div>
             </div>
             
@@ -72,7 +72,6 @@
                 <button onclick="centerMap()" class="ext-btn">🎯</button>
                 <button onclick="map.zoomIn()" class="ext-btn">➕</button>
                 <button onclick="map.zoomOut()" class="ext-btn">➖</button>
-                <button onclick="location.reload()" class="ext-btn">🔄</button>
             </div>
         </div>
 
