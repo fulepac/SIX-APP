@@ -14,7 +14,8 @@ const DEFAULT_OBJS = [
 
 let state = { 
     isMaster: false, playerName: "", playerTeam: "", playerMarker: null, 
-    autoCenter: true, selectedMode: "DOMINATION", targetObj: null, navLine: null, startTime: null 
+    autoCenter: true, selectedMode: "DOMINATION", targetObj: null, navLine: null, startTime: null,
+    moving: false 
 };
 
 let activeMarkers = [];
@@ -77,9 +78,14 @@ async function loadConfigFromServer() {
     } catch(e) {}
 }
 
+// Rotazione tramite Bussola (Magnetometro)
 function handleRotation(e) {
     let compass = e.webkitCompassHeading || (360 - e.alpha);
-    if(compass) document.getElementById("map-rotate").style.transform = `rotate(${-compass}deg)`;
+    // Se siamo fermi (non c'è segnale GPS di movimento), usiamo la bussola
+    if(compass && !state.moving) {
+        document.getElementById("map-rotate").style.transform = `rotate(${-compass}deg)`;
+        document.getElementById("player-pointer").style.transform = `translate(-50%, -50%) rotate(${compass}deg)`;
+    }
 }
 
 function enableSensorsAndStart(isMasterAction) {
@@ -87,6 +93,7 @@ function enableSensorsAndStart(isMasterAction) {
     state.playerTeam = document.getElementById("teamSelect").value;
     if(!state.playerName) return alert("INSERISCI NOME!");
     localStorage.setItem("six_app_session", JSON.stringify({name: state.playerName, team: state.playerTeam}));
+    
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission().then(res => {
             if(res === 'granted') window.addEventListener('deviceorientation', handleRotation);
@@ -108,10 +115,23 @@ async function startGame() {
     document.getElementById("setup-screen").style.display = "none";
     document.getElementById("game-ui").style.display = "block";
     map.invalidateSize();
+    
     if ("geolocation" in navigator) {
         navigator.geolocation.watchPosition(
             (p) => {
                 const pos = [p.coords.latitude, p.coords.longitude];
+                const heading = p.coords.heading; // Direzione GPS (gradi rispetto al nord)
+                const speed = p.coords.speed || 0;
+
+                // Coordinamento Movimento: se velocità > 0.5 m/s, usa il Heading GPS
+                if (heading !== null && speed > 0.5) {
+                    state.moving = true;
+                    document.getElementById("map-rotate").style.transform = `rotate(${-heading}deg)`;
+                    document.getElementById("player-pointer").style.transform = `translate(-50%, -50%) rotate(${heading}deg)`;
+                } else {
+                    state.moving = false; // Torna alla bussola hardware se disponibile
+                }
+
                 if(!state.playerMarker) {
                     state.playerMarker = L.circleMarker(pos, {radius: 9, color: '#fff', fillColor: '#007bff', fillOpacity: 1, weight: 3}).addTo(map);
                     map.setView(pos, 18);
@@ -132,7 +152,12 @@ async function sync(forceMaster, duration) {
         const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
         let { record } = await res.json();
         if(!record.players) record.players = {};
-        record.players[state.playerName] = { team: state.playerTeam, lat: state.playerMarker?.getLatLng().lat || 0, lon: state.playerMarker?.getLatLng().lng || 0, last: Date.now() };
+        record.players[state.playerName] = { 
+            team: state.playerTeam, 
+            lat: state.playerMarker?.getLatLng().lat || 0, 
+            lon: state.playerMarker?.getLatLng().lng || 0, 
+            last: Date.now() 
+        };
 
         if(state.isMaster || forceMaster) {
             record.game = { 
@@ -143,7 +168,12 @@ async function sync(forceMaster, duration) {
             let newObjs = [];
             document.querySelectorAll(".obj-slot").forEach(s => {
                 if(s.querySelector(".s-active").checked) {
-                    newObjs.push({ name: s.querySelector(".s-name").value, lat: parseFloat(s.querySelector(".s-lat").value), lon: parseFloat(s.querySelector(".s-lon").value), owner: "LIBERO" });
+                    newObjs.push({ 
+                        name: s.querySelector(".s-name").value, 
+                        lat: parseFloat(s.querySelector(".s-lat").value), 
+                        lon: parseFloat(s.querySelector(".s-lon").value), 
+                        owner: "LIBERO" 
+                    });
                 }
             });
             if(newObjs.length > 0) record.objectives = newObjs;
