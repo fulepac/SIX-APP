@@ -1,69 +1,290 @@
-* { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-body { background: #000; color: #0f0; font-family: 'Courier New', monospace; margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+/* RESET E OTTIMIZZAZIONE MOBILE */
+* { 
+    box-sizing: border-box; 
+    outline: none; 
+    -webkit-tap-highlight-color: transparent; 
+    user-select: none;
+}
 
-/* Stile Combat */
-.brand-title { color: #0f0; font-size: 2.5rem; text-align: center; margin: 5px 0; text-shadow: 0 0 10px #0f0; font-weight: 900; letter-spacing: 5px; }
-.credits { text-align: center; color: #004400; font-size: 0.6rem; margin-bottom: 10px; }
+body { 
+    background: #000; 
+    color: #0f0; 
+    font-family: 'Courier New', monospace; 
+    margin: 0; 
+    padding: 0; 
+    height: 100vh; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+}
 
-#menu { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-input, select { background: rgba(0, 20, 0, 0.8); border: 1px solid #0f0; color: #0f0; padding: 15px; border-radius: 5px; font-size: 1.1rem; }
+/* SCHERMATA DI SETUP - STILE TATTICO */
+#setup-screen { 
+    padding: 20px; 
+    background: linear-gradient(180deg, #001100 0%, #000 100%);
+    height: 100%;
+    overflow-y: auto;
+}
 
-/* UI DI GIOCO - MASSIMIZZATA */
-#game-ui { height: 100vh; display: flex; flex-direction: column; }
+.brand-title { 
+    color: #0f0; 
+    font-size: 3rem; 
+    text-align: center; 
+    margin: 10px 0; 
+    text-shadow: 0 0 15px #0f0; 
+    font-weight: 900; 
+    letter-spacing: 4px;
+}
+
+.credits { 
+    text-align: center; 
+    color: #006600; 
+    font-size: 0.7rem; 
+    margin-bottom: 30px; 
+    text-transform: uppercase;
+}
+
+#menu { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+    max-width: 500px; 
+    margin: 0 auto; 
+}
+
+input, select { 
+    background: rgba(0, 30, 0, 0.7); 
+    border: 2px solid #0f0; 
+    color: #0f0; 
+    padding: 18px; 
+    border-radius: 5px; 
+    font-size: 1.2rem; 
+    font-weight: bold;
+}
+
+/* BOTTONI MODALITÀ */
+.mode-selector { display: flex; gap: 10px; }
+.mode-btn { 
+    flex: 1; 
+    background: #000; 
+    color: #0f0; 
+    border: 2px solid #0f0; 
+    padding: 15px; 
+    font-weight: bold; 
+    text-transform: uppercase;
+}
+.mode-btn.active { 
+    background: #0f0 !important; 
+    color: #000 !important; 
+    box-shadow: 0 0 20px #0f0; 
+}
+
+/* UI DI GIOCO - LAYOUT MASSIMIZZATO */
+#game-ui { 
+    height: 100vh; 
+    display: flex; 
+    flex-direction: column; 
+}
 
 .top-bar { 
-    display: flex; justify-content: space-between; align-items: center; 
-    background: rgba(0, 40, 0, 0.9); padding: 5px 15px; 
-    border-bottom: 2px solid #0f0; height: 50px; z-index: 10;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    background: #000; 
+    padding: 10px 15px; 
+    border-bottom: 2px solid #0f0; 
+    z-index: 100;
 }
 
-/* MAPPA GIGANTE */
-.map-system { flex-grow: 1; position: relative; width: 100%; overflow: hidden; }
-.map-main-container { width: 100%; height: 100%; position: relative; }
+.countdown-display { 
+    color: #f00; 
+    font-weight: 900; 
+    font-size: 1.2rem; 
+    text-shadow: 0 0 5px #f00;
+}
 
+.score-box { 
+    display: inline-block;
+    padding: 5px 12px; 
+    border-radius: 3px; 
+    font-weight: bold; 
+    margin-left: 5px;
+}
+.score-box.red { background: #400; color: #f00; border: 1px solid #f00; }
+.score-box.blue { background: #004; color: #0ff; border: 1px solid #0ff; }
+
+/* SISTEMA MAPPA FULL SCREEN */
+.map-system { 
+    flex-grow: 1; 
+    position: relative; 
+    width: 100%; 
+    background: #000;
+}
+
+.map-main-container { 
+    width: 100%; 
+    height: 100%; 
+    position: relative; 
+}
+
+/* ROTAZIONE COORDINATA */
 #map-rotate { 
-    width: 100%; height: 100%; 
-    transition: transform 0.5s cubic-bezier(0.1, 0.7, 0.1, 1); 
+    width: 100%; 
+    height: 100%; 
+    transition: transform 0.5s cubic-bezier(0.1, 0.8, 0.2, 1); 
 }
-#map { width: 100%; height: 100%; background: #000; }
 
-/* PUNTATORE TATTICO */
+#map { 
+    width: 100%; 
+    height: 100%; 
+}
+
+/* PUNTATORE HUD */
 #player-pointer { 
-    position: absolute; top: 50%; left: 50%; 
+    position: absolute; 
+    top: 50%; 
+    left: 50%; 
     transform: translate(-50%, -50%); 
-    z-index: 1000; color: #0f0; font-size: 40px; 
-    pointer-events: none; text-shadow: 0 0 15px #0f0;
+    z-index: 1000; 
+    color: #0f0; 
+    font-size: 45px; 
+    pointer-events: none; 
+    text-shadow: 0 0 15px #000, 0 0 5px #0f0;
 }
 
-/* COMANDI SMARTPHONE (LATERALI PER POLLICE) */
+/* CONTROLLI SMARTPHONE (LATERALE DESTRA PER POLLICE) */
 .map-controls-external { 
-    position: absolute; right: 10px; top: 50%; 
-    transform: translateY(-50%); display: flex; 
-    flex-direction: column; gap: 15px; z-index: 5000; 
+    position: absolute; 
+    right: 15px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px; 
+    z-index: 5000; 
 }
+
 .ext-btn { 
-    width: 60px; height: 60px; background: rgba(0,0,0,0.7); 
-    border: 2px solid #0f0; color: #0f0; border-radius: 50%; 
-    font-size: 1.5rem; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 0 10px rgba(0,255,0,0.3);
+    width: 65px; 
+    height: 65px; 
+    background: rgba(0, 0, 0, 0.8); 
+    border: 2px solid #0f0; 
+    color: #0f0; 
+    border-radius: 50%; 
+    font-size: 1.8rem; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
 }
 
-/* HUD INFERIORE RIDOTTO */
+.ext-btn:active { background: #0f0; color: #000; }
+
+/* HUD INFERIORE (RADAR E OBIETTIVI) */
 .game-info-container { 
-    display: grid; grid-template-columns: 1fr 1fr; gap: 2px; 
-    height: 100px; background: #000; border-top: 2px solid #0f0;
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    height: 120px; 
+    background: #000; 
+    border-top: 2px solid #0f0;
+    z-index: 100;
 }
-.info-section { padding: 5px; overflow-y: auto; font-size: 0.8rem; border-right: 1px solid #040; }
-.info-section h3 { font-size: 0.7rem; margin: 2px 0; color: #0a0; }
 
-.data-list li { padding: 5px; border-bottom: 1px solid #020; display: flex; justify-content: space-between; }
+.info-section { 
+    padding: 8px; 
+    overflow-y: auto; 
+    border-right: 1px solid #040;
+}
 
-/* Navigazione */
+.info-section h3 { 
+    font-size: 0.7rem; 
+    margin: 0 0 5px 0; 
+    color: #0a0; 
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.data-list { 
+    list-style: none; 
+    padding: 0; 
+    margin: 0; 
+    font-size: 0.85rem; 
+}
+
+.data-list li { 
+    padding: 8px 0; 
+    border-bottom: 1px solid #111; 
+    display: flex; 
+    justify-content: space-between;
+    color: #ccc;
+}
+
+.data-list li span { color: #0f0; font-weight: bold; }
+
+/* NAVIGAZIONE HUD */
 .nav-hud { 
-    position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
-    width: 90%; background: rgba(0,0,0,0.8); border: 1px solid yellow; 
-    color: yellow; padding: 10px; border-radius: 5px; z-index: 2000;
-    text-align: center; font-weight: bold;
+    position: absolute; 
+    top: 15px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    width: 85%; 
+    background: rgba(0, 0, 0, 0.9); 
+    border: 2px solid yellow; 
+    color: yellow; 
+    padding: 12px; 
+    border-radius: 5px; 
+    z-index: 2000; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    font-weight: bold;
+    box-shadow: 0 0 20px rgba(0,0,0,1);
 }
 
-.btn-start { background: #0f0; color: #000; padding: 20px; font-weight: 900; font-size: 1.2rem; border-radius: 5px; width: 100%; border: none; box-shadow: 0 0 20px #0f0; }
+.nav-stop-btn { 
+    background: #f00; 
+    color: #fff; 
+    border: none; 
+    padding: 8px 15px; 
+    border-radius: 3px; 
+    font-weight: bold;
+}
+
+/* BOTTONI AZIONE */
+.btn-start { 
+    background: #0f0; 
+    color: #000; 
+    padding: 22px; 
+    font-weight: 900; 
+    font-size: 1.4rem; 
+    border-radius: 5px; 
+    width: 100%; 
+    border: none; 
+    box-shadow: 0 0 25px rgba(0, 255, 0, 0.5);
+    text-transform: uppercase;
+}
+
+.exit-btn { 
+    position: absolute; 
+    top: 80px; 
+    left: 15px; 
+    background: rgba(255, 0, 0, 0.2); 
+    color: #f66; 
+    border: 1px solid #f00; 
+    padding: 8px 12px; 
+    border-radius: 4px; 
+    z-index: 5000; 
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* LEAFLET OVERRIDES */
+.obj-label { 
+    background: transparent !important; 
+    border: none !important; 
+    box-shadow: none !important; 
+    color: white !important; 
+    font-weight: 900 !important; 
+    text-shadow: 2px 2px 4px #000 !important; 
+    font-size: 14px !important;
+}
