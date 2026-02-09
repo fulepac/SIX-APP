@@ -3,22 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP TACTICAL v.10.0</title>
+    <title>SIX APP TACTICAL v.11.5</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="setup-screen">
-        <div class="version-tag">SIX APP v.10.0 STABLE</div>
+        <div class="version-tag">STABLE BUILD v.11.5</div>
         <h1 class="brand-title">SIX APP</h1>
         
-        <div id="briefing" class="briefing-box">
-            <p><strong>OPORD - ISTRUZIONI:</strong></p>
+        <div class="briefing-box">
+            <p><strong>OPORD (ISTRUZIONI):</strong></p>
             <ul>
-                <li>Inserisci Nome e scegli il Team.</li>
-                <li>Il Master imposta tempi e coordinate OBJ.</li>
-                <li>Per catturare un OBJ: resta nel raggio di 15m.</li>
-                <li>Il radar mostra solo i compagni di squadra.</li>
+                <li><strong>GPS:</strong> Attiva la geolocalizzazione ad alta precisione.</li>
+                <li><strong>BUSSOLA:</strong> Al click su "START", accetta la richiesta dei sensori.</li>
+                <li><strong>NAVIGAZIONE:</strong> Clicca un obiettivo in lista per avere la distanza.</li>
             </ul>
         </div>
 
@@ -26,11 +25,11 @@
             <input id="playerName" type="text" placeholder="NOME OPERATORE">
             
             <div class="team-settings">
-                <input id="nameRed" type="text" value="ATTACCO" placeholder="NOME TEAM ROSSO">
-                <input id="nameBlue" type="text" value="DIFESA" placeholder="NOME TEAM BLU">
+                <input id="nameRed" type="text" value="ATTACCO" placeholder="TEAM ROSSO">
+                <input id="nameBlue" type="text" value="DIFESA" placeholder="TEAM BLU">
                 <select id="teamSelect">
-                    <option value="RED">TEAM ROSSO</option>
-                    <option value="BLUE">TEAM BLU</option>
+                    <option value="RED">UNITÀ ROSSA</option>
+                    <option value="BLUE">UNITÀ BLU</option>
                 </select>
             </div>
             
@@ -43,16 +42,16 @@
                     </div>
                     <div id="masterObjInputs"></div>
                     <button type="button" class="btn-sub" onclick="addObjRow()">➕ AGGIUNGI OBJ</button>
-                    <button class="btn-danger" onclick="resetDatabase()">🔥 RESET E START</button>
+                    <button class="btn-danger" onclick="resetDatabase()">🔥 RESET TOTALE</button>
                 </div>
             </div>
-            <button class="btn-start" onclick="initApp()">▶ INIZIA MISSIONE</button>
+            <button class="btn-start" onclick="initApp()">▶ ATTIVA E START</button>
         </div>
     </div>
 
     <div id="game-ui" style="display:none;">
         <div class="top-bar">
-            <div id="timer">⏱️ 00:00</div>
+            <div id="timer">⏱️ --:--</div>
             <div id="score">R: 0 | B: 0</div>
         </div>
         
