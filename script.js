@@ -4,9 +4,9 @@ const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 const PWD_MASTER = "71325";
 
 const DEFAULT_OBJS = [
-    { name: "ALFA", lat: 45.2377, lon: 8.8097, owner: "LIBERO" },
-    { name: "BRAVO", lat: 45.2385, lon: 8.8105, owner: "LIBERO" },
-    { name: "CHARLIE", lat: 45.2369, lon: 8.8115, owner: "LIBERO" }
+    { name: "ALFA", lat: 45.2377, lon: 8.8097, owner: "LIBERO", progress: 0, capturingTeam: null },
+    { name: "BRAVO", lat: 45.2385, lon: 8.8105, owner: "LIBERO", progress: 0, capturingTeam: null },
+    { name: "CHARLIE", lat: 45.2369, lon: 8.8115, owner: "LIBERO", progress: 0, capturingTeam: null }
 ];
 
 let state = { 
@@ -16,7 +16,6 @@ let state = {
 
 let activeMarkers = [];
 let map;
-let captureTimers = {}; // { "ALFA": { team: 'RED', seconds: 0 } }
 
 window.onload = () => {
     map = L.map("map", { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
@@ -62,7 +61,6 @@ async function loadConfigFromServer() {
 function handleRotation(e) {
     let compass = e.webkitCompassHeading || (360 - e.alpha);
     if(compass) {
-        // Punto 6: Ruota la mappa e segui il movimento
         document.getElementById("map-rotate").style.transform = `rotate(${-compass}deg)`;
     }
 }
@@ -121,34 +119,36 @@ async function sync(forceMaster, duration) {
 
         const captureRequired = parseInt(document.getElementById("captureTime")?.value || 180);
 
-        // LOGICA DI CONQUISTA (Punti 1, 2, 3)
+        // LOGICA DI CONQUISTA E CONTESA (Richieste 1, 2, 3)
         record.objectives.forEach(obj => {
             let playersInRadius = Object.values(record.players).filter(p => (Date.now() - p.last < 10000) && getDist(p.lat, p.lon, obj.lat, obj.lon) <= 15);
             let redHere = playersInRadius.some(p => p.team === 'RED');
             let blueHere = playersInRadius.some(p => p.team === 'BLUE');
 
             if (redHere && blueHere) {
-                obj.contested = true; // Punto 3: Segnala contesa
+                obj.isContested = true; 
             } else {
-                obj.contested = false;
+                obj.isContested = false;
                 let activeTeam = redHere ? 'RED' : (blueHere ? 'BLUE' : null);
+
+                // Requisito 2: Per riconquistare non deve esserci il team precedente
+                let ownerPresent = (obj.owner === 'RED' && redHere) || (obj.owner === 'BLUE' && blueHere);
                 
-                // Punto 2: Conquista solo se il proprietario non c'è
-                if (activeTeam && (obj.owner === "LIBERO" || obj.owner !== activeTeam)) {
-                    if (!captureTimers[obj.name] || captureTimers[obj.name].team !== activeTeam) {
-                        captureTimers[obj.name] = { team: activeTeam, seconds: 0 };
-                    }
-                    captureTimers[obj.name].seconds += 4;
-                    if (captureTimers[obj.name].seconds >= captureRequired) {
+                if (activeTeam && !ownerPresent && obj.owner !== activeTeam) {
+                    obj.capturingTeam = activeTeam;
+                    obj.progress = (obj.progress || 0) + 4;
+                    if (obj.progress >= captureRequired) {
                         obj.owner = activeTeam;
-                        captureTimers[obj.name].seconds = 0;
+                        obj.progress = 0;
                     }
-                } else {
-                    if(captureTimers[obj.name]) captureTimers[obj.name].seconds = 0;
+                } else if (!activeTeam || ownerPresent) {
+                    obj.progress = 0;
+                    obj.capturingTeam = null;
                 }
             }
         });
 
+        // Gestione Master e Punteggio
         if(state.isMaster || forceMaster) {
             record.game = { 
                 mode: state.selectedMode, 
@@ -166,7 +166,7 @@ async function sync(forceMaster, duration) {
                 let newObjs = [];
                 document.querySelectorAll(".obj-slot").forEach(s => {
                     if(s.querySelector(".s-active").checked) {
-                        newObjs.push({ name: s.querySelector(".s-name").value, lat: parseFloat(s.querySelector(".s-lat").value), lon: parseFloat(s.querySelector(".s-lon").value), owner: "LIBERO" });
+                        newObjs.push({ name: s.querySelector(".s-name").value, lat: parseFloat(s.querySelector(".s-lat").value), lon: parseFloat(s.querySelector(".s-lon").value), owner: "LIBERO", progress: 0 });
                     }
                 });
                 record.objectives = newObjs;
@@ -174,32 +174,34 @@ async function sync(forceMaster, duration) {
         }
         await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
         updateUI(record);
-    } catch(e) {}
+    } catch(e) { console.error("Sync Error:", e); }
 }
 
 function updateUI(r) {
     activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
     
-    // Timer e Score
+    // Timer
     const timerEl = document.getElementById("timer");
     const remain = ((r.game.duration || 30) * 60) - Math.floor((Date.now() - r.game.start) / 1000);
     if(remain > 0) {
         const m = Math.floor(remain / 60); const s = remain % 60;
         timerEl.innerText = `⏱️ ${m}:${s < 10 ? '0'+s : s}`;
     } else { timerEl.innerText = "FINE"; }
+    
     document.getElementById("scoreRed").innerText = Math.floor(r.game.scoreRed/10);
     document.getElementById("scoreBlue").innerText = Math.floor(r.game.scoreBlue/10);
 
-    // Liste Obiettivi (Punto 5: Visibili senza scorrere in landscape)
+    // Lista Obiettivi (Richiesta 5: Senza scorrere)
     const scoreboard = document.getElementById("scoreboard");
     scoreboard.innerHTML = "";
     r.objectives.forEach(obj => {
         let color = obj.owner === 'RED' ? '#f00' : (obj.owner === 'BLUE' ? '#0ff' : '#fff');
-        let statusText = obj.contested ? '<span style="color:yellow">! CONTESA !</span>' : obj.owner;
+        let status = obj.isContested ? '<span style="color:yellow">! CONTESA !</span>' : 
+                    (obj.progress > 0 ? `CATTURA ${obj.capturingTeam} ${Math.round((obj.progress/parseInt(document.getElementById("captureTime")?.value || 180))*100)}%` : obj.owner);
         
-        scoreboard.innerHTML += `<li style="border-left:5px solid ${color}"><b>${obj.name}</b>: ${statusText}</li>`;
+        scoreboard.innerHTML += `<li style="border-left:5px solid ${color}"><b>${obj.name}</b>: ${status}</li>`;
         
-        let m = L.circle([obj.lat, obj.lon], {radius: 15, color: obj.contested ? 'yellow' : color, weight: 3, fillOpacity: 0.2}).addTo(map);
+        let m = L.circle([obj.lat, obj.lon], {radius: 15, color: obj.isContested ? 'yellow' : color, weight: 3, fillOpacity: 0.3}).addTo(map);
         activeMarkers.push(m);
     });
 
@@ -216,7 +218,7 @@ function updateUI(r) {
 }
 
 function getDist(lat1, lon1, lat2, lon2) {
-    if(!lat1 || !lat2) return 0;
+    if(!lat1 || !lat2) return 999;
     const R = 6371000;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
