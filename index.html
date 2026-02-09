@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX-APP OPERATOR v.27</title>
+    <title>SIX-APP OPERATOR v.28</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -11,87 +11,67 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; font-weight: bold; }
         body { background: var(--bg); color: var(--mil-green); height: 100vh; overflow: hidden; }
 
-        /* BLOCCO ORIENTAMENTO */
         #rotate-warning { position: fixed; inset: 0; background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
         @media (orientation: landscape) { #rotate-warning { display: none; } }
-        .rotate-icon { font-size: 4rem; margin-bottom: 20px; animation: rotate 2s infinite; }
-        @keyframes rotate { 0% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } 100% { transform: rotate(0deg); } }
-
-        /* LOGIN / SETUP */
+        
         #setup { position: fixed; inset: 0; background: #050505; z-index: 10000; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; border: 10px solid #111; }
         .m-title { font-size: 2.5rem; letter-spacing: 5px; border: 2px solid var(--mil-green); padding: 10px 30px; margin: 20px 0; }
-        .login-container { width: 100%; max-width: 600px; }
-        input, select, button { width: 100%; padding: 12px; background: #000; border: 1px solid var(--mil-green); color: var(--mil-green); border-radius: 0; margin-bottom: 10px; text-transform: uppercase; font-size: 0.9rem; }
-        button:active { background: var(--mil-green); color: #000; }
-        #btn-compass.ready { background: var(--dim-green); color: #fff; border-color: #fff; box-shadow: 0 0 15px var(--mil-green); }
+        
+        input, select, button { width: 100%; padding: 12px; background: #000; border: 1px solid var(--mil-green); color: var(--mil-green); border-radius: 0; margin-bottom: 10px; text-transform: uppercase; }
+        #btn-compass.ready { background: var(--dim-green); color: #fff; border-color: #fff; }
 
-        /* MASTER PANEL */
-        #master-panel { display: none; border: 1px dashed var(--warn); padding: 15px; color: var(--warn); margin-top: 20px; text-align: left; }
+        #master-panel { display: none; border: 1px dashed var(--warn); padding: 15px; color: var(--warn); margin-top: 20px; width: 100%; max-width: 600px; }
         .m-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .m-row input { border-color: var(--warn); color: var(--warn); font-size: 0.7rem; }
+        .m-row input { border-color: var(--warn); color: var(--warn); }
 
-        /* INTERFACCIA GIOCO (LANDSCAPE) */
         #game { display: none; height: 100vh; width: 100vw; flex-direction: column; }
-        .hud-header { height: 40px; background: #000; border-bottom: 1px solid var(--mil-green); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; font-size: 0.8rem; z-index: 1000; }
+        .hud-header { height: 40px; background: #000; border-bottom: 1px solid var(--mil-green); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 1000; }
         
         .main-ui { flex-grow: 1; display: flex; overflow: hidden; }
         #map-wrap { flex-grow: 1; position: relative; background: #000; }
         #map { width: 100%; height: 100%; }
 
-        /* MIRINO TATTICO SOTTILE */
         #crosshair { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; transform: translate(-50%, -50%); z-index: 2000; pointer-events: none; }
         #crosshair::before { content: ''; position: absolute; top: 25px; left: 0; width: 50px; height: 1px; background: rgba(255,255,255,0.4); }
         #crosshair::after { content: ''; position: absolute; left: 25px; top: 0; width: 1px; height: 50px; background: rgba(255,255,255,0.4); }
 
-        /* NAVIGAZIONE */
         #nav-line { position: absolute; top: 50%; left: 50%; width: 2px; height: 200px; background: linear-gradient(to top, transparent, var(--mil-green)); transform-origin: bottom center; z-index: 1500; display: none; }
-        #nav-dist { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: #000; border: 1px solid var(--mil-green); padding: 2px 6px; font-size: 0.7rem; white-space: nowrap; }
+        #nav-dist { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: #000; border: 1px solid var(--mil-green); padding: 2px 6px; font-size: 0.8rem; }
 
         .btn-center { position: absolute; bottom: 20px; left: 20px; width: 55px; height: 55px; border-radius: 50%; background: rgba(0,0,0,0.8); border: 2px solid var(--mil-green); color: var(--mil-green); z-index: 2500; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
         .btn-center.active { background: var(--mil-green); color: #000; }
 
-        /* SIDEBAR COMPATTA */
         #sidebar { width: 220px; background: #000; border-left: 1px solid var(--mil-green); display: flex; flex-direction: column; z-index: 1000; }
-        .list-box { flex: 1; overflow-y: auto; padding: 10px; border-bottom: 1px solid #111; }
-        .list-box h3 { font-size: 0.6rem; color: #444; margin-bottom: 5px; letter-spacing: 1px; }
-        ul { list-style: none; }
-        li { padding: 10px 5px; border-bottom: 1px solid #111; font-size: 0.75rem; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .list-box { flex: 1; overflow-y: auto; padding: 10px; }
+        li { padding: 10px 5px; border-bottom: 1px solid #111; font-size: 0.75rem; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="rotate-warning">
-        <div class="rotate-icon">🔄</div>
-        <h2>RUOTARE IL DISPOSITIVO</h2>
-        <p>L'app funziona esclusivamente in modalità orizzontale.</p>
-    </div>
+    <div id="rotate-warning"><h2>RUOTARE IL DISPOSITIVO 🔄</h2></div>
 
     <div id="setup">
-        <div class="m-title">SIX-APP v.27</div>
-        <div class="login-container">
-            <input type="text" id="pName" placeholder="CALLSIGN OPERATORE">
-            <select id="pTeam">
-                <option value="RED">TEAM ALPHA (RED)</option>
-                <option value="BLUE">TEAM BRAVO (BLUE)</option>
-            </select>
-            <button id="btn-compass" onclick="requestSensors()">SBLOCCA BUSSOLA (OBBLIGATORIO)</button>
-            <button onclick="startGame()" style="background:#004400; border-color:#0f0; margin-top:10px;">AVVIA MISSIONE</button>
+        <div class="m-title">SIX-APP v.28</div>
+        <div style="width:100%; max-width:600px;">
+            <input type="text" id="pName" placeholder="CALLSIGN">
+            <select id="pTeam"><option value="RED">ALPHA (RED)</option><option value="BLUE">BRAVO (BLUE)</option></select>
+            <button id="btn-compass" onclick="requestSensors()">SBLOCCA BUSSOLA</button>
+            <button onclick="startGame()" style="background:#004400;">AVVIA MISSIONE</button>
 
-            <input type="password" id="mPass" placeholder="ADMIN PIN" oninput="checkMaster()" style="margin-top:30px; border-color:#333; font-size:0.7rem;">
-            
+            <input type="password" id="mPass" placeholder="ADMIN PIN" oninput="checkMaster()" style="margin-top:30px; border-color:#333;">
             <div id="master-panel">
                 <div class="m-row">
                     <input type="text" id="cfgRed" placeholder="Nome Red">
                     <input type="text" id="cfgBlue" placeholder="Nome Blue">
                 </div>
                 <div class="m-row">
-                    <select id="cfgMode"><option value="DOMINIO">DOMINIO</option><option value="RECON">RECON</option></select>
-                    <input type="number" id="cfgDur" placeholder="Minuti">
+                    <input type="number" id="cfgDur" placeholder="Minuti Partita">
+                    <input type="number" id="cfgCap" placeholder="Sec. Cattura">
                 </div>
-                <button onclick="toggleCoord()" id="coord-btn" style="color:#f90; font-size:0.7rem;">MODALITÀ: GPS</button>
+                <button onclick="toggleCoord()" id="coord-btn">MODO: GPS</button>
                 <div id="obj-editor"></div>
-                <button onclick="addObjRow()" style="border-color:#f90; font-size:0.7rem;">+ AGGIUNGI OBJ</button>
-                <div class="m-row" style="margin-top:10px;">
+                <button onclick="addObjRow()" style="border-color:#f90;">+ AGGIUNGI OBJ</button>
+                <div class="m-row">
                     <button onclick="saveCloud(false)" style="color:cyan;">SALVA</button>
                     <button onclick="saveCloud(true)" style="color:orange;">RESET</button>
                 </div>
@@ -103,9 +83,8 @@
         <div class="hud-header">
             <span id="timer">00:00</span>
             <span id="score">0 - 0</span>
-            <button onclick="location.reload()" style="width:auto; border-color:red; color:red; padding:2px 10px; font-size:0.6rem;">CHIUDI</button>
+            <button onclick="location.reload()" style="width:auto; border-color:red; color:red; padding:2px 8px;">ESCI</button>
         </div>
-        
         <div class="main-ui">
             <div id="map-wrap">
                 <div id="map"></div>
@@ -113,11 +92,9 @@
                 <div id="nav-line"><div id="nav-dist">0M</div></div>
                 <div id="recenter-btn" onclick="forceFollow()" class="btn-center active">🎯</div>
             </div>
-            
             <div id="sidebar">
-                <div class="list-box"><h3>OBIETTIVI</h3><ul id="ui-objs"></ul></div>
-                <div class="list-box"><h3>TEAM</h3><ul id="ui-team"></ul></div>
-                <button onclick="stopNav()" id="nav-stop" style="display:none; margin:5px; font-size:0.6rem; color:red; border-color:red;">STOP NAV</button>
+                <div class="list-box"><ul id="ui-objs"></ul></div>
+                <div class="list-box"><ul id="ui-team"></ul></div>
             </div>
         </div>
     </div>
@@ -142,7 +119,6 @@
                 if(state.map) document.getElementById('map').style.transform = `rotate(${-state.hd}deg)`;
             });
             document.getElementById("btn-compass").classList.add("ready");
-            document.getElementById("btn-compass").innerText = "✓ BUSSOLA ATTIVA";
         }
 
         function checkMaster() {
@@ -153,14 +129,11 @@
             }
         }
 
-        function toggleCoord() {
-            state.coordType = state.coordType === 'GPS' ? '32T' : 'GPS';
-            document.getElementById("coord-btn").innerText = "MODALITÀ: " + state.coordType;
-        }
+        function toggleCoord() { state.coordType = state.coordType === 'GPS' ? '32T' : 'GPS'; document.getElementById("coord-btn").innerText = "MODO: " + state.coordType; }
 
         function addObjRow(n="", c1="", c2="") {
             const d = document.createElement("div"); d.className = "m-row";
-            d.innerHTML = `<input type="text" class="o-n" value="${n}" placeholder="OBJ" style="width:30%"><input type="number" class="o-1" value="${c1}" placeholder="C1" style="width:35%"><input type="number" class="o-2" value="${c2}" placeholder="C2" style="width:35%">`;
+            d.innerHTML = `<input type="text" class="o-n" value="${n}" placeholder="NOME"><input type="number" class="o-1" value="${c1}" placeholder="C1"><input type="number" class="o-2" value="${c2}" placeholder="C2">`;
             document.getElementById("obj-editor").appendChild(d);
         }
 
@@ -169,8 +142,8 @@
             let r = (await res.json()).record;
             document.getElementById("cfgRed").value = r.game.names.RED;
             document.getElementById("cfgBlue").value = r.game.names.BLUE;
-            document.getElementById("cfgMode").value = r.game.mode;
             document.getElementById("cfgDur").value = r.game.duration;
+            document.getElementById("cfgCap").value = r.game.capTime || 60;
             document.getElementById("obj-editor").innerHTML = "";
             r.objectives.forEach(o => addObjRow(o.name, o.lat, o.lon));
         }
@@ -192,23 +165,28 @@
                     objs.push({ name: n, lat, lon, owner: "LIBERO", progress: 0 });
                 }
             });
-            r.game = { start: reset ? Date.now() : r.game.start, mode: document.getElementById("cfgMode").value, duration: document.getElementById("cfgDur").value, names: { RED: document.getElementById("cfgRed").value, BLUE: document.getElementById("cfgBlue").value }, scoreRed: reset ? 0 : r.game.scoreRed, scoreBlue: reset ? 0 : r.game.scoreBlue };
+            r.game = { 
+                start: reset ? Date.now() : r.game.start, 
+                duration: document.getElementById("cfgDur").value, 
+                capTime: document.getElementById("cfgCap").value,
+                names: { RED: document.getElementById("cfgRed").value, BLUE: document.getElementById("cfgBlue").value },
+                scoreRed: reset ? 0 : r.game.scoreRed, 
+                scoreBlue: reset ? 0 : r.game.scoreBlue
+            };
             r.objectives = objs;
             await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(r) });
-            alert("SISTEMA AGGIORNATO");
+            alert("OK");
         }
 
         function startGame() {
             state.name = document.getElementById("pName").value.toUpperCase();
             state.team = document.getElementById("pTeam").value;
-            if(!state.name) return alert("CALLSIGN?");
+            if(!state.name) return;
             document.getElementById("setup").style.display = "none";
             document.getElementById("game").style.display = "flex";
-            
             state.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([45, 9], 18);
             L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}').addTo(state.map);
             state.map.on('dragstart', () => { state.follow = false; document.getElementById("recenter-btn").classList.remove("active"); });
-
             navigator.geolocation.watchPosition(p => { state.lat = p.coords.latitude; state.lon = p.coords.longitude; }, null, { enableHighAccuracy: true });
             setInterval(loop, 3000);
             render();
@@ -234,15 +212,26 @@
                 let r = (await res.json()).record;
                 r.players[state.name] = { team: state.team, lat: state.lat, lon: state.lon, last: Date.now() };
                 
-                if(r.game.mode === "DOMINIO") {
-                    r.objectives.forEach(o => {
-                        if(getD(state.lat, state.lon, o.lat, o.lon) < 20 && o.owner !== state.team) {
-                            o.progress += 3;
-                            if(o.progress >= 60) { o.owner = state.team; o.progress = 0; }
-                        }
-                    });
-                    if(state.isMaster) r.objectives.forEach(o => { if(o.owner==='RED') r.game.scoreRed++; if(o.owner==='BLUE') r.game.scoreBlue++; });
-                }
+                // TIMER
+                let totalSec = r.game.duration * 60;
+                let elapsed = Math.floor((Date.now() - r.game.start) / 1000);
+                let remain = totalSec - elapsed;
+                if(remain < 0) remain = 0;
+                document.getElementById("timer").innerText = `${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}`;
+
+                // CATTURA OBIETTIVI
+                r.objectives.forEach(o => {
+                    let d = getD(state.lat, state.lon, o.lat, o.lon);
+                    if(d < 20 && o.owner !== state.team) {
+                        o.progress = (o.progress || 0) + 3;
+                        if(o.progress >= (r.game.capTime || 60)) { o.owner = state.team; o.progress = 0; }
+                    }
+                    if(state.isMaster && o.owner !== "LIBERO") {
+                        if(o.owner === "RED") r.game.scoreRed++;
+                        if(o.owner === "BLUE") r.game.scoreBlue++;
+                    }
+                });
+
                 await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(r) });
                 
                 const uiO = document.getElementById("ui-objs"); uiO.innerHTML = "";
@@ -250,8 +239,8 @@
                 r.objectives.forEach(o => {
                     let c = o.owner === 'RED' ? '#f00' : (o.owner === 'BLUE' ? '#0ff' : '#fff');
                     let li = document.createElement("li"); li.style.color = c;
-                    li.innerHTML = `[${o.owner[0]}] ${o.name} ${o.progress > 0 ? '...' : ''}`;
-                    li.onclick = () => { state.target = o; document.getElementById("nav-stop").style.display="block"; };
+                    li.innerHTML = `${o.name} [${o.owner}] ${o.progress > 0 ? '⚡' : ''}`;
+                    li.onclick = () => { state.target = o; };
                     uiO.appendChild(li);
                     state.markers.push(L.circle([o.lat, o.lon], { radius: 15, color: c, weight: 1, fillOpacity: 0.2 }).addTo(state.map));
                 });
@@ -259,7 +248,6 @@
             } catch(e){}
         }
 
-        function stopNav() { state.target = null; document.getElementById("nav-line").style.display = "none"; document.getElementById("nav-stop").style.display = "none"; }
         function getD(la1, lo1, la2, lo2) {
             const R = 6371000;
             const a = Math.sin(((la2-la1)*Math.PI/180)/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(((lo2-lo1)*Math.PI/180)/2)**2;
@@ -272,4 +260,5 @@
         }
     </script>
 </body>
+</html>
 </html>
