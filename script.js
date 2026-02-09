@@ -2,46 +2,45 @@ const BIN_ID = "696d4940ae596e708fe53514";
 const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
 const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
+// Obiettivi di default se il database è vuoto
 const DEFAULT_OBJS = [
-    { name: "ALFA", lat: 45.2377, lon: 8.8097, owner: "LIBERO", progress: 0 },
-    { name: "BRAVO", lat: 45.2385, lon: 8.8105, owner: "LIBERO", progress: 0 },
-    { name: "CHARLIE", lat: 45.2369, lon: 8.8115, owner: "LIBERO", progress: 0 },
-    { name: "DELTA", lat: 45.2392, lon: 8.8085, owner: "LIBERO", progress: 0 },
-    { name: "ECHO", lat: 45.2360, lon: 8.8075, owner: "LIBERO", progress: 0 }
+    { name: "ALFA", lat: 45.2377, lon: 8.8097 },
+    { name: "BRAVO", lat: 45.2385, lon: 8.8105 },
+    { name: "CHARLIE", lat: 45.2369, lon: 8.8115 },
+    { name: "DELTA", lat: 45.2392, lon: 8.8085 },
+    { name: "ECHO", lat: 45.2360, lon: 8.8075 }
 ];
 
 let state = {
-    isMaster: false, playerName: "", playerTeam: "", playerMarker: null,
-    autoCenter: true, selectedMode: "DOMINATION", targetObj: null, navLine: null,
-    activeMarkers: [], selectedObjIndices: [0,1,2,3,4]
+    isMaster: false, playerName: "", playerTeam: "", 
+    playerMarker: null, autoCenter: true, selectedMode: "DOMINATION",
+    targetObj: null, navLine: null, activeMarkers: []
 };
 
 let map;
 
-// INIZIALIZZAZIONE MASTER
+// --- GESTIONE MASTER ---
+
 function checkMasterPass() {
     if(document.getElementById("masterPass").value === "71325") {
         state.isMaster = true;
         document.getElementById("masterTools").style.display = "block";
-        renderMasterObjList();
+        initMasterObjEditor();
     }
 }
 
-function renderMasterObjList() {
-    const container = document.getElementById("masterObjList");
-    container.innerHTML = DEFAULT_OBJS.map((obj, i) => `
-        <div class="obj-item">
-            <input type="checkbox" checked onchange="toggleObj(${i})"> ${obj.name}
-        </div>
-    `).join('');
-}
-
-function toggleObj(index) {
-    if(state.selectedObjIndices.includes(index)) {
-        state.selectedObjIndices = state.selectedObjIndices.filter(i => i !== index);
-    } else {
-        state.selectedObjIndices.push(index);
-    }
+function initMasterObjEditor() {
+    const container = document.getElementById("masterObjInputs");
+    container.innerHTML = ""; // Pulisci
+    DEFAULT_OBJS.forEach((obj, i) => {
+        container.innerHTML += `
+            <div class="obj-row-edit" id="row-obj-${i}">
+                <input type="text" class="obj-name-in" value="${obj.name}" id="name-${i}">
+                <input type="number" class="obj-coord-in" value="${obj.lat}" id="lat-${i}" step="0.0001">
+                <input type="number" class="obj-coord-in" value="${obj.lon}" id="lon-${i}" step="0.0001">
+            </div>
+        `;
+    });
 }
 
 function selectGameMode(m) {
@@ -50,7 +49,8 @@ function selectGameMode(m) {
     document.getElementById("btnRecon").className = m === 'RECON' ? 'mode-btn active' : 'mode-btn';
 }
 
-// PERMESSI E START
+// --- CORE GIOCO ---
+
 async function requestPermissions() {
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
@@ -74,7 +74,7 @@ function handleOrientation(e) {
 function startGame() {
     state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
     state.playerTeam = document.getElementById("teamSelect").value;
-    if(!state.playerName) return alert("INSERISCI NOME!");
+    if(!state.playerName) return alert("INSERISCI NOME OPERATORE!");
 
     document.getElementById("setup-screen").style.display = "none";
     document.getElementById("game-ui").style.display = "flex";
@@ -98,7 +98,8 @@ function startGame() {
     setInterval(sync, 4000);
 }
 
-// SINCRONIZZAZIONE E LOGICA
+// --- SINCRONIZZAZIONE ---
+
 async function sync() {
     try {
         const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key": SECRET_KEY}, cache: 'no-store' });
@@ -111,9 +112,9 @@ async function sync() {
         const captureTimeLimit = parseInt(document.getElementById("captureTime").value) || 180;
         
         record.objectives.forEach(obj => {
-            const nearPlayers = Object.values(record.players).filter(p => (Date.now() - p.last < 10000) && getDistance(p.lat, p.lon, obj.lat, obj.lon) < 15);
-            const reds = nearPlayers.some(p => p.team === 'RED');
-            const blues = nearPlayers.some(p => p.team === 'BLUE');
+            const near = Object.values(record.players).filter(p => (Date.now() - p.last < 10000) && getDistance(p.lat, p.lon, obj.lat, obj.lon) < 15);
+            const reds = near.some(p => p.team === 'RED');
+            const blues = near.some(p => p.team === 'BLUE');
 
             if (reds && blues) { obj.contested = true; } 
             else {
@@ -139,8 +140,10 @@ async function sync() {
 }
 
 function updateUI(r) {
-    const remain = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start) / 1000);
+    const elapsed = Math.floor((Date.now() - r.game.start) / 1000);
+    const remain = (r.game.duration * 60) - elapsed;
     document.getElementById("timer").innerText = remain > 0 ? `⏱️ ${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}` : "FINE";
+    
     document.getElementById("scoreRed").innerText = Math.floor(r.game.scoreRed/10);
     document.getElementById("scoreBlue").innerText = Math.floor(r.game.scoreBlue/10);
     
@@ -153,11 +156,10 @@ function updateUI(r) {
         let color = obj.owner === 'RED' ? '#f00' : (obj.owner === 'BLUE' ? '#0ff' : '#fff');
         if(obj.contested) color = 'yellow';
         
-        const perc = Math.round((obj.progress / 180) * 100) || 0;
         let li = document.createElement("li");
         li.style.borderLeft = `5px solid ${color}`;
         li.style.paddingLeft = "10px";
-        li.innerHTML = `<b>${obj.name}</b><br><small>${obj.contested ? 'CONTESO' : obj.owner} ${perc>0 ? perc+'%' : ''}</small>`;
+        li.innerHTML = `<b>${obj.name}</b><br><small>${obj.contested ? 'CONTESO' : obj.owner}</small>`;
         li.onclick = () => startNavigation(obj);
         sb.appendChild(li);
 
@@ -175,7 +177,55 @@ function updateUI(r) {
     });
 }
 
-// NAVIGAZIONE
+// --- RESET DATABASE CON GESTIONE OB ---
+
+async function resetDatabase() {
+    if(!confirm("ATTENZIONE: Questo sovrascriverà i nomi e le posizioni degli obiettivi. Procedere?")) return;
+
+    // Leggi i nuovi dati dagli input del Master
+    let newObjectives = [];
+    for(let i=0; i < DEFAULT_OBJS.length; i++) {
+        const name = document.getElementById(`name-${i}`).value.trim().toUpperCase();
+        const lat = parseFloat(document.getElementById(`lat-${i}`).value);
+        const lon = parseFloat(document.getElementById(`lon-${i}`).value);
+        if(name) {
+            newObjectives.push({ name, lat, lon, owner: "LIBERO", progress: 0 });
+        }
+    }
+
+    const initialData = {
+        game: { 
+            mode: state.selectedMode, 
+            scoreRed: 0, scoreBlue: 0, 
+            start: Date.now(), 
+            duration: parseInt(document.getElementById("gameDuration").value) 
+        },
+        players: {},
+        objectives: newObjectives
+    };
+
+    try {
+        await fetch(URL, {
+            method: "PUT",
+            headers: {"Content-Type": "application/json", "X-Master-Key": SECRET_KEY},
+            body: JSON.stringify(initialData)
+        });
+        alert("CONFIGURAZIONE CARICATA CON SUCCESSO!");
+    } catch (e) {
+        alert("Errore durante il caricamento.");
+    }
+}
+
+// --- UTILITY ---
+
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+}
+
 function startNavigation(obj) {
     state.targetObj = obj;
     document.getElementById("nav-overlay").style.display = "flex";
@@ -198,27 +248,7 @@ function updateNavigationHUD() {
     state.navLine = L.polyline([p1, p2], {color: 'yellow', weight: 3, dashArray: '10, 10'}).addTo(map);
 }
 
-function getDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-}
-
 function centerMap() {
     state.autoCenter = true;
     if(state.playerMarker) map.panTo(state.playerMarker.getLatLng());
-}
-
-async function resetDatabase() {
-    if(!confirm("RESET TOTALE PARTITA?")) return;
-    const selectedObjs = DEFAULT_OBJS.filter((_, i) => state.selectedObjIndices.includes(i));
-    const initial = {
-        game: { mode: state.selectedMode, scoreRed: 0, scoreBlue: 0, start: Date.now(), duration: parseInt(document.getElementById("gameDuration").value) },
-        players: {},
-        objectives: selectedObjs
-    };
-    await fetch(URL, { method: "PUT", headers: {"Content-Type": "application/json", "X-Master-Key": SECRET_KEY}, body: JSON.stringify(initial) });
-    alert("PARTITA RESETTATA E AVVIATA!");
 }
