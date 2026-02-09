@@ -1,6 +1,6 @@
 const BIN_ID = "696d4940ae596e708fe53514";
 const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
-const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const API_URL = "https://api.jsonbin.io/v3/b/" + BIN_ID;
 
 let state = { 
     isMaster: false, playerName: "", playerTeam: "", 
@@ -13,21 +13,20 @@ function checkMasterPass() {
     if (document.getElementById("masterPass").value === "71325") {
         state.isMaster = true;
         document.getElementById("masterTools").style.display = "block";
-        const container = document.getElementById("masterObjInputs");
-        if (container.innerHTML === "") {
+        if (document.getElementById("masterObjInputs").innerHTML === "") {
             addObjRow("ALFA", 45.2377, 8.8097);
             addObjRow("BRAVO", 45.2385, 8.8105);
         }
     }
 }
 
-function addObjRow(n="", lat="", lon="") {
+function addObjRow(n="", lt="", ln="") {
     const div = document.createElement("div");
     div.className = "obj-row-edit";
     div.innerHTML = `
-        <input type="text" class="in-name" value="${n}" placeholder="OBJ">
-        <input type="number" class="in-lat" value="${lat}" step="0.0001">
-        <input type="number" class="in-lon" value="${lon}" step="0.0001">
+        <input type="text" class="in-name" value="${n}" placeholder="OBJ" style="width:30%">
+        <input type="number" class="in-lat" value="${lt}" step="0.0001" style="width:35%">
+        <input type="number" class="in-lon" value="${ln}" step="0.0001" style="width:35%">
     `;
     document.getElementById("masterObjInputs").appendChild(div);
 }
@@ -39,19 +38,13 @@ async function initApp() {
     state.teamNames.RED = document.getElementById("nameRed").value.toUpperCase();
     state.teamNames.BLUE = document.getElementById("nameBlue").value.toUpperCase();
 
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
-            const res = await DeviceOrientationEvent.requestPermission();
-            if (res === 'granted') window.addEventListener('deviceorientation', (e) => {
-                let h = e.webkitCompassHeading || (360 - e.alpha);
-                if (h) document.getElementById("map-rotate").style.transform = `rotate(${-h}deg)`;
-            });
+            const r = await DeviceOrientationEvent.requestPermission();
+            if (r === 'granted') window.addEventListener('deviceorientation', handleRot);
         } catch(e) {}
     } else {
-        window.addEventListener('deviceorientation', (e) => {
-            let h = e.webkitCompassHeading || (360 - e.alpha);
-            if (h) document.getElementById("map-rotate").style.transform = `rotate(${-h}deg)`;
-        });
+        window.addEventListener('deviceorientation', handleRot);
     }
     
     document.getElementById("setup-screen").style.display = "none";
@@ -64,18 +57,25 @@ async function initApp() {
         const pos = [p.coords.latitude, p.coords.longitude];
         if (!state.playerMarker) {
             state.playerMarker = L.circleMarker(pos, { radius: 10, color: '#fff', fillColor: '#007bff', fillOpacity: 1 }).addTo(map);
+            map.panTo(pos);
         } else {
             state.playerMarker.setLatLng(pos);
             if (state.autoCenter) map.panTo(pos);
         }
+        if (state.targetObj) updateNavHUD();
     }, null, { enableHighAccuracy: true });
 
     setInterval(sync, 4000);
 }
 
+function handleRot(e) {
+    let h = e.webkitCompassHeading || (360 - e.alpha);
+    if (h) document.getElementById("map-rotate").style.transform = `rotate(${-h}deg)`;
+}
+
 async function sync() {
     try {
-        const res = await fetch(`${URL}/latest`, { headers: { "X-Master-Key": SECRET_KEY }, cache: 'no-store' });
+        const res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": SECRET_KEY }, cache: 'no-store' });
         let { record } = await res.json();
         const myPos = state.playerMarker.getLatLng();
 
@@ -102,13 +102,13 @@ async function sync() {
         }
 
         updateUI(record);
-        await fetch(URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(record) });
+        await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(record) });
     } catch (e) {}
 }
 
 function updateUI(r) {
-    const tNames = r.game.teamNames || { RED: "ROSSI", BLUE: "BLU" };
-    document.getElementById("score").innerText = `${tNames.RED}: ${Math.floor(r.game.scoreRed/10)} | ${tNames.BLUE}: ${Math.floor(r.game.scoreBlue/10)}`;
+    const tN = r.game.teamNames || { RED: "ROSSI", BLUE: "BLU" };
+    document.getElementById("score").innerText = `${tN.RED}:${Math.floor(r.game.scoreRed/10)} | ${tN.BLUE}:${Math.floor(r.game.scoreBlue/10)}`;
     
     state.activeMarkers.forEach(m => map.removeLayer(m));
     state.activeMarkers = [];
@@ -118,7 +118,7 @@ function updateUI(r) {
         let col = obj.owner === 'RED' ? '#f00' : (obj.owner === 'BLUE' ? '#0ff' : '#fff');
         let li = document.createElement("li");
         li.style.color = col;
-        li.innerHTML = `[${obj.owner === 'LIBERO' ? 'LIB' : tNames[obj.owner]}] ${obj.name} ${obj.progress > 0 ? '⏳' : ''}`;
+        li.innerHTML = `[${obj.owner === 'LIBERO' ? 'LIB' : tN[obj.owner]}] ${obj.name} ${obj.progress > 0 ? '⏳' : ''}`;
         li.onclick = () => { state.targetObj = obj; document.getElementById("nav-overlay").style.display = "flex"; };
         sb.appendChild(li);
         state.activeMarkers.push(L.circle([obj.lat, obj.lon], { radius: 15, color: col, fillOpacity: 0.3 }).addTo(map));
@@ -154,7 +154,7 @@ async function resetDatabase() {
         players: {}, 
         objectives: objs 
     };
-    await fetch(URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(data) });
+    await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(data) });
     alert("PARTITA RESETTATA!");
 }
 
@@ -166,5 +166,10 @@ function getDist(la1, lo1, la2, lo2) {
     return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
+function updateNavHUD() {
+    const p1 = state.playerMarker.getLatLng();
+    const d = getDist(p1.lat, p1.lng, state.targetObj.lat, state.targetObj.lon);
+    document.getElementById("nav-text").innerText = `${state.targetObj.name}: ${d}m`;
+}
+
 function stopNavigation() { state.targetObj = null; document.getElementById("nav-overlay").style.display = "none"; }
-function centerMap() { state.autoCenter = true; map.panTo(state.playerMarker.getLatLng()); }
