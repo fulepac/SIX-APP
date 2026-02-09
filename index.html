@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP v.5.0 TACTICAL</title>
+    <title>SIX APP v.5.5</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
@@ -11,7 +11,7 @@
     <div id="setup-screen">
         <header>
             <h1 class="brand-title">SIX APP</h1>
-            <div class="credits">Creato da Fulvio v.5.0_TACTICAL</div>
+            <div class="credits">Creato da Fulvio v.5.5_STABLE</div>
         </header>
 
         <div id="menu">
@@ -24,29 +24,18 @@
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">CONFIGURAZIONE MISSIONE</p>
-                    <div class="mode-selector">
-                        <button id="btnDomination" type="button" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
-                        <button id="btnRecon" type="button" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
-                    </div>
+                    <p class="m-title">PANNELLO OBIETTIVI</p>
+                    <div id="masterObjInputs"></div>
+                    <button type="button" class="btn-add" onclick="addObjRow()">➕ AGGIUNGI OBIETTIVO</button>
                     
                     <div class="m-config-grid">
-                        <div class="m-row"><span>MINUTI:</span><input id="gameDuration" type="number" value="30"></div>
-                        <div class="m-row"><span>CATTURA (S):</span><input id="captureTime" type="number" value="180"></div>
+                        <span>DURATA (MIN):</span><input id="gameDuration" type="number" value="30">
                     </div>
-
-                    <div class="obj-management">
-                        <p class="m-title">GESTIONE OBIETTIVI (NOME | LAT | LON)</p>
-                        <div id="masterObjInputs">
-                            </div>
-                        <button type="button" class="btn-add" onclick="addObjRow()">➕ AGGIUNGI OBIETTIVO</button>
-                    </div>
-
-                    <button type="button" class="btn-danger" onclick="resetDatabase()">🔥 RESET E AVVIA PARTITA</button>
+                    <button type="button" class="btn-danger" onclick="resetDatabase()">🔥 RESET E AVVIA</button>
                 </div>
             </div>
             
-            <button class="btn-start" onclick="requestPermissions()">▶ ENTRA IN AZIONE</button>
+            <button class="btn-start" onclick="requestPermissions()">▶ ATTIVA SENSORI E AVVIA</button>
         </div>
     </div>
 
@@ -54,35 +43,23 @@
         <div class="top-bar">
             <div id="timer">⏱️ --:--</div>
             <div class="score-display">
-                <div class="score-box red">R: <span id="scoreRed">0</span></div>
-                <div class="score-box blue">B: <span id="scoreBlue">0</span></div>
+                <span class="red">R: <span id="scoreRed">0</span></span> | 
+                <span class="blue">B: <span id="scoreBlue">0</span></span>
             </div>
         </div>
-
         <div class="map-system">
             <div class="map-main-container">
                 <div id="map-rotate"><div id="map"></div></div>
                 <div id="player-pointer">▲</div>
-                <div id="nav-overlay" class="nav-hud" style="display:none;">
-                    <span id="nav-text">---</span>
-                    <button onclick="stopNavigation()">❌</button>
-                </div>
             </div>
             <div class="map-controls">
                 <button onclick="centerMap()">🎯</button>
-                <button onclick="map.zoomIn()">➕</button>
-                <button onclick="map.zoomOut()">➖</button>
             </div>
         </div>
-
         <div class="game-info-container">
             <div class="info-section">
                 <h3>📍 OBIETTIVI</h3>
                 <ul id="scoreboard" class="data-list"></ul>
-            </div>
-            <div class="info-section">
-                <h3>👥 RADAR TEAM</h3>
-                <ul id="playerList" class="data-list"></ul>
             </div>
         </div>
     </div>
