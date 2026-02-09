@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP TACTICAL v.8.0</title>
+    <title>SIX APP TACTICAL v.8.5</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
@@ -24,17 +24,15 @@
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">CONFIGURAZIONE MISSIONE</p>
+                    <p class="m-title">PARAMETRI MISSIONE</p>
                     <div class="m-config-grid">
-                        <div class="m-row"><span>DURATA (MIN):</span><input id="gameDuration" type="number" value="30"></div>
-                        <div class="m-row"><span>CATTURA (SEC):</span><input id="captureTime" type="number" value="180"></div>
+                        <div class="m-row"><span>MINUTI:</span><input id="gameDuration" type="number" value="30"></div>
+                        <div class="m-row"><span>CATTURA(s):</span><input id="captureTime" type="number" value="180"></div>
                     </div>
-                    
-                    <p class="m-title">OBIETTIVI (NOME | LAT | LON)</p>
-                    <div id="masterObjInputs">
-                        </div>
+                    <p class="m-title">LISTA OBIETTIVI</p>
+                    <div id="masterObjInputs"></div>
                     <button type="button" class="btn-add" onclick="addObjRow()">➕ AGGIUNGI OB</button>
-                    <button class="btn-danger" onclick="resetDatabase()">🔥 RESET E AVVIA PARTITA</button>
+                    <button type="button" class="btn-danger" onclick="resetDatabase()">🔥 RESET E AVVIA</button>
                 </div>
             </div>
             <button class="btn-start" onclick="initApp()">▶ ENTRA IN AZIONE</button>
