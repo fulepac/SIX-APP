@@ -3,43 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP v.5.6</title>
+    <title>SIX APP v.6.0 TACTICAL</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * { box-sizing: border-box; font-family: 'Courier New', monospace; font-weight: bold; }
+        body { background: #000; color: #0f0; margin: 0; padding: 5px; height: 100vh; overflow: hidden; }
+        #setup-screen { height: 100vh; overflow-y: auto; padding: 15px; }
+        .brand-title { text-align: center; color: #0f0; font-size: 3.5rem; text-shadow: 0 0 15px #0f0; margin: 10px 0; }
+        #menu { display: flex; flex-direction: column; gap: 12px; max-width: 600px; margin: 0 auto; padding-bottom: 100px; }
+        input, select, button { background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; border-radius: 8px; font-size: 1rem; }
+        .master-zone { border-top: 1px solid #333; margin-top: 15px; padding-top: 15px; }
+        .m-title { text-align: center; color: #888; font-size: 0.8rem; margin: 10px 0; }
+        .obj-row-edit { display: flex; gap: 4px; margin-bottom: 8px; }
+        .obj-row-edit input { padding: 8px; font-size: 0.7rem; }
+        .in-name { width: 30%; } .in-coord { width: 35%; }
+        .btn-danger { border-color: #f00; color: #f00; width: 100%; margin-top: 10px; }
+        .btn-start { background: #0f0 !important; color: #000 !important; font-size: 1.5rem; margin-top: 20px; width: 100%; }
+        
+        #game-ui { display: flex; flex-direction: column; height: 100vh; gap: 5px; }
+        .top-bar { background: #080808; border: 1px solid #222; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 50px; }
+        .map-system { display: flex; flex-grow: 1; gap: 5px; position: relative; }
+        .map-main-container { flex-grow: 1; border: 2px solid #0f0; border-radius: 15px; overflow: hidden; position: relative; }
+        #map-rotate, #map { width: 100%; height: 100%; }
+        #player-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; color: #fff; font-size: 30px; pointer-events: none; }
+        .map-controls { display: flex; flex-direction: column; gap: 5px; }
+        .map-controls button { width: 55px; flex: 1; font-size: 1.5rem; background: #000; border: 1px solid #0f0; color: #0f0; border-radius: 10px; }
+        .nav-hud { position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.9); border: 2px solid yellow; color: yellow; padding: 15px; border-radius: 10px; z-index: 1100; display: flex; justify-content: space-between; align-items: center; }
+        .game-info-container { display: flex; gap: 5px; height: 180px; }
+        .info-section { flex: 1; background: #050505; border: 1px solid #1a1a1a; padding: 10px; border-radius: 10px; overflow-y: auto; }
+        .data-list { list-style: none; padding: 0; margin: 0; }
+        .data-list li { border-bottom: 1px solid #111; padding: 8px 0; font-size: 0.8rem; cursor: pointer; }
+        @media screen and (orientation: landscape) {
+            #game-ui { display: grid; grid-template-columns: 1fr 320px; grid-template-rows: 55px 1fr; }
+            .top-bar { grid-column: 1 / 3; }
+            .map-system { grid-column: 1; grid-row: 2; }
+            .game-info-container { grid-column: 2; grid-row: 2; flex-direction: column; height: auto; }
+        }
+    </style>
 </head>
 <body>
     <div id="setup-screen">
         <h1 class="brand-title">SIX APP</h1>
-        <div class="credits">Creato da Fulvio v.5.6</div>
-
         <div id="menu">
             <input id="playerName" type="text" placeholder="NOME OPERATORE">
-            <select id="teamSelect">
-                <option value="RED">TEAM ROSSO</option>
-                <option value="BLUE">TEAM BLU</option>
-            </select>
-
+            <select id="teamSelect"><option value="RED">TEAM ROSSO</option><option value="BLUE">TEAM BLU</option></select>
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">CONFIGURA OBIETTIVI (NOME | LAT | LON)</p>
+                    <p class="m-title">EDIT OBIETTIVI (NOME | LAT | LON)</p>
                     <div id="masterObjInputs">
-                        <div class="obj-row-edit">
-                            <input type="text" class="in-name" value="ALFA">
-                            <input type="number" class="in-lat" value="45.2377" step="0.0001">
-                            <input type="number" class="in-lon" value="8.8097" step="0.0001">
-                        </div>
-                        <div class="obj-row-edit">
-                            <input type="text" class="in-name" value="BRAVO">
-                            <input type="number" class="in-lat" value="45.2385" step="0.0001">
-                            <input type="number" class="in-lon" value="8.8105" step="0.0001">
-                        </div>
+                        <div class="obj-row-edit"><input type="text" class="in-name" value="ALFA"><input type="number" class="in-lat in-coord" value="45.2377" step="0.0001"><input type="number" class="in-lon in-coord" value="8.8097" step="0.0001"></div>
+                        <div class="obj-row-edit"><input type="text" class="in-name" value="BRAVO"><input type="number" class="in-lat in-coord" value="45.2385" step="0.0001"><input type="number" class="in-lon in-coord" value="8.8105" step="0.0001"></div>
+                        <div class="obj-row-edit"><input type="text" class="in-name" value="CHARLIE"><input type="number" class="in-lat in-coord" value="45.2369" step="0.0001"><input type="number" class="in-lon in-coord" value="8.8115" step="0.0001"></div>
+                        <div class="obj-row-edit"><input type="text" class="in-name" value="DELTA"><input type="number" class="in-lat in-coord" value="45.2392" step="0.0001"><input type="number" class="in-lon in-coord" value="8.8085" step="0.0001"></div>
+                        <div class="obj-row-edit"><input type="text" class="in-name" value="ECHO"><input type="number" class="in-lat in-coord" value="45.2360" step="0.0001"><input type="number" class="in-lon in-coord" value="8.8075" step="0.0001"></div>
                     </div>
-                    <button type="button" class="btn-danger" onclick="resetDatabase()">🔥 RESET E AVVIA</button>
+                    <button class="btn-danger" onclick="resetDatabase()">🔥 RESET E CARICA CONFIG</button>
                 </div>
             </div>
-            
-            <button class="btn-start" onclick="startApp()">▶ AVVIA E ATTIVA BUSSOLA</button>
+            <button class="btn-start" onclick="requestPermissions()">▶ ENTRA IN AZIONE</button>
         </div>
     </div>
 
@@ -48,12 +70,30 @@
             <div id="timer">⏱️ --:--</div>
             <div id="score">R: 0 | B: 0</div>
         </div>
-        <div class="map-container">
-            <div id="map-rotate"><div id="map"></div></div>
-            <div id="player-pointer">▲</div>
+        <div class="map-system">
+            <div class="map-main-container">
+                <div id="map-rotate"><div id="map"></div></div>
+                <div id="player-pointer">▲</div>
+                <div id="nav-overlay" class="nav-hud" style="display:none;">
+                    <div id="nav-text">---</div>
+                    <button onclick="stopNavigation()" style="border-color:yellow">❌</button>
+                </div>
+            </div>
+            <div class="map-controls">
+                <button onclick="centerMap()">🎯</button>
+                <button onclick="map.zoomIn()">➕</button>
+                <button onclick="map.zoomOut()">➖</button>
+            </div>
         </div>
-        <div class="info-zone">
-            <ul id="scoreboard" class="data-list"></ul>
+        <div class="game-info-container">
+            <div class="info-section">
+                <p style="color:#0f0;font-size:0.7rem;">📍 OBIETTIVI</p>
+                <ul id="scoreboard" class="data-list"></ul>
+            </div>
+            <div class="info-section">
+                <p style="color:#0f0;font-size:0.7rem;">👥 RADAR TEAM</p>
+                <ul id="playerList" class="data-list"></ul>
+            </div>
         </div>
     </div>
 
