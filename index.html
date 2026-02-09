@@ -3,24 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP v.6.0 TACTICAL</title>
+    <title>SIX APP TACTICAL v.6.5</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+        /* CSS INTEGRATO */
         * { box-sizing: border-box; font-family: 'Courier New', monospace; font-weight: bold; }
         body { background: #000; color: #0f0; margin: 0; padding: 5px; height: 100vh; overflow: hidden; }
         #setup-screen { height: 100vh; overflow-y: auto; padding: 15px; }
-        .brand-title { text-align: center; color: #0f0; font-size: 3.5rem; text-shadow: 0 0 15px #0f0; margin: 10px 0; }
+        .brand-title { text-align: center; color: #0f0; font-size: 3rem; text-shadow: 0 0 15px #0f0; margin: 10px 0; }
         #menu { display: flex; flex-direction: column; gap: 12px; max-width: 600px; margin: 0 auto; padding-bottom: 100px; }
-        input, select, button { background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; border-radius: 8px; font-size: 1rem; }
+        input, select, button { background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; border-radius: 8px; font-size: 1rem; width: 100%; }
         .master-zone { border-top: 1px solid #333; margin-top: 15px; padding-top: 15px; }
-        .m-title { text-align: center; color: #888; font-size: 0.8rem; margin: 10px 0; }
         .obj-row-edit { display: flex; gap: 4px; margin-bottom: 8px; }
         .obj-row-edit input { padding: 8px; font-size: 0.7rem; }
         .in-name { width: 30%; } .in-coord { width: 35%; }
-        .btn-danger { border-color: #f00; color: #f00; width: 100%; margin-top: 10px; }
-        .btn-start { background: #0f0 !important; color: #000 !important; font-size: 1.5rem; margin-top: 20px; width: 100%; }
+        .btn-danger { border-color: #f00; color: #f00; margin-top: 10px; }
+        .btn-start { background: #0f0 !important; color: #000 !important; font-size: 1.5rem; margin-top: 20px; cursor: pointer; }
         
-        #game-ui { display: flex; flex-direction: column; height: 100vh; gap: 5px; }
+        #game-ui { display: flex; flex-direction: column; height: 100vh; gap: 5px; display: none; }
         .top-bar { background: #080808; border: 1px solid #222; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 50px; }
         .map-system { display: flex; flex-grow: 1; gap: 5px; position: relative; }
         .map-main-container { flex-grow: 1; border: 2px solid #0f0; border-radius: 15px; overflow: hidden; position: relative; }
@@ -33,6 +33,7 @@
         .info-section { flex: 1; background: #050505; border: 1px solid #1a1a1a; padding: 10px; border-radius: 10px; overflow-y: auto; }
         .data-list { list-style: none; padding: 0; margin: 0; }
         .data-list li { border-bottom: 1px solid #111; padding: 8px 0; font-size: 0.8rem; cursor: pointer; }
+        
         @media screen and (orientation: landscape) {
             #game-ui { display: grid; grid-template-columns: 1fr 320px; grid-template-rows: 55px 1fr; }
             .top-bar { grid-column: 1 / 3; }
@@ -42,21 +43,21 @@
     </style>
 </head>
 <body>
+
     <div id="setup-screen">
         <h1 class="brand-title">SIX APP</h1>
         <div id="menu">
             <input id="playerName" type="text" placeholder="NOME OPERATORE">
             <select id="teamSelect"><option value="RED">TEAM ROSSO</option><option value="BLUE">TEAM BLU</option></select>
+            
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">EDIT OBIETTIVI (NOME | LAT | LON)</p>
+                    <p style="text-align:center; font-size: 0.7rem; color: #888;">EDIT OBIETTIVI</p>
                     <div id="masterObjInputs">
                         <div class="obj-row-edit"><input type="text" class="in-name" value="ALFA"><input type="number" class="in-lat in-coord" value="45.2377" step="0.0001"><input type="number" class="in-lon in-coord" value="8.8097" step="0.0001"></div>
                         <div class="obj-row-edit"><input type="text" class="in-name" value="BRAVO"><input type="number" class="in-lat in-coord" value="45.2385" step="0.0001"><input type="number" class="in-lon in-coord" value="8.8105" step="0.0001"></div>
                         <div class="obj-row-edit"><input type="text" class="in-name" value="CHARLIE"><input type="number" class="in-lat in-coord" value="45.2369" step="0.0001"><input type="number" class="in-lon in-coord" value="8.8115" step="0.0001"></div>
-                        <div class="obj-row-edit"><input type="text" class="in-name" value="DELTA"><input type="number" class="in-lat in-coord" value="45.2392" step="0.0001"><input type="number" class="in-lon in-coord" value="8.8085" step="0.0001"></div>
-                        <div class="obj-row-edit"><input type="text" class="in-name" value="ECHO"><input type="number" class="in-lat in-coord" value="45.2360" step="0.0001"><input type="number" class="in-lon in-coord" value="8.8075" step="0.0001"></div>
                     </div>
                     <button class="btn-danger" onclick="resetDatabase()">🔥 RESET E CARICA CONFIG</button>
                 </div>
@@ -65,7 +66,7 @@
         </div>
     </div>
 
-    <div id="game-ui" style="display:none;">
+    <div id="game-ui">
         <div class="top-bar">
             <div id="timer">⏱️ --:--</div>
             <div id="score">R: 0 | B: 0</div>
@@ -76,7 +77,7 @@
                 <div id="player-pointer">▲</div>
                 <div id="nav-overlay" class="nav-hud" style="display:none;">
                     <div id="nav-text">---</div>
-                    <button onclick="stopNavigation()" style="border-color:yellow">❌</button>
+                    <button onclick="stopNavigation()" style="width:40px; border-color:yellow">❌</button>
                 </div>
             </div>
             <div class="map-controls">
@@ -87,17 +88,132 @@
         </div>
         <div class="game-info-container">
             <div class="info-section">
-                <p style="color:#0f0;font-size:0.7rem;">📍 OBIETTIVI</p>
+                <p style="color:#0f0;font-size:0.7rem;margin:0;">📍 OBIETTIVI</p>
                 <ul id="scoreboard" class="data-list"></ul>
             </div>
             <div class="info-section">
-                <p style="color:#0f0;font-size:0.7rem;">👥 RADAR TEAM</p>
+                <p style="color:#0f0;font-size:0.7rem;margin:0;">👥 RADAR TEAM</p>
                 <ul id="playerList" class="data-list"></ul>
             </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+    <script>
+        // SCRIPT INTEGRATO
+        const BIN_ID = "696d4940ae596e708fe53514";
+        const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
+        const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+        let state = { isMaster: false, playerName: "", playerTeam: "", playerMarker: null, autoCenter: true, targetObj: null, navLine: null, activeMarkers: [] };
+        let map;
+
+        function checkMasterPass() {
+            if (document.getElementById("masterPass").value === "71325") {
+                state.isMaster = true;
+                document.getElementById("masterTools").style.display = "block";
+            }
+        }
+
+        async function requestPermissions() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const res = await DeviceOrientationEvent.requestPermission();
+                    if (res === 'granted') window.addEventListener('deviceorientation', rotateCompass);
+                } catch (e) {}
+            } else {
+                window.addEventListener('deviceorientation', rotateCompass);
+            }
+            startGame();
+        }
+
+        function rotateCompass(e) {
+            let heading = e.webkitCompassHeading || (360 - e.alpha);
+            if (heading) document.getElementById("map-rotate").style.transform = `rotate(${-heading}deg)`;
+        }
+
+        function startGame() {
+            state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
+            state.playerTeam = document.getElementById("teamSelect").value;
+            if (!state.playerName) return alert("INSERISCI NOME!");
+
+            document.getElementById("setup-screen").style.display = "none";
+            document.getElementById("game-ui").style.display = "flex";
+
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
+            L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}').addTo(map);
+
+            navigator.geolocation.watchPosition(p => {
+                const pos = [p.coords.latitude, p.coords.longitude];
+                if (!state.playerMarker) {
+                    state.playerMarker = L.circleMarker(pos, { radius: 9, color: '#fff', fillColor: '#007bff', fillOpacity: 1 }).addTo(map);
+                    map.setView(pos, 19);
+                } else {
+                    state.playerMarker.setLatLng(pos);
+                    if (state.autoCenter) map.panTo(pos);
+                }
+                if (state.targetObj) updateNavHUD();
+            }, null, { enableHighAccuracy: true });
+
+            map.on('dragstart', () => state.autoCenter = false);
+            setInterval(sync, 4000);
+        }
+
+        async function sync() {
+            try {
+                const res = await fetch(`${URL}/latest`, { headers: { "X-Master-Key": SECRET_KEY }, cache: 'no-store' });
+                let { record } = await res.json();
+                const myPos = state.playerMarker.getLatLng();
+                if (!record.players) record.players = {};
+                record.players[state.playerName] = { team: state.playerTeam, lat: myPos.lat, lon: myPos.lng, last: Date.now() };
+
+                record.objectives.forEach(obj => {
+                    const d = getDist(myPos.lat, myPos.lng, obj.lat, obj.lon);
+                    if (d < 15 && obj.owner !== state.playerTeam) {
+                        obj.progress = (obj.progress || 0) + 4;
+                        if (obj.progress >= 180) { obj.owner = state.playerTeam; obj.progress = 0; }
+                    }
+                });
+
+                if (state.isMaster) {
+                    record.objectives.forEach(o => {
+                        if (o.owner === 'RED') record.game.scoreRed += 1;
+                        if (o.owner === 'BLUE') record.game.scoreBlue += 1;
+                    });
+                }
+
+                updateUI(record);
+                await fetch(URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(record) });
+            } catch (e) {}
+        }
+
+        function updateUI(r) {
+            const rem = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start) / 1000);
+            document.getElementById("timer").innerText = rem > 0 ? `⏱️ ${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')}` : "FINE";
+            document.getElementById("score").innerText = `R: ${Math.floor(r.game.scoreRed/10)} | B: ${Math.floor(r.game.scoreBlue/10)}`;
+            state.activeMarkers.forEach(m => map.removeLayer(m));
+            state.activeMarkers = [];
+
+            const sb = document.getElementById("scoreboard"); sb.innerHTML = "";
+            r.objectives.forEach(obj => {
+                let col = obj.owner === 'RED' ? '#f00' : (obj.owner === 'BLUE' ? '#0ff' : '#fff');
+                let li = document.createElement("li");
+                li.style.color = col; li.innerHTML = `[${obj.owner}] ${obj.name}`;
+                li.onclick = () => { state.targetObj = obj; document.getElementById("nav-overlay").style.display = "flex"; };
+                sb.appendChild(li);
+                state.activeMarkers.push(L.circle([obj.lat, obj.lon], { radius: 15, color: col, fillOpacity: 0.3 }).addTo(map));
+            });
+
+            const pl = document.getElementById("playerList"); pl.innerHTML = "";
+            Object.entries(r.players).forEach(([n, p]) => {
+                if (Date.now() - p.last < 30000 && p.team === state.playerTeam && n !== state.playerName) {
+                    pl.innerHTML += `<li>${n} (${getDist(p.lat, p.lon, state.playerMarker.getLatLng().lat, state.playerMarker.getLatLng().lng)}m)</li>`;
+                    state.activeMarkers.push(L.circleMarker([p.lat, p.lon], { radius: 6, color: p.team === 'RED' ? 'red' : 'cyan', fillOpacity: 1 }).addTo(map));
+                }
+            });
+        }
+
+        async function resetDatabase() {
+            if (!confirm("AVVIARE MISSIONE?")) return;
+            let objs = [];
+            document.querySelectorAll(".obj-row-edit").forEach(
