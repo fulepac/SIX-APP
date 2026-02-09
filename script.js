@@ -2,107 +2,170 @@ const BIN_ID = "696d4940ae596e708fe53514";
 const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
 const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-const DEFAULT_OBJS = [
-    { name: "ALFA", lat: 45.2377, lon: 8.8097 },
-    { name: "BRAVO", lat: 45.2385, lon: 8.8105 },
-    { name: "CHARLIE", lat: 45.2369, lon: 8.8115 }
-];
-
-let state = { isMaster: false, playerMarker: null, autoCenter: true };
+let state = {
+    isMaster: false, playerName: "", playerTeam: "", 
+    playerMarker: null, autoCenter: true, 
+    targetObj: null, navLine: null, activeMarkers: []
+};
 let map;
 
-// --- BUSSOLA: FORZA ROTAZIONE ---
-function handleOrientation(e) {
-    let heading = e.webkitCompassHeading || (360 - e.alpha);
-    if (heading) {
-        const rotateEl = document.getElementById("map-rotate");
-        if (rotateEl) rotateEl.style.transform = `rotate(${-heading}deg)`;
-    }
-}
-
-// --- MASTER: MOSTRA LISTA OBIETTIVI ALL'ISTANTE ---
 function checkMasterPass() {
     if (document.getElementById("masterPass").value === "71325") {
         state.isMaster = true;
         document.getElementById("masterTools").style.display = "block";
-        
-        const container = document.getElementById("masterObjInputs");
-        // Se il contenitore è vuoto, lo riempio subito con i default
-        if (container.innerHTML === "") {
-            DEFAULT_OBJS.forEach(obj => addObjRow(obj.name, obj.lat, obj.lon));
-        }
     }
 }
 
-function addObjRow(name = "", lat = "", lon = "") {
-    const container = document.getElementById("masterObjInputs");
-    const div = document.createElement("div");
-    div.style.display = "flex";
-    div.style.gap = "2px";
-    div.style.marginBottom = "5px";
-    div.className = "obj-row-edit";
-    div.innerHTML = `
-        <input type="text" class="in-name" value="${name}" placeholder="Nome" style="width:30%; color:lime; font-size:12px;">
-        <input type="number" class="in-lat" value="${lat}" placeholder="Lat" style="width:35%; color:lime; font-size:12px;">
-        <input type="number" class="in-lon" value="${lon}" placeholder="Lon" style="width:35%; color:lime; font-size:12px;">
-    `;
-    container.appendChild(div);
-}
-
-// --- PERMESSI E AVVIO ---
 async function requestPermissions() {
-    // Richiesta per iOS
-    if (DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        const response = await DeviceOrientationEvent.requestPermission();
-        if (response === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation);
-        }
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+            const res = await DeviceOrientationEvent.requestPermission();
+            if (res === 'granted') window.addEventListener('deviceorientation', (e) => {
+                let heading = e.webkitCompassHeading || (360 - e.alpha);
+                if (heading) document.getElementById("map-rotate").style.transform = `rotate(${-heading}deg)`;
+            });
+        } catch (e) {}
     } else {
-        // Android e altri
-        window.addEventListener('deviceorientation', handleOrientation);
+        window.addEventListener('deviceorientation', (e) => {
+            let heading = e.webkitCompassHeading || (360 - e.alpha);
+            if (heading) document.getElementById("map-rotate").style.transform = `rotate(${-heading}deg)`;
+        });
     }
     startGame();
 }
 
 function startGame() {
-    if (!document.getElementById("playerName").value) return alert("Metti il nome!");
+    state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
+    state.playerTeam = document.getElementById("teamSelect").value;
+    if (!state.playerName) return alert("INSERISCI NOME!");
+
     document.getElementById("setup-screen").style.display = "none";
     document.getElementById("game-ui").style.display = "flex";
 
-    map = L.map('map', { zoomControl: false }).setView([45.2377, 8.8097], 18);
+    map = L.map('map', { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}').addTo(map);
 
     navigator.geolocation.watchPosition(p => {
         const pos = [p.coords.latitude, p.coords.longitude];
         if (!state.playerMarker) {
-            state.playerMarker = L.circleMarker(pos, { radius: 8, color: '#fff', fillColor: '#007bff', fillOpacity: 1 }).addTo(map);
+            state.playerMarker = L.circleMarker(pos, { radius: 9, color: '#fff', fillColor: '#007bff', fillOpacity: 1 }).addTo(map);
+            map.setView(pos, 19);
         } else {
             state.playerMarker.setLatLng(pos);
             if (state.autoCenter) map.panTo(pos);
         }
+        if (state.targetObj) updateNavHUD();
     }, null, { enableHighAccuracy: true });
+
+    map.on('dragstart', () => state.autoCenter = false);
+    setInterval(sync, 4000);
+}
+
+async function sync() {
+    try {
+        const res = await fetch(`${URL}/latest`, { headers: { "X-Master-Key": SECRET_KEY }, cache: 'no-store' });
+        let { record } = await res.json();
+        
+        const myPos = state.playerMarker.getLatLng();
+        if (!record.players) record.players = {};
+        record.players[state.playerName] = { team: state.playerTeam, lat: myPos.lat, lon: myPos.lng, last: Date.now() };
+
+        // Calcolo catture (se sei entro 15 metri da un OB)
+        record.objectives.forEach(obj => {
+            const dist = getDist(myPos.lat, myPos.lng, obj.lat, obj.lon);
+            if (dist < 15) {
+                if (obj.owner !== state.playerTeam) {
+                    obj.progress = (obj.progress || 0) + 4;
+                    if (obj.progress >= 180) { obj.owner = state.playerTeam; obj.progress = 0; }
+                }
+            }
+        });
+
+        // Punteggio (Solo il Master calcola per evitare conflitti)
+        if (state.isMaster) {
+            record.objectives.forEach(o => {
+                if (o.owner === 'RED') record.game.scoreRed += 1;
+                if (o.owner === 'BLUE') record.game.scoreBlue += 1;
+            });
+        }
+
+        updateUI(record);
+        await fetch(URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(record) });
+    } catch (e) {}
+}
+
+function updateUI(r) {
+    const remain = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start) / 1000);
+    document.getElementById("timer").innerText = remain > 0 ? `⏱️ ${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}` : "FINE";
+    document.getElementById("score").innerText = `R: ${Math.floor(r.game.scoreRed/10)} | B: ${Math.floor(r.game.scoreBlue/10)}`;
+    
+    state.activeMarkers.forEach(m => map.removeLayer(m));
+    state.activeMarkers = [];
+
+    const sb = document.getElementById("scoreboard");
+    sb.innerHTML = "";
+    r.objectives.forEach(obj => {
+        let color = obj.owner === 'RED' ? '#f00' : (obj.owner === 'BLUE' ? '#0ff' : '#fff');
+        let li = document.createElement("li");
+        li.style.color = color;
+        li.innerHTML = `[${obj.owner}] ${obj.name}`;
+        li.onclick = () => startNav(obj);
+        sb.appendChild(li);
+        state.activeMarkers.push(L.circle([obj.lat, obj.lon], { radius: 15, color: color, weight: 2, fillOpacity: 0.3 }).addTo(map));
+    });
+
+    const pl = document.getElementById("playerList");
+    pl.innerHTML = "";
+    Object.entries(r.players).forEach(([name, p]) => {
+        if (Date.now() - p.last < 30000 && p.team === state.playerTeam && name !== state.playerName) {
+            pl.innerHTML += `<li>${name} (${getDist(p.lat, p.lon, state.playerMarker.getLatLng().lat, state.playerMarker.getLatLng().lng)}m)</li>`;
+            state.activeMarkers.push(L.circleMarker([p.lat, p.lon], { radius: 6, color: p.team === 'RED' ? 'red' : 'cyan', fillOpacity: 1 }).addTo(map));
+        }
+    });
 }
 
 async function resetDatabase() {
-    if (!confirm("Reset?")) return;
+    if (!confirm("AVVIARE NUOVA MISSIONE?")) return;
     let objs = [];
     document.querySelectorAll(".obj-row-edit").forEach(row => {
-        const n = row.querySelector(".in-name").value;
-        const la = parseFloat(row.querySelector(".in-lat").value);
-        const lo = parseFloat(row.querySelector(".in-lon").value);
-        if (n && la) objs.push({ name: n, lat: la, lon: lo, owner: "LIBERO", progress: 0 });
+        const inputs = row.querySelectorAll("input");
+        objs.push({ name: inputs[0].value.toUpperCase(), lat: parseFloat(inputs[1].value), lon: parseFloat(inputs[2].value), owner: "LIBERO", progress: 0 });
     });
 
     const data = {
-        game: { mode: "DOMINATION", scoreRed: 0, scoreBlue: 0, start: Date.now(), duration: 30 },
+        game: { scoreRed: 0, scoreBlue: 0, start: Date.now(), duration: parseInt(document.getElementById("gameDuration").value) || 30 },
         players: {},
         objectives: objs
     };
-
-    await fetch(URL, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY },
-        body: JSON.stringify(data)
-    });
-    alert("PARTITA AVVIATA!");
+    await fetch(URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(data) });
+    alert("CONFIGURAZIONE INVIATA!");
 }
+
+function getDist(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+function startNav(obj) {
+    state.targetObj = obj;
+    document.getElementById("nav-overlay").style.display = "flex";
+}
+
+function stopNavigation() {
+    state.targetObj = null;
+    if (state.navLine) map.removeLayer(state.navLine);
+    document.getElementById("nav-overlay").style.display = "none";
+}
+
+function updateNavHUD() {
+    const p1 = state.playerMarker.getLatLng();
+    const d = getDist(p1.lat, p1.lng, state.targetObj.lat, state.targetObj.lon);
+    document.getElementById("nav-text").innerText = `${state.targetObj.name}: ${d}m`;
+    if (state.navLine) map.removeLayer(state.navLine);
+    state.navLine = L.polyline([p1, [state.targetObj.lat, state.targetObj.lon]], { color: 'yellow', weight: 3, dashArray: '10, 10' }).addTo(map);
+}
+
+function centerMap() { state.autoCenter = true; map.panTo(state.playerMarker.getLatLng()); }
