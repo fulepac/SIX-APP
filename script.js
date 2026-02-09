@@ -4,11 +4,8 @@ const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 const PWD_MASTER = "71325";
 
 const DEFAULT_OBJS = [
-    { name: "ALFA", lat: 45.2377, lon: 8.8097, owner: "LIBERO", progress: 0, capturingTeam: null },
-    { name: "BRAVO", lat: 45.2385, lon: 8.8105, owner: "LIBERO", progress: 0, capturingTeam: null },
-    { name: "CHARLIE", lat: 45.2369, lon: 8.8115, owner: "LIBERO", progress: 0, capturingTeam: null },
-    { name: "DELTA", lat: 45.2392, lon: 8.8085, owner: "LIBERO", progress: 0, capturingTeam: null },
-    { name: "ECHO", lat: 45.2360, lon: 8.8075, owner: "LIBERO", progress: 0, capturingTeam: null }
+    { name: "ALFA", lat: 45.2377, lon: 8.8097, owner: "LIBERO", progress: 0 },
+    { name: "BRAVO", lat: 45.2385, lon: 8.8105, owner: "LIBERO", progress: 0 }
 ];
 
 let state = { 
@@ -16,13 +13,10 @@ let state = {
     autoCenter: true, selectedMode: "DOMINATION", startTime: null 
 };
 
-let activeMarkers = [];
 let map;
+let activeMarkers = [];
 
 window.onload = () => {
-    map = L.map("map", { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
-    L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21 }).addTo(map);
-    map.on('dragstart', () => state.autoCenter = false);
     loadConfigFromServer();
 };
 
@@ -36,8 +30,8 @@ function checkMasterPass() {
 
 function selectGameMode(m) {
     state.selectedMode = m;
-    document.getElementById("btnDomination").classList.toggle("active", m === 'DOMINATION');
-    document.getElementById("btnRecon").classList.toggle("active", m === 'RECON');
+    document.getElementById("btnDomination").className = (m === 'DOMINATION' ? "mode-btn active" : "mode-btn");
+    document.getElementById("btnRecon").className = (m === 'RECON' ? "mode-btn active" : "mode-btn");
 }
 
 async function loadConfigFromServer() {
@@ -45,6 +39,7 @@ async function loadConfigFromServer() {
         const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}});
         const { record } = await res.json();
         const container = document.getElementById("objSlotContainer");
+        if(!container) return;
         container.innerHTML = "";
         const currentObjs = (record.objectives && record.objectives.length > 0) ? record.objectives : DEFAULT_OBJS;
         for (let i = 0; i < 10; i++) {
@@ -63,7 +58,6 @@ async function loadConfigFromServer() {
 function handleRotation(e) {
     let compass = e.webkitCompassHeading || (360 - e.alpha);
     if(compass) {
-        // Punto 6: Ruota la mappa e segui il movimento
         document.getElementById("map-rotate").style.transform = `rotate(${-compass}deg)`;
     }
 }
@@ -93,20 +87,27 @@ async function saveAndStart() {
 function startGame() {
     document.getElementById("setup-screen").style.display = "none";
     document.getElementById("game-ui").style.display = "block";
-    map.invalidateSize();
+    
+    // Inizializza mappa solo ora per evitare bug di visualizzazione
+    if(!map) {
+        map = L.map("map", { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
+        L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21 }).addTo(map);
+        map.on('dragstart', () => state.autoCenter = false);
+    }
+    
+    setTimeout(() => { map.invalidateSize(); }, 500);
 
-    navigator.geolocation.watchPosition(
-        (p) => {
-            const pos = [p.coords.latitude, p.coords.longitude];
-            if(!state.playerMarker) {
-                state.playerMarker = L.circleMarker(pos, {radius: 8, color: '#fff', fillColor: '#007bff', fillOpacity: 1, weight: 3}).addTo(map);
-                map.setView(pos, 19);
-            } else {
-                state.playerMarker.setLatLng(pos);
-                if(state.autoCenter) map.panTo(pos);
-            }
-        }, null, { enableHighAccuracy: true }
-    );
+    navigator.geolocation.watchPosition((p) => {
+        const pos = [p.coords.latitude, p.coords.longitude];
+        if(!state.playerMarker) {
+            state.playerMarker = L.circleMarker(pos, {radius: 8, color: '#fff', fillColor: '#007bff', fillOpacity: 1, weight: 3}).addTo(map);
+            map.setView(pos, 19);
+        } else {
+            state.playerMarker.setLatLng(pos);
+            if(state.autoCenter) map.panTo(pos);
+        }
+    }, null, { enableHighAccuracy: true });
+
     setInterval(() => sync(false), 4000);
 }
 
@@ -122,20 +123,19 @@ async function sync(forceMaster, duration) {
 
         const captureRequired = parseInt(document.getElementById("captureTime")?.value || 180);
 
-        // LOGICA DI CONQUISTA (Punti 1, 2, 3)
+        // LOGICA CONQUISTA
         record.objectives.forEach(obj => {
             let inArea = Object.values(record.players).filter(p => (Date.now() - p.last < 10000) && getDistRaw(p.lat, p.lon, obj.lat, obj.lon) <= 15);
             let redHere = inArea.some(p => p.team === 'RED');
             let blueHere = inArea.some(p => p.team === 'BLUE');
 
             if (redHere && blueHere) {
-                obj.contested = true; // Punto 3: Allerta contesa
+                obj.contested = true;
             } else {
                 obj.contested = false;
                 let activeTeam = redHere ? 'RED' : (blueHere ? 'BLUE' : null);
                 let ownerPresent = (obj.owner === 'RED' && redHere) || (obj.owner === 'BLUE' && blueHere);
                 
-                // Punto 1 e 2: Conquista se il proprietario non c'è e il tempo passa
                 if (activeTeam && !ownerPresent && obj.owner !== activeTeam) {
                     obj.capturingTeam = activeTeam;
                     obj.progress = (obj.progress || 0) + 4;
@@ -175,10 +175,11 @@ async function sync(forceMaster, duration) {
         }
         await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
         updateUI(record);
-    } catch(e) { console.error("Sync Error"); }
+    } catch(e) {}
 }
 
 function updateUI(r) {
+    if(!map) return;
     activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
     
     const timerEl = document.getElementById("timer");
@@ -196,7 +197,7 @@ function updateUI(r) {
     r.objectives.forEach(obj => {
         let color = obj.owner === 'RED' ? '#f00' : (obj.owner === 'BLUE' ? '#0ff' : '#fff');
         let statusText = obj.contested ? '<span style="color:yellow">! CONTESA !</span>' : 
-                        (obj.progress > 0 ? `CATTURA ${obj.capturingTeam} ${Math.round((obj.progress/parseInt(document.getElementById("captureTime")?.value || 180))*100)}%` : obj.owner);
+                        (obj.progress > 0 ? `CATTURA ${obj.capturingTeam}` : obj.owner);
         
         scoreboard.innerHTML += `<li style="border-left:5px solid ${color}"><b>${obj.name}</b>: ${statusText}</li>`;
         
@@ -224,6 +225,8 @@ function getDistRaw(lat1, lon1, lat2, lon2) {
     return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
+function zoomIn() { map.zoomIn(); }
+function zoomOut() { map.zoomOut(); }
 function centerMap() { state.autoCenter = true; }
 function exitGame() { location.reload(); }
 async function resetBin() {
