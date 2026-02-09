@@ -1,9 +1,9 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP TACTICAL v.18</title>
+    <title>SIX APP TACTICAL v.19</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -13,8 +13,9 @@
         /* SETUP SCREEN */
         #setup { position: fixed; inset: 0; background: #000; z-index: 9999; padding: 20px; overflow-y: auto; text-align: center; }
         input, select, button { width: 100%; padding: 12px; background: #111; border: 2px solid #0f0; color: #0f0; border-radius: 5px; margin-bottom: 8px; }
-        #master-panel { display: none; background: #080808; padding: 10px; border: 1px dashed #444; margin: 10px 0; }
+        #master-panel { display: none; background: #080808; padding: 10px; border: 1px dashed #444; margin: 10px 0; text-align: left; }
         .m-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 5px; }
+        .label-m { font-size: 0.6rem; color: #888; margin-bottom: 2px; display: block; text-transform: uppercase; }
         .obj-input-row { display: flex; gap: 5px; margin-bottom: 5px; }
         .obj-input-row input { margin-bottom: 0; padding: 8px; font-size: 0.75rem; }
 
@@ -33,7 +34,6 @@
         .btn-exit { width: auto; background: #300; border-color: #f00; color: #f00; padding: 5px 15px; margin: 0; font-size: 0.7rem; }
         .btn-recenter { position: absolute; bottom: 15px; left: 15px; width: 45px; height: 45px; border-radius: 50%; z-index: 1100; background: rgba(0,0,0,0.8); color:#0f0; border:1px solid #0f0; }
 
-        /* SIDEBAR */
         #sidebar { width: 100%; height: 180px; background: #000; border-top: 1px solid #0f0; display: flex; z-index: 1500; }
         .list-col { flex: 1; padding: 5px; overflow-y: auto; border-right: 1px solid #111; }
         .list-col h3 { font-size: 0.7rem; color: #555; margin-bottom: 3px; border-bottom: 1px solid #111; }
@@ -49,7 +49,7 @@
 <body>
 
     <div id="setup">
-        <h1>SIX APP v.18</h1>
+        <h1>SIX APP v.19</h1>
         <input type="text" id="pName" placeholder="NOME OPERATORE">
         <select id="pTeam">
             <option value="RED">TEAM ROSSO</option>
@@ -59,22 +59,30 @@
         <input type="password" id="mPass" placeholder="PIN MASTER" oninput="unlockMaster()">
         
         <div id="master-panel">
-            <p style="font-size: 0.7rem; color: yellow; margin-bottom: 8px;">CONFIGURAZIONE OBIETTIVI</p>
+            <span class="label-m">Nomi Fazioni & Modalità</span>
             <div class="m-row">
-                <input type="text" id="cfgRed" placeholder="Nome Team Rosso">
-                <input type="text" id="cfgBlue" placeholder="Nome Team Blu">
+                <input type="text" id="cfgRed" placeholder="Team Rosso">
+                <input type="text" id="cfgBlue" placeholder="Team Blu">
+            </div>
+            <select id="cfgMode">
+                <option value="DOMINIO">MODALITÀ: DOMINIO</option>
+                <option value="RECON">MODALITÀ: RECON (SOLO NAV)</option>
+            </select>
+
+            <span class="label-m">Tempi (Minuti Gioco / Secondi Capture)</span>
+            <div class="m-row">
+                <input type="number" id="cfgDuration" placeholder="Minuti Partita">
+                <input type="number" id="cfgCapTime" placeholder="Sec. Cattura">
             </div>
             
-            <div id="obj-edit-zone">
-                </div>
-            
-            <button onclick="addObjRow()" style="background:#222; border-color:#555;">+ AGGIUNGI RIGA</button>
+            <span class="label-m">Lista Obiettivi</span>
+            <div id="obj-edit-zone"></div>
+            <button onclick="addObjRow()" style="background:#222; border-color:#555; font-size:0.7rem; padding:5px;">+ AGGIUNGI RIGA</button>
             
             <div class="m-row" style="margin-top:10px;">
-                <button onclick="masterUpdate(false)" style="border-color:cyan; color:cyan;">SALVA OBIETTIVI</button>
-                <button onclick="masterUpdate(true)" style="border-color:orange; color:orange;">RESET PUNTI & AVVIA</button>
+                <button onclick="masterUpdate(false)" style="border-color:cyan; color:cyan;">SALVA CONFIG</button>
+                <button onclick="masterUpdate(true)" style="border-color:orange; color:orange;">RESET & AVVIA</button>
             </div>
-            <button onclick="fullWipe()" style="color:red; border-color:red; margin-top:5px; font-size:0.7rem;">WIPE DATABASE</button>
         </div>
 
         <div style="margin-top:20px;">
@@ -87,7 +95,7 @@
         <div class="top-bar">
             <button class="btn-exit" onclick="exitGame()">ESCI</button>
             <span id="timer">00:00</span>
-            <span id="score">R:0 | B:0</span>
+            <span id="score">0 - 0</span>
             <button onclick="stopNav()" id="btn-stop-nav" style="display:none; width:auto; margin:0; padding:2px 10px; font-size:0.7rem; border-color:red; color:red;">STOP</button>
         </div>
         <div class="main-view">
@@ -111,7 +119,6 @@
 
         let state = { lat:0, lon:0, hd:0, target:null, markers:[], map:null, name:"", team:"", isM:false, syncTimer:null };
 
-        // 1. LOGICA MASTER
         async function unlockMaster() {
             if(document.getElementById("mPass").value === "71325") {
                 state.isM = true;
@@ -124,100 +131,68 @@
             try {
                 let res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": API_KEY } });
                 let r = (await res.json()).record;
-                
                 document.getElementById("cfgRed").value = r.game.names.RED;
                 document.getElementById("cfgBlue").value = r.game.names.BLUE;
-                
+                document.getElementById("cfgMode").value = r.game.mode || "DOMINIO";
+                document.getElementById("cfgDuration").value = r.game.duration || 60;
+                document.getElementById("cfgCapTime").value = r.game.capTime || 120;
                 const zone = document.getElementById("obj-edit-zone");
                 zone.innerHTML = "";
-                if(r.objectives && r.objectives.length > 0) {
-                    r.objectives.forEach(o => addObjRow(o.name, o.lat, o.lon));
-                } else {
-                    addObjRow("ALPHA", 45.2377, 8.8097);
-                }
-            } catch(e) { console.log("Errore caricamento: " + e); }
+                r.objectives.forEach(o => addObjRow(o.name, o.lat, o.lon));
+            } catch(e) { console.log("Load error"); }
         }
 
         function addObjRow(n="", la="", lo="") {
             const d = document.createElement("div");
             d.className = "obj-input-row";
-            d.innerHTML = `
-                <input type="text" class="on" value="${n}" placeholder="Nome" style="width:30%">
-                <input type="number" class="ol" value="${la}" step="0.0001" placeholder="Lat" style="width:35%">
-                <input type="number" class="oo" value="${lo}" step="0.0001" placeholder="Lon" style="width:35%">
-            `;
+            d.innerHTML = `<input type="text" class="on" value="${n}" style="width:30%"><input type="number" class="ol" value="${la}" step="0.0001" style="width:35%"><input type="number" class="oo" value="${lo}" step="0.0001" style="width:35%">`;
             document.getElementById("obj-edit-zone").appendChild(d);
         }
 
-        async function masterUpdate(resetScores = false) {
+        async function masterUpdate(reset) {
             try {
                 let res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": API_KEY } });
                 let r = (await res.json()).record;
-
-                let newObjs = [];
+                let objs = [];
                 document.querySelectorAll(".obj-input-row").forEach(row => {
                     let name = row.querySelector(".on").value.toUpperCase();
                     let lat = parseFloat(row.querySelector(".ol").value);
                     let lon = parseFloat(row.querySelector(".oo").value);
-                    if(name && lat && lon) {
-                        // Se l'obiettivo esisteva già, manteniamo l'owner, altrimenti LIBERO
-                        let old = r.objectives.find(x => x.name === name);
-                        newObjs.push({ name, lat, lon, owner: old ? old.owner : "LIBERO", progress: 0 });
-                    }
+                    if(name && lat) objs.push({ name, lat, lon, owner: reset ? "LIBERO" : (r.objectives.find(x=>x.name===name)?.owner || "LIBERO"), progress: 0 });
                 });
-
-                r.game.names = { RED: document.getElementById("cfgRed").value || "ROSSI", BLUE: document.getElementById("cfgBlue").value || "BLU" };
-                r.objectives = newObjs;
-
-                if(resetScores) {
-                    r.game.scoreRed = 0; r.game.scoreBlue = 0; r.game.start = Date.now();
-                    r.objectives.forEach(o => { o.owner = "LIBERO"; o.progress = 0; });
-                }
-
+                r.game = { 
+                    start: reset ? Date.now() : r.game.start, 
+                    duration: parseInt(document.getElementById("cfgDuration").value),
+                    capTime: parseInt(document.getElementById("cfgCapTime").value),
+                    mode: document.getElementById("cfgMode").value,
+                    names: { RED: document.getElementById("cfgRed").value, BLUE: document.getElementById("cfgBlue").value },
+                    scoreRed: reset ? 0 : r.game.scoreRed, 
+                    scoreBlue: reset ? 0 : r.game.scoreBlue 
+                };
+                r.objectives = objs;
                 await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(r) });
-                alert("DATI SALVATI!");
-            } catch(e) { alert("Errore: " + e); }
+                alert("OPERAZIONE COMPLETATA");
+            } catch(e) { alert("Error update"); }
         }
 
-        async function fullWipe() {
-            if(!confirm("CANCELLARE TUTTO?")) return;
-            const data = { game: { start: Date.now(), duration: 60, capTime: 120, names: { RED: "ROSSI", BLUE: "BLU" }, scoreRed: 0, scoreBlue: 0 }, players: {}, objectives: [] };
-            await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(data) });
-            location.reload();
-        }
-
-        // 2. SENSORI & GIOCO
         async function requestSensors() {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const res = await DeviceOrientationEvent.requestPermission();
-                if (res === 'granted') window.addEventListener('deviceorientation', (e) => {
-                    let rot = window.orientation || 0;
-                    state.hd = (e.webkitCompassHeading || (360 - e.alpha)) + rot;
-                });
-            } else { 
-                window.addEventListener('deviceorientation', (e) => {
-                    let rot = window.orientation || 0;
-                    state.hd = (e.webkitCompassHeading || (360 - e.alpha)) + rot;
-                });
-            }
+                if (res === 'granted') window.addEventListener('deviceorientation', (e) => state.hd = (e.webkitCompassHeading || (360 - e.alpha)) + (window.orientation || 0));
+            } else { window.addEventListener('deviceorientation', (e) => state.hd = (e.webkitCompassHeading || (360 - e.alpha)) + (window.orientation || 0)); }
         }
 
         function startGame() {
             state.name = document.getElementById("pName").value.toUpperCase();
             state.team = document.getElementById("pTeam").value;
-            if(!state.name) return alert("INSERISCI NOME");
+            if(!state.name) return;
             document.getElementById("setup").style.display = "none";
             document.getElementById("game").style.display = "flex";
-            
             if(!state.map) {
                 state.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
                 L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}').addTo(state.map);
             }
-
-            navigator.geolocation.watchPosition(p => {
-                state.lat = p.coords.latitude; state.lon = p.coords.longitude;
-            }, null, { enableHighAccuracy: true });
-
+            navigator.geolocation.watchPosition(p => { state.lat = p.coords.latitude; state.lon = p.coords.longitude; }, null, { enableHighAccuracy: true });
             state.syncTimer = setInterval(loop, 3000);
             requestAnimationFrame(renderFrame);
         }
@@ -235,24 +210,19 @@
             try {
                 let res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": API_KEY }, cache: 'no-store' });
                 let r = (await res.json()).record;
-                if(!r.players) r.players = {};
                 r.players[state.name] = { team: state.team, lat: state.lat, lon: state.lon, last: Date.now() };
-                
-                r.objectives.forEach(o => {
-                    let d = getD(state.lat, state.lon, o.lat, o.lon);
-                    if(d < 20 && o.owner !== state.team) {
-                        o.progress += 3;
-                        if(o.progress >= r.game.capTime) { o.owner = state.team; o.progress = 0; }
-                    }
-                });
-                
-                if(state.isM) {
-                    r.objectives.forEach(o => { 
-                        if(o.owner === 'RED') r.game.scoreRed++; 
-                        if(o.owner === 'BLUE') r.game.scoreBlue++; 
+                if(r.game.mode === "DOMINIO") {
+                    r.objectives.forEach(o => {
+                        let d = getD(state.lat, state.lon, o.lat, o.lon);
+                        if(d < 20 && o.owner !== state.team) {
+                            o.progress += 3;
+                            if(o.progress >= r.game.capTime) { o.owner = state.team; o.progress = 0; }
+                        }
                     });
+                    if(state.isM) {
+                        r.objectives.forEach(o => { if(o.owner === 'RED') r.game.scoreRed++; if(o.owner === 'BLUE') r.game.scoreBlue++; });
+                    }
                 }
-                
                 await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(r) });
                 renderUI(r);
             } catch(e) {}
@@ -263,26 +233,21 @@
             const uiT = document.getElementById("ui-team"); uiT.innerHTML = "";
             state.markers.forEach(m => state.map.removeLayer(m));
             state.markers = [];
-
             r.objectives.forEach(o => {
                 let c = o.owner === 'RED' ? '#f00' : (o.owner === 'BLUE' ? '#0ff' : '#fff');
                 let li = document.createElement("li");
-                li.style.color = c;
-                li.innerHTML = `${o.name} [${o.owner}] ${o.progress > 0 ? '⏳' : ''}`;
+                li.style.color = c; li.innerHTML = `${o.name} [${o.owner}] ${o.progress > 0 ? '⏳' : ''}`;
                 li.onclick = () => { state.target = o; document.getElementById("btn-stop-nav").style.display = "block"; };
                 uiO.appendChild(li);
                 state.markers.push(L.circle([o.lat, o.lon], { radius: 15, color: c, fillOpacity: 0.2 }).addTo(state.map));
             });
-
             Object.entries(r.players).forEach(([name, p]) => {
                 if(name !== state.name && p.team === state.team && (Date.now() - p.last < 30000)) {
                     uiT.innerHTML += `<li>${name}</li>`;
                     state.markers.push(L.circleMarker([p.lat, p.lon], { radius: 6, color: '#0f0', fillOpacity: 1 }).addTo(state.map));
                 }
             });
-
-            let n = r.game.names || {RED:"R", BLUE:"B"};
-            document.getElementById("score").innerText = `${n.RED}:${Math.floor(r.game.scoreRed/10)} | ${n.BLUE}:${Math.floor(r.game.scoreBlue/10)}`;
+            document.getElementById("score").innerText = r.game.mode === "DOMINIO" ? `${r.game.names.RED.substring(0,3)}:${Math.floor(r.game.scoreRed/10)} | ${r.game.names.BLUE.substring(0,3)}:${Math.floor(r.game.scoreBlue/10)}` : "RECON MODE";
             let rem = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start)/1000);
             document.getElementById("timer").innerText = rem > 0 ? `${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')}` : "FINE";
         }
