@@ -3,113 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX-APP OPERATOR v.24</title>
+    <title>SIX-APP TACTICAL v.25</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        :root { --neon-green: #0f0; --dark-militare: #0a0c0a; --warning-orange: #f90; }
+        :root { --green: #00ff00; --dark: #050505; --gray: #1a1a1a; --admin: #ff9900; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; font-weight: bold; }
-        body { background: var(--dark-militare); color: var(--neon-green); height: 100vh; overflow: hidden; }
-        
-        /* SETUP SCREEN */
-        #setup { position: fixed; inset: 0; background: var(--dark-militare); z-index: 9999; padding: 15px; overflow-y: auto; text-align: center; border: 8px solid #1a1a1a; }
-        .military-title { font-size: 2.2rem; letter-spacing: 3px; color: var(--neon-green); text-shadow: 2px 2px 0px #030; border: 3px solid var(--neon-green); padding: 10px; display: inline-block; margin: 15px 0; }
-        .instruction-box { background: #050505; border: 1px solid #333; padding: 12px; text-align: left; font-size: 0.75rem; color: #888; margin-bottom: 15px; border-left: 4px solid var(--neon-green); }
+        body { background: #000; color: var(--green); height: 100vh; overflow: hidden; }
 
-        input, select, button { width: 100%; padding: 12px; background: #111; border: 2px solid var(--neon-green); color: var(--neon-green); border-radius: 0; margin-bottom: 8px; text-transform: uppercase; }
-        button:active { background: var(--neon-green); color: #000; }
-        #btn-compass.ready { background: #004d00 !important; color: #fff !important; box-shadow: 0 0 15px var(--neon-green); }
+        /* --- SCHERMATA INIZIALE --- */
+        #setup { position: fixed; inset: 0; background: #000; z-index: 9999; padding: 20px; overflow-y: auto; text-align: center; border: 5px solid var(--gray); }
+        .logo-box { border: 2px solid var(--green); padding: 15px; margin-bottom: 20px; background: rgba(0,255,0,0.05); }
+        h1 { font-size: 2rem; letter-spacing: 4px; text-transform: uppercase; }
+        .info-txt { font-size: 0.75rem; color: #666; text-align: left; margin: 15px 0; line-height: 1.3; border-left: 2px solid var(--green); padding-left: 10px; }
 
-        #master-panel { display: none; background: #080808; padding: 15px; border: 1px dashed var(--warning-orange); margin: 10px 0; text-align: left; color: var(--warning-orange); }
-        .m-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; }
-        .label-admin { font-size: 0.65rem; color: #f90; margin-bottom: 3px; display: block; }
-        .obj-input-row { display: flex; gap: 5px; margin-bottom: 5px; }
+        input, select, button { width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid var(--green); color: var(--green); border-radius: 0; margin-bottom: 10px; text-transform: uppercase; }
+        button { cursor: pointer; transition: all 0.2s; }
+        #btn-compass.ready { background: #003300; border-color: #fff; color: #fff; }
 
-        /* GAME UI */
+        /* --- PANNELLO MASTER --- */
+        #master-panel { display: none; background: #0a0800; padding: 15px; border: 1px dashed var(--admin); margin-top: 20px; text-align: left; color: var(--admin); }
+        .m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .obj-row { display: flex; gap: 5px; margin-bottom: 5px; }
+        .obj-row input { border-color: var(--admin); font-size: 0.7rem; padding: 6px; }
+
+        /* --- INTERFACCIA GIOCO --- */
         #game { display: none; flex-direction: column; height: 100%; }
-        .top-bar { height: 45px; background: #000; border-bottom: 2px solid var(--neon-green); display: flex; justify-content: space-between; align-items: center; padding: 0 10px; z-index: 2000; }
-        .main-view { flex-grow: 1; position: relative; display: flex; overflow: hidden; }
-        #map-container { flex-grow: 1; position: relative; overflow: hidden; }
-        #map-rotator { width: 100%; height: 100%; transition: transform 0.1s linear; }
-        #map { width: 100%; height: 100%; }
+        .top-hud { height: 50px; background: #000; border-bottom: 1px solid var(--green); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 2000; }
+        .main-container { flex-grow: 1; position: relative; display: flex; }
         
-        #pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; color: #fff; font-size: 1.5rem; pointer-events: none; text-shadow: 0 0 5px #000; }
+        #map-box { flex-grow: 1; position: relative; background: #111; overflow: hidden; }
+        #map { width: 100%; height: 100%; z-index: 1; }
         
-        /* BOTTONE CENTRA (UI PULITA) */
-        .btn-recenter { 
-            position: absolute; bottom: 20px; left: 20px; width: 55px; height: 55px; 
-            border-radius: 50%; z-index: 1100; background: rgba(0,0,0,0.6); 
-            color: var(--neon-green); border: 2px solid var(--neon-green); 
-            font-size: 1.8rem; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-        .btn-recenter.active { background: var(--neon-green); color: #000; box-shadow: 0 0 15px var(--neon-green); }
+        /* MIRINO CENTRALE PULITO */
+        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; pointer-events: none; }
+        .ch-line { position: absolute; background: rgba(255,255,255,0.8); }
+        .ch-v { width: 2px; height: 30px; left: -1px; top: -15px; }
+        .ch-h { width: 30px; height: 2px; left: -15px; top: -1px; }
 
-        #sidebar { width: 100%; height: 180px; background: #000; border-top: 2px solid var(--neon-green); display: flex; z-index: 1500; }
-        .list-col { flex: 1; padding: 5px; overflow-y: auto; border-right: 1px solid #111; }
-        h3 { font-size: 0.7rem; color: #555; text-transform: uppercase; margin-bottom: 4px; }
-        li { padding: 12px 5px; border-bottom: 1px solid #111; font-size: 0.8rem; }
+        /* NAVIGAZIONE */
+        #nav-arrow { position: absolute; top: 50%; left: 50%; width: 2px; height: 200px; background: linear-gradient(to top, transparent, var(--green)); transform-origin: bottom center; z-index: 999; display: none; }
+        #dist-tag { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: #000; border: 1px solid var(--green); padding: 2px 8px; font-size: 0.8rem; white-space: nowrap; }
+
+        .btn-ctrl { position: absolute; bottom: 25px; left: 20px; width: 60px; height: 60px; border-radius: 50%; z-index: 1100; background: rgba(0,0,0,0.8); color: var(--green); border: 2px solid var(--green); font-size: 1.8rem; display: flex; align-items: center; justify-content: center; }
+        .btn-ctrl.active { background: var(--green); color: #000; }
+
+        /* SIDEBAR LISTE */
+        #sidebar { width: 100%; height: 180px; background: #000; border-top: 1px solid var(--green); display: flex; z-index: 1500; }
+        .col { flex: 1; padding: 8px; overflow-y: auto; border-right: 1px solid #222; }
+        .col h3 { font-size: 0.65rem; color: #555; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
+        ul { list-style: none; }
+        li { padding: 12px 5px; border-bottom: 1px solid #111; font-size: 0.85rem; cursor: pointer; }
 
         @media (orientation: landscape) {
-            .main-view { flex-direction: row; }
-            #sidebar { width: 280px; height: 100%; border-top: none; border-left: 2px solid var(--neon-green); flex-direction: column; }
+            .main-container { flex-direction: row; }
+            #sidebar { width: 280px; height: 100%; border-top: none; border-left: 1px solid var(--green); flex-direction: column; }
         }
     </style>
 </head>
 <body>
 
     <div id="setup">
-        <div class="military-title">SIX-APP v.24</div>
-        <div class="instruction-box">
-            <b>SISTEMA DI PUNTAMENTO:</b><br>
-            • <b>CENTRAGGIO:</b> Il tasto 🎯 aggancia la mappa alla tua posizione.<br>
-            • <b>NAVIGAZIONE:</b> La linea verde indica la direzione verso l'obiettivo selezionato.
+        <div class="logo-box"><h1>SIX-APP TACTICAL</h1></div>
+        
+        <div class="info-txt">
+            <b>STATUS SENSORI:</b> Sbloccare la bussola per l'orientamento HUD.<br>
+            <b>NAVIGAZIONE:</b> Selezionare un OBJ in lista per attivare la guida.<br>
+            <b>MAPPA:</b> Il tasto 🎯 mantiene il centraggio GPS attivo.
         </div>
-        <input type="text" id="pName" placeholder="CALLSIGN OPERATORE">
+
+        <input type="text" id="pName" placeholder="OPERATOR CALLSIGN">
         <select id="pTeam">
-            <option value="RED">TEAM ALPHA (ROSSO)</option>
-            <option value="BLUE">TEAM BRAVO (BLU)</option>
+            <option value="RED">TEAM ALPHA (RED)</option>
+            <option value="BLUE">TEAM BRAVO (BLUE)</option>
         </select>
-        <button id="btn-compass" onclick="requestSensors()">🔓 SBLOCCA SENSORI ORIENTAMENTO</button>
-        <button onclick="startGame()" style="background:#003300; font-size:1.2rem; margin-top:10px;">▶ AVVIA MISSIONE</button>
-        <input type="password" id="mPass" placeholder="ADMIN ACCESS" oninput="unlockMaster()" style="margin-top:20px; border-color:#333;">
+        
+        <button id="btn-compass" onclick="requestSensors()">🔓 SBLOCCA BUSSOLA</button>
+        <button onclick="startGame()" style="background:#004400; border-color:#0f0; margin-top:10px;">▶ INIZIA MISSIONE</button>
+
+        <input type="password" id="mPass" placeholder="ADMIN PIN" oninput="unlockMaster()" style="margin-top:30px; border-color:#222; font-size:0.7rem;">
+        
         <div id="master-panel">
-            <span class="label-admin">PARAMETRI DI GIOCO</span>
-            <div class="m-row"><input type="text" id="cfgRed"><input type="text" id="cfgBlue"></div>
-            <div class="m-row">
+            <div class="m-grid">
+                <input type="text" id="cfgRed" placeholder="Nome Red">
+                <input type="text" id="cfgBlue" placeholder="Nome Blue">
+            </div>
+            <div class="m-grid">
                 <select id="cfgMode"><option value="DOMINIO">DOMINIO</option><option value="RECON">RECON</option></select>
                 <input type="number" id="cfgDur" placeholder="Minuti">
             </div>
-            <input type="number" id="cfgCap" placeholder="Sec. Cattura">
-            <button class="coord-type-btn" id="coord-toggle" onclick="toggleCoordSystem()" style="background:#221100; color:#f90; border-color:#f90; margin:10px 0;">FORMATO: GOOGLE GPS</button>
-            <div id="obj-edit-zone"></div>
-            <button onclick="addObjRow()" style="border-color:#f90; font-size:0.7rem;">+ AGGIUNGI OBJ</button>
-            <div class="m-row" style="margin-top:15px;">
-                <button onclick="masterUpdate(false)" style="color:cyan;">SALVA</button>
-                <button onclick="masterUpdate(true)" style="color:orange;">RESET</button>
+            <input type="number" id="cfgCap" placeholder="Secondi Cattura">
+            
+            <button onclick="toggleCoordSystem()" id="coord-btn" style="color:#f90; border-color:#f90; font-size:0.7rem; margin-bottom:15px;">SISTEMA: GPS DECIMAL</button>
+            
+            <div id="obj-list-edit"></div>
+            <button onclick="addObjRow()" style="border-color:#f90; font-size:0.7rem;">+ AGGIUNGI OBIETTIVO</button>
+            
+            <div class="m-grid" style="margin-top:15px;">
+                <button onclick="saveMaster(false)" style="color:cyan; border-color:cyan;">SALVA</button>
+                <button onclick="saveMaster(true)" style="color:orange; border-color:orange;">RESET</button>
             </div>
         </div>
     </div>
 
     <div id="game">
-        <div class="top-bar">
-            <button onclick="location.reload()" style="width:auto; color:red; border-color:red; font-size:0.7rem;">CHIUDI</button>
+        <div class="top-hud">
+            <button onclick="location.reload()" style="width:auto; color:red; border-color:red; font-size:0.7rem; padding:2px 8px;">ESCI</button>
             <span id="timer">--:--</span>
-            <span id="score">00 - 00</span>
-            <button onclick="stopNav()" id="btn-stop-nav" style="display:none; width:auto; color:red; font-size:0.7rem;">STOP NAV</button>
+            <span id="score">0 - 0</span>
+            <button onclick="stopNav()" id="btn-stop-nav" style="display:none; width:auto; font-size:0.7rem; color:red;">STOP NAV</button>
         </div>
-        <div class="main-view">
-            <div id="map-container">
-                <div id="map-rotator"><div id="map"></div></div>
-                <div id="pointer">▲</div>
-                <div id="nav-line" style="position: absolute; top: 50%; left: 50%; width: 2px; height: 150px; background: linear-gradient(to top, transparent, #0f0); transform-origin: bottom center; z-index: 1001; display: none;">
-                    <div id="nav-dist-mini" style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); border:1px solid #0f0; padding:2px 5px; font-size:0.7rem; color:#0f0; white-space:nowrap;">0M</div>
+        
+        <div class="main-container">
+            <div id="map-box">
+                <div id="map"></div>
+                <div id="crosshair">
+                    <div class="ch-line ch-v"></div>
+                    <div class="ch-line ch-h"></div>
                 </div>
-                <div id="recenter-btn" onclick="toggleRecenter()" class="btn-recenter active">🎯</div>
+                <div id="nav-arrow">
+                    <div id="dist-tag">0M</div>
+                </div>
+                <div id="recenter-btn" onclick="toggleRecenter()" class="btn-ctrl active">🎯</div>
             </div>
+            
             <div id="sidebar">
-                <div class="list-col"><h3>Obiettivi</h3><ul id="ui-objs"></ul></div>
-                <div class="list-col"><h3>Squadra</h3><ul id="ui-team"></ul></div>
+                <div class="col"><h3>OBIETTIVI</h3><ul id="ui-objs"></ul></div>
+                <div class="col"><h3>TEAM</h3><ul id="ui-team"></ul></div>
             </div>
         </div>
     </div>
@@ -119,8 +139,9 @@
         const BIN_ID = "696d4940ae596e708fe53514";
         const API_URL = "https://api.jsonbin.io/v3/b/" + BIN_ID;
 
-        let state = { lat:0, lon:0, hd:0, target:null, markers:[], map:null, name:"", team:"", isM:false, follow:true, coordSystem:'GPS' };
+        let state = { lat:0, lon:0, hd:0, target:null, markers:[], map:null, name:"", team:"", isM:false, follow:true, coordType:'GPS' };
 
+        // SENSORI
         async function requestSensors() {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const res = await DeviceOrientationEvent.requestPermission();
@@ -129,11 +150,15 @@
         }
 
         function activateCompass() {
-            window.addEventListener('deviceorientation', (e) => state.hd = (e.webkitCompassHeading || (360 - e.alpha)) + (window.orientation || 0));
+            window.addEventListener('deviceorientation', (e) => {
+                state.hd = (e.webkitCompassHeading || (360 - e.alpha)) + (window.orientation || 0);
+                document.getElementById("map").style.transform = `rotate(${-state.hd}deg)`;
+            });
             document.getElementById("btn-compass").classList.add("ready");
-            document.getElementById("btn-compass").innerText = "✓ SENSORI ATTIVI";
+            document.getElementById("btn-compass").innerText = "✓ BUSSOLA ATTIVA";
         }
 
+        // MASTER
         function unlockMaster() {
             if(document.getElementById("mPass").value === "71325") {
                 state.isM = true;
@@ -143,41 +168,37 @@
         }
 
         function toggleCoordSystem() {
-            state.coordSystem = state.coordSystem === 'GPS' ? '32T' : 'GPS';
-            document.getElementById("coord-toggle").innerText = "FORMATO: " + (state.coordSystem === 'GPS' ? "GOOGLE GPS" : "32T UTM");
+            state.coordType = state.coordType === 'GPS' ? '32T' : 'GPS';
+            document.getElementById("coord-btn").innerText = "SISTEMA: " + (state.coordType === 'GPS' ? "GPS DECIMAL" : "32T UTM");
         }
 
         function addObjRow(n="", la="", lo="") {
-            const d = document.createElement("div"); d.className = "obj-input-row";
+            const d = document.createElement("div"); d.className = "obj-row";
             d.innerHTML = `<input type="text" class="on" value="${n}" placeholder="NOME" style="width:30%"><input type="number" class="ol" value="${la}" placeholder="C1" style="width:35%"><input type="number" class="oo" value="${lo}" placeholder="C2" style="width:35%">`;
-            document.getElementById("obj-edit-zone").appendChild(d);
+            document.getElementById("obj-list-edit").appendChild(d);
         }
 
-        function convertCoords(v1, v2) {
-            if(state.coordSystem === 'GPS') return { lat: v1, lon: v2 };
-            const x = v1 - 500000; const y = v2;
-            const lat = y / 111132.952;
-            const lon = 9 + (x / (111319.491 * Math.cos(lat * Math.PI / 180)));
-            return { lat, lon };
-        }
-
-        async function masterUpdate(reset) {
+        async function saveMaster(reset) {
             let res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": API_KEY } });
             let r = (await res.json()).record;
             let objs = [];
-            document.querySelectorAll(".obj-input-row").forEach(row => {
+            document.querySelectorAll(".obj-row").forEach(row => {
                 let n = row.querySelector(".on").value.toUpperCase();
                 let v1 = parseFloat(row.querySelector(".ol").value);
                 let v2 = parseFloat(row.querySelector(".oo").value);
-                if(n && v1 && v2) {
-                    let c = convertCoords(v1, v2);
-                    objs.push({ name: n, lat: c.lat, lon: c.lon, owner: "LIBERO", progress: 0 });
+                if(n && v1) {
+                    let lat = v1, lon = v2;
+                    if(state.coordType === '32T') { // Conversione 32T UTM approssimata
+                        lat = v2 / 111132.952;
+                        lon = 9 + ((v1 - 500000) / (111319.491 * Math.cos(lat * Math.PI / 180)));
+                    }
+                    objs.push({ name: n, lat, lon, owner: "LIBERO", progress: 0 });
                 }
             });
             r.game = { start: reset ? Date.now() : r.game.start, mode: document.getElementById("cfgMode").value, duration: document.getElementById("cfgDur").value, capTime: document.getElementById("cfgCap").value, names: { RED: document.getElementById("cfgRed").value, BLUE: document.getElementById("cfgBlue").value }, scoreRed: reset ? 0 : r.game.scoreRed, scoreBlue: reset ? 0 : r.game.scoreBlue };
             r.objectives = objs;
             await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(r) });
-            alert("CONFIGURAZIONE INVIATA");
+            alert("SISTEMA AGGIORNATO");
         }
 
         async function loadConfig() {
@@ -188,46 +209,51 @@
             document.getElementById("cfgMode").value = r.game.mode;
             document.getElementById("cfgDur").value = r.game.duration;
             document.getElementById("cfgCap").value = r.game.capTime;
-            document.getElementById("obj-edit-zone").innerHTML = "";
+            document.getElementById("obj-list-edit").innerHTML = "";
             r.objectives.forEach(o => addObjRow(o.name, o.lat, o.lon));
         }
 
+        // GIOCO
         function startGame() {
             state.name = document.getElementById("pName").value.toUpperCase();
             state.team = document.getElementById("pTeam").value;
-            if(!state.name) return alert("INSERISCI CALLSIGN");
+            if(!state.name) return alert("CALLSIGN NECESSARIO");
             document.getElementById("setup").style.display = "none";
             document.getElementById("game").style.display = "flex";
+            
             if(!state.map) {
-                state.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([45.0, 9.0], 18);
+                state.map = L.map('map', { zoomControl: false, attributionControl: false, rotate: true }).setView([45, 9], 18);
                 L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}').addTo(state.map);
                 state.map.on('dragstart', () => { state.follow = false; document.getElementById("recenter-btn").classList.remove("active"); });
             }
             navigator.geolocation.watchPosition(p => { state.lat = p.coords.latitude; state.lon = p.coords.longitude; }, null, { enableHighAccuracy: true });
             setInterval(loop, 3000);
-            requestAnimationFrame(renderFrame);
+            render();
         }
 
         function toggleRecenter() { state.follow = true; document.getElementById("recenter-btn").classList.add("active"); }
 
-        function renderFrame() {
-            if(document.getElementById("game").style.display === "flex") {
-                document.getElementById("map-rotator").style.transform = `rotate(${-state.hd}deg)`;
-                if(state.follow && state.lat) state.map.panTo([state.lat, state.lon]);
-                updateNavUI();
-                requestAnimationFrame(renderFrame);
+        function render() {
+            if(state.follow && state.lat) state.map.panTo([state.lat, state.lon]);
+            if(state.target) {
+                const line = document.getElementById("nav-arrow"); line.style.display = "block";
+                const d = getD(state.lat, state.lon, state.target.lat, state.target.lon);
+                const bearing = getBearing(state.lat, state.lon, state.target.lat, state.target.lon);
+                line.style.transform = `translate(-50%, -100%) rotate(${bearing - state.hd}deg)`;
+                document.getElementById("dist-tag").innerText = d + " M";
             }
+            requestAnimationFrame(render);
         }
 
         async function loop() {
             try {
-                let res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": API_KEY }, cache: 'no-store' });
+                let res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": API_KEY } });
                 let r = (await res.json()).record;
                 r.players[state.name] = { team: state.team, lat: state.lat, lon: state.lon, last: Date.now() };
+                
                 if(r.game.mode === "DOMINIO") {
                     r.objectives.forEach(o => {
-                        let dist = getD(state.lat, state.lon, o.lat, o.lon);
-                        if(dist < 20 && o.owner !== state.team) {
+                        if(getD(state.lat, state.lon, o.lat, o.lon) < 20 && o.owner !== state.team) {
                             o.progress += 3;
                             if(o.progress >= r.game.capTime) { o.owner = state.team; o.progress = 0; }
                         }
@@ -235,43 +261,32 @@
                     if(state.isM) r.objectives.forEach(o => { if(o.owner==='RED') r.game.scoreRed++; if(o.owner==='BLUE') r.game.scoreBlue++; });
                 }
                 await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(r) });
-                renderUI(r);
-            } catch(e) {}
+                
+                const uiO = document.getElementById("ui-objs"); uiO.innerHTML = "";
+                state.markers.forEach(m => state.map.removeLayer(m));
+                state.markers = [];
+                r.objectives.forEach(o => {
+                    let col = o.owner === 'RED' ? '#f00' : (o.owner === 'BLUE' ? '#0ff' : '#fff');
+                    let li = document.createElement("li"); li.style.color = col;
+                    li.innerHTML = `${o.name} [${o.owner}] ${o.progress > 0 ? '⏳' : ''}`;
+                    li.onclick = () => { state.target = o; document.getElementById("btn-stop-nav").style.display="block"; };
+                    uiO.appendChild(li);
+                    state.markers.push(L.circle([o.lat, o.lon], { radius: 15, color: col, fillOpacity: 0.3, weight: 2 }).addTo(state.map));
+                });
+                document.getElementById("score").innerText = `${Math.floor(r.game.scoreRed/10)} - ${Math.floor(r.game.scoreBlue/10)}`;
+            } catch(e){}
         }
 
-        function renderUI(r) {
-            const uiO = document.getElementById("ui-objs"); uiO.innerHTML = "";
-            state.markers.forEach(m => state.map.removeLayer(m));
-            state.markers = [];
-            r.objectives.forEach(o => {
-                let color = o.owner === 'RED' ? '#f00' : (o.owner === 'BLUE' ? '#0ff' : '#fff');
-                let li = document.createElement("li");
-                li.style.color = color; li.innerHTML = `${o.name} [${o.owner}] ${o.progress > 0 ? '⚡' : ''}`;
-                li.onclick = () => { state.target = o; document.getElementById("btn-stop-nav").style.display="block"; };
-                uiO.appendChild(li);
-                state.markers.push(L.circle([o.lat, o.lon], { radius: 15, color: color, fillOpacity: 0.3 }).addTo(state.map));
-            });
-            document.getElementById("score").innerText = `${Math.floor(r.game.scoreRed/10)} - ${Math.floor(r.game.scoreBlue/10)}`;
-            let rem = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start)/1000);
-            document.getElementById("timer").innerText = rem > 0 ? `${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')}` : "FINE";
-        }
-
-        function updateNavUI() {
-            if(!state.target) { document.getElementById("nav-line").style.display = "none"; return; }
-            const line = document.getElementById("nav-line"); line.style.display = "block";
-            const dist = getD(state.lat, state.lon, state.target.lat, state.target.lon);
-            const y = Math.sin((state.target.lon - state.lon) * Math.PI/180) * Math.cos(state.target.lat * Math.PI/180);
-            const x = Math.cos(state.lat * Math.PI/180) * Math.sin(state.target.lat * Math.PI/180) - Math.sin(state.lat * Math.PI/180) * Math.cos(state.target.lat * Math.PI/180) * Math.cos((state.target.lon - state.lon) * Math.PI/180);
-            const bearing = (Math.atan2(y, x) * 180/Math.PI + 360) % 360;
-            line.style.transform = `translate(-50%, -100%) rotate(${bearing - state.hd}deg)`;
-            document.getElementById("nav-dist-mini").innerText = dist + " METRI";
-        }
-
-        function stopNav() { state.target = null; document.getElementById("btn-stop-nav").style.display = "none"; }
+        function stopNav() { state.target = null; document.getElementById("nav-arrow").style.display = "none"; document.getElementById("btn-stop-nav").style.display = "none"; }
         function getD(la1, lo1, la2, lo2) {
             const R = 6371000;
             const a = Math.sin(((la2-la1)*Math.PI/180)/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(((lo2-lo1)*Math.PI/180)/2)**2;
             return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        }
+        function getBearing(la1, lo1, la2, lo2) {
+            const y = Math.sin((lo2-lo1)*Math.PI/180) * Math.cos(la2*Math.PI/180);
+            const x = Math.cos(la1*Math.PI/180)*Math.sin(la2*Math.PI/180) - Math.sin(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.cos((lo2-lo1)*Math.PI/180);
+            return (Math.atan2(y, x) * 180/Math.PI + 360) % 360;
         }
     </script>
 </body>
