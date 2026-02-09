@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX-APP OPERATOR v.29</title>
+    <title>SIX-APP OPERATOR v.30</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -11,30 +11,29 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; font-weight: bold; }
         body { background: var(--bg); color: var(--mil-green); height: 100vh; overflow: hidden; }
 
-        /* ORIENTAMENTO */
+        /* BLOCCO ORIENTAMENTO */
         #rotate-warning { position: fixed; inset: 0; background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         @media (orientation: landscape) { #rotate-warning { display: none; } }
         
-        /* LOGIN / SETUP */
-        #setup { position: fixed; inset: 0; background: #050505; z-index: 10000; padding: 20px; overflow-y: auto; border: 8px solid #111; }
+        /* SETUP SCREEN */
+        #setup { position: fixed; inset: 0; background: #050505; z-index: 10000; padding: 20px; overflow-y: auto; border: 8px solid #111; text-align: center; }
         .m-title { font-size: 2.2rem; letter-spacing: 4px; border-bottom: 3px solid var(--mil-green); display: inline-block; margin-bottom: 20px; }
         
         .instruction-box { background: rgba(0,255,0,0.05); border: 1px solid #333; padding: 15px; margin-bottom: 20px; border-left: 4px solid var(--mil-green); text-align: left; font-size: 0.8rem; line-height: 1.4; color: #ccc; }
         
-        .field-group { text-align: left; margin-bottom: 15px; width: 100%; max-width: 500px; margin-left: auto; margin-right: auto; }
-        .mini-label { color: var(--label); font-size: 0.6rem; text-transform: uppercase; margin-bottom: 4px; display: block; letter-spacing: 1px; }
+        .field-group { text-align: left; margin-bottom: 12px; width: 100%; max-width: 500px; margin-left: auto; margin-right: auto; }
+        .mini-label { color: var(--label); font-size: 0.65rem; text-transform: uppercase; margin-bottom: 4px; display: block; letter-spacing: 1px; }
         
         input, select, button { width: 100%; padding: 12px; background: #000; border: 1px solid var(--mil-green); color: var(--mil-green); border-radius: 0; text-transform: uppercase; font-size: 1rem; }
         
         /* BUSSOLA DINAMICA */
-        #btn-compass { background: #200; border-color: #600; color: #f44; margin-top: 10px; transition: 0.3s; }
+        #btn-compass { background: #200; border-color: #600; color: #f44; transition: 0.3s; }
         #btn-compass.ready { background: var(--dim-green) !important; border-color: var(--mil-green) !important; color: var(--mil-green) !important; box-shadow: 0 0 15px var(--mil-green); }
 
         /* MASTER PANEL */
-        #master-panel { display: none; border: 2px dashed var(--warn); padding: 20px; color: var(--warn); margin-top: 30px; }
-        .m-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px; }
-        .m-row input { border-color: var(--warn); color: var(--warn); }
-        .m-row .mini-label { color: #fff; }
+        #master-panel { display: none; border: 2px dashed var(--warn); padding: 20px; color: var(--warn); margin-top: 30px; text-align: center; }
+        .m-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px; text-align: left; }
+        .m-row input, .m-row select { border-color: var(--warn); color: var(--warn); }
 
         /* GAME UI */
         #game { display: none; height: 100vh; width: 100vw; flex-direction: column; }
@@ -54,10 +53,8 @@
         .btn-center { position: absolute; bottom: 25px; left: 25px; width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.8); border: 2px solid var(--mil-green); color: var(--mil-green); z-index: 2500; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
         .btn-center.active { background: var(--mil-green); color: #000; }
 
-        /* SIDEBAR LISTA OBJ - LINEA SINGOLA */
         #sidebar { width: 240px; background: #000; border-left: 2px solid var(--mil-green); display: flex; flex-direction: column; z-index: 1000; }
         .list-box { flex: 1; overflow-y: auto; padding: 5px; }
-        .list-box h3 { font-size: 0.7rem; color: #444; margin: 5px; border-bottom: 1px solid #222; }
         li { padding: 12px 8px; border-bottom: 1px solid #111; font-size: 0.8rem; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
@@ -65,8 +62,8 @@
 
     <div id="rotate-warning"><h2>RUOTARE IL DISPOSITIVO 🔄</h2></div>
 
-    <div id="setup" style="text-align: center;">
-        <div class="m-title">SIX-APP v.29</div>
+    <div id="setup">
+        <div class="m-title">SIX-APP v.30</div>
         
         <div class="instruction-box">
             <b>MANUALE OPERATIVO:</b><br>
@@ -102,10 +99,16 @@
                 <div class="field-group"><span class="mini-label">NOME TEAM BLUE</span><input type="text" id="cfgBlue"></div>
             </div>
             <div class="m-row">
+                <div class="field-group">
+                    <span class="mini-label">MODALITÀ DI GIOCO</span>
+                    <select id="cfgMode"><option value="DOMINIO">DOMINIO</option><option value="RECON">RECON</option></select>
+                </div>
+                <div class="field-group"><span class="mini-label">SISTEMA COORD.</span><button onclick="toggleCoord()" id="coord-btn" style="font-size:0.7rem;">GPS</button></div>
+            </div>
+            <div class="m-row">
                 <div class="field-group"><span class="mini-label">DURATA (MIN)</span><input type="number" id="cfgDur"></div>
                 <div class="field-group"><span class="mini-label">CATTURA (SEC)</span><input type="number" id="cfgCap"></div>
             </div>
-            <button onclick="toggleCoord()" id="coord-btn" style="margin-bottom:15px; color:#fff;">SISTEMA: GPS</button>
             <div id="obj-editor"></div>
             <button onclick="addObjRow()" style="border-color:var(--warn); margin-bottom:10px;">+ AGGIUNGI OBIETTIVO</button>
             <div class="m-row">
@@ -129,8 +132,8 @@
                 <div id="recenter-btn" onclick="forceFollow()" class="btn-center active">🎯</div>
             </div>
             <div id="sidebar">
-                <div class="list-box"><h3>OBIETTIVI</h3><ul id="ui-objs"></ul></div>
-                <div class="list-box"><h3>SQUADRA</h3><ul id="ui-team"></ul></div>
+                <div class="list-box"><ul id="ui-objs"></ul></div>
+                <div class="list-box"><ul id="ui-team"></ul></div>
             </div>
         </div>
     </div>
@@ -166,7 +169,7 @@
             }
         }
 
-        function toggleCoord() { state.coordType = state.coordType === 'GPS' ? '32T' : 'GPS'; document.getElementById("coord-btn").innerText = "SISTEMA: " + state.coordType; }
+        function toggleCoord() { state.coordType = state.coordType === 'GPS' ? '32T' : 'GPS'; document.getElementById("coord-btn").innerText = state.coordType; }
 
         function addObjRow(n="", c1="", c2="") {
             const d = document.createElement("div"); d.className = "m-row";
@@ -182,6 +185,7 @@
             let r = (await res.json()).record;
             document.getElementById("cfgRed").value = r.game.names.RED;
             document.getElementById("cfgBlue").value = r.game.names.BLUE;
+            document.getElementById("cfgMode").value = r.game.mode || "DOMINIO";
             document.getElementById("cfgDur").value = r.game.duration;
             document.getElementById("cfgCap").value = r.game.capTime || 60;
             document.getElementById("obj-editor").innerHTML = "";
@@ -209,6 +213,7 @@
                 start: reset ? Date.now() : r.game.start, 
                 duration: document.getElementById("cfgDur").value, 
                 capTime: document.getElementById("cfgCap").value,
+                mode: document.getElementById("cfgMode").value,
                 names: { RED: document.getElementById("cfgRed").value, BLUE: document.getElementById("cfgBlue").value },
                 scoreRed: reset ? 0 : r.game.scoreRed, 
                 scoreBlue: reset ? 0 : r.game.scoreBlue
@@ -256,17 +261,19 @@
                 if(remain < 0) remain = 0;
                 document.getElementById("timer").innerText = `${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}`;
 
-                r.objectives.forEach(o => {
-                    let d = getD(state.lat, state.lon, o.lat, o.lon);
-                    if(d < 20 && o.owner !== state.team) {
-                        o.progress = (o.progress || 0) + 3;
-                        if(o.progress >= (r.game.capTime || 60)) { o.owner = state.team; o.progress = 0; }
-                    }
-                    if(state.isMaster && o.owner !== "LIBERO") {
-                        if(o.owner === "RED") r.game.scoreRed++;
-                        if(o.owner === "BLUE") r.game.scoreBlue++;
-                    }
-                });
+                if(r.game.mode === "DOMINIO") {
+                    r.objectives.forEach(o => {
+                        let d = getD(state.lat, state.lon, o.lat, o.lon);
+                        if(d < 20 && o.owner !== state.team) {
+                            o.progress = (o.progress || 0) + 3;
+                            if(o.progress >= (r.game.capTime || 60)) { o.owner = state.team; o.progress = 0; }
+                        }
+                        if(state.isMaster && o.owner !== "LIBERO") {
+                            if(o.owner === "RED") r.game.scoreRed++;
+                            if(o.owner === "BLUE") r.game.scoreBlue++;
+                        }
+                    });
+                }
 
                 await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(r) });
                 
