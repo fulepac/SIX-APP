@@ -11,11 +11,11 @@
     <div id="setup-screen">
         <header id="main-header">
             <h1 class="brand-title">SIX APP</h1>
-            <div class="credits">OPERAZIONE REAL-TIME v.5.0</div>
+            <div class="credits">Creato da Fulvio v.5.0_TACTICAL</div>
         </header>
 
         <div id="menu">
-            <button class="btn-info" onclick="alert('MANUALE: Conquista gli obiettivi restando nel raggio di 15m. Se il cerchio è giallo, l\'obiettivo è conteso!')">📖 COME FUNZIONA?</button>
+            <button class="btn-info" onclick="alert('MANUALE: Conquista gli obiettivi (15m). Se il cerchio è GIALLO, c\'è un nemico vicino: la conquista è ferma!')">📖 COME FUNZIONA?</button>
 
             <input id="playerName" placeholder="NOME OPERATORE">
             <select id="teamSelect">
@@ -26,14 +26,14 @@
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">COMANDO MASTER</p>
+                    <p class="m-title">COMANDO OPERAZIONE (MASTER)</p>
                     <div class="mode-selector">
                         <button id="btnDomination" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
                         <button id="btnRecon" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
                     </div>
                     <div class="m-config">
-                        <input id="gameDuration" type="number" value="30" placeholder="Minuti">
-                        <input id="captureTime" type="number" value="180" placeholder="Sec. Cattura">
+                        <div class="m-row"><span>MINUTI:</span><input id="gameDuration" type="number" value="30"></div>
+                        <div class="m-row"><span>CATTURA (SEC):</span><input id="captureTime" type="number" value="180"></div>
                     </div>
                 </div>
             </div>
@@ -45,8 +45,8 @@
         <div class="top-bar">
             <div id="timer">⏱️ --:--</div>
             <div class="scores">
-                <span class="r-txt">RED: <span id="scoreRed">0</span></span>
-                <span class="b-txt">BLUE: <span id="scoreBlue">0</span></span>
+                <span class="r-txt">R: <span id="scoreRed">0</span></span>
+                <span class="b-txt">B: <span id="scoreBlue">0</span></span>
             </div>
         </div>
 
@@ -68,7 +68,7 @@
                 <ul id="scoreboard" class="data-list"></ul>
             </div>
             <div class="info-section">
-                <h3>👥 RADAR TEAM</h3>
+                <h3>👥 TEAM RADAR</h3>
                 <ul id="playerList" class="data-list"></ul>
             </div>
         </div>
