@@ -11,11 +11,11 @@
     <div id="setup-screen">
         <header id="main-header">
             <h1 class="brand-title">SIX APP</h1>
-            <div class="credits"> Fulvio v.5.1_09022026</div>
+            <div class="credits">by Fulvio 5.3</div>
         </header>
 
         <div id="menu">
-            <input id="playerName" placeholder="NOME OPERATORE">
+            <input id="playerName" type="text" placeholder="NOME OPERATORE">
             <select id="teamSelect">
                 <option value="RED">TEAM ROSSO</option>
                 <option value="BLUE">TEAM BLU</option>
@@ -23,6 +23,7 @@
 
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
+                
                 <div id="masterTools" style="display:none;">
                     <p class="m-title">COMANDO OPERAZIONE (MASTER)</p>
                     <div class="mode-selector">
@@ -34,16 +35,19 @@
                         <div class="m-row"><span>CATTURA (SEC):</span><input id="captureTime" type="number" value="180"></div>
                     </div>
                     <div id="objSlotContainer" class="slot-list"></div>
+                    
                     <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 AVVIA PER TUTTI</button>
                     <button class="btn-danger" onclick="resetBin()">🔥 RESET DATABASE</button>
                 </div>
             </div>
+            
             <button id="playerStartBtn" class="btn-start" onclick="enableSensorsAndStart(false)">▶ ENTRA IN OPERAZIONE</button>
         </div>
     </div>
 
     <div id="game-ui" style="display:none;">
         <button class="exit-btn" onclick="exitGame()">LOGOUT</button>
+        
         <div class="top-bar">
             <div id="timer" class="countdown-display">⏱️ --:--</div>
             <div id="score-panel" class="score-display">
@@ -54,9 +58,12 @@
 
         <div class="map-system">
             <div class="map-main-container">
-                <div id="map-rotate"><div id="map" style="width:100%; height:100%;"></div></div>
+                <div id="map-rotate">
+                    <div id="map"></div>
+                </div>
                 <div id="player-pointer">▲</div>
             </div>
+
             <div class="map-controls-external">
                 <button onclick="centerMap()" class="ext-btn">🎯</button>
                 <button onclick="zoomIn()" class="ext-btn">➕</button>
