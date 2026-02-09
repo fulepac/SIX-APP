@@ -2,8 +2,8 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP v.5.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
+    <title>SIX APP v.5.1 TACTICAL</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
@@ -11,12 +11,11 @@
     <div id="setup-screen">
         <header id="main-header">
             <h1 class="brand-title">SIX APP</h1>
-            <div class="credits">Creato da Fulvio v.5.0_300126</div>
+            <div class="credits">Operazione Real-Time v.5.1_090226</div>
         </header>
 
         <div id="menu">
-            <button class="btn-info" onclick="toggleTutorial(true)">📖 COME FUNZIONA? CLICCAMI !</button>
-
+            <button class="btn-info" onclick="toggleTutorial(true)">📖 BRIEFING OPERATIVO</button>
             <input id="playerName" placeholder="NOME OPERATORE">
             <select id="teamSelect">
                 <option value="RED">TEAM ROSSO</option>
@@ -49,22 +48,6 @@
         </div>
     </div>
 
-    <div id="tutorial-overlay" class="overlay" style="display:none;">
-        <div class="overlay-content">
-            <h2>🛰️ PRESENTAZIONE TATTICA</h2>
-            <div class="scroll-text">
-                <p><strong>SIX APP</strong> è un sistema di coordinamento tattico progettato da <strong>Fulvio</strong>.</p>
-                <hr>
-                <h3>1. ARCHITETTURA</h3>
-                <p>Sincronizzazione Cloud in tempo reale tra Master e Operatori.</p>
-                <h3>2. MODALITÀ</h3>
-                <p><strong>DOMINIO:</strong> Conquista i punti sulla mappa per accumulare punteggio.<br>
-                <strong>RECON:</strong> Esplorazione e ricognizione libera senza timer.</p>
-            </div>
-            <button class="btn-start" onclick="toggleTutorial(false)">RICEVUTO</button>
-        </div>
-    </div>
-
     <div id="game-ui" style="display:none;">
         <button class="exit-btn" onclick="exitGame()">SCOLLEGATI</button>
         
@@ -83,7 +66,7 @@
                 
                 <div id="nav-overlay" class="nav-hud" style="display:none;">
                     <div id="nav-text">NAVIGAZIONE...</div>
-                    <button onclick="stopNavigation()" class="nav-stop-btn">X</button>
+                    <button onclick="stopNavigation()" class="nav-stop-btn">ANNULLA</button>
                 </div>
             </div>
             <div class="map-controls-external">
