@@ -3,75 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP TACTICAL v.12.0</title>
+    <title>SIX APP TACTICAL v.13.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="setup-screen">
-        <div class="version-tag">TACTICAL BUILD v.12.0</div>
-        <h1 class="brand-title">SIX APP</h1>
-        
-        <div id="menu">
-            <input id="playerName" type="text" placeholder="NOME OPERATORE">
+        <div class="header-box">
+            <span class="version">v.13.0</span>
+            <h1>SIX APP TACTICAL</h1>
+        </div>
+
+        <div class="setup-form">
+            <input id="playerName" type="text" placeholder="NOME OPERATORE (ES. GHOST)">
             <select id="teamSelect">
-                <option value="RED">UNITÀ ROSSA</option>
-                <option value="BLUE">UNITÀ BLU</option>
+                <option value="RED">SQUADRA ROSSA</option>
+                <option value="BLUE">SQUADRA BLU</option>
             </select>
-            
-            <div class="master-zone">
-                <input id="masterPass" type="password" placeholder="PIN MASTER" oninput="checkMasterPass()">
-                <div id="masterTools" style="display:none;">
-                    <div class="team-names-edit">
-                        <input id="nameRed" type="text" value="ATTACCO">
-                        <input id="nameBlue" type="text" value="DIFESA">
+
+            <div class="master-section">
+                <input id="masterPass" type="password" placeholder="PIN MASTER" oninput="checkMaster()">
+                <div id="masterPanel" style="display:none;">
+                    <p class="label">CONFIGURAZIONE MISSIONE</p>
+                    <div class="grid">
+                        <input id="nameRed" type="text" value="ATTACCO" placeholder="NOME ROSSI">
+                        <input id="nameBlue" type="text" value="DIFESA" placeholder="NOME BLU">
                     </div>
                     <select id="gameMode">
                         <option value="DOMINIO">MODALITÀ: DOMINIO</option>
                         <option value="RECON">MODALITÀ: RECON</option>
                     </select>
-                    <div class="m-config-grid">
-                        <div class="m-row"><span>PARTITA(min):</span><input id="gameDuration" type="number" value="60"></div>
-                        <div class="m-row"><span>CATTURA(sec):</span><input id="captureTime" type="number" value="120"></div>
+                    <div class="grid">
+                        <div class="col">TEMPO (MIN)<input id="gameDur" type="number" value="60"></div>
+                        <div class="col">CATTURA (SEC)<input id="capTime" type="number" value="120"></div>
                     </div>
-                    <div id="masterObjInputs"></div>
-                    <button type="button" class="btn-sub" onclick="addObjRow()">➕ AGGIUNGI OBIETTIVO</button>
-                    <button class="btn-danger" onclick="resetDatabase()">🔥 RESET TOTALE</button>
+                    <div id="objContainer"></div>
+                    <button type="button" class="btn-add" onclick="addObjField()">➕ AGGIUNGI OBIETTIVO</button>
+                    <button class="btn-reset" onclick="hardReset()">🔥 RESET E AVVIA PARTITA</button>
                 </div>
             </div>
-            
-            <button id="btn-sensor" class="btn-sensor" onclick="requestCompass()">🔓 SBLOCCA BUSSOLA</button>
-            <button class="btn-start" onclick="initApp()">▶ INIZIA MISSIONE</button>
+
+            <div class="actions">
+                <button id="compassBtn" class="btn-compass" onclick="unlockCompass()">🔓 SBLOCCA BUSSOLA</button>
+                <button class="btn-start" onclick="startApp()">▶ ENTRA IN AZIONE</button>
+            </div>
         </div>
     </div>
 
     <div id="game-ui" style="display:none;">
-        <div class="top-bar">
-            <div id="timer">⏱️ --:--</div>
-            <div id="mode-label">DOMINIO</div>
-            <div id="score">R: 0 | B: 0</div>
+        <div class="top-nav">
+            <div id="timer">00:00</div>
+            <div id="m-label">DOMINIO</div>
+            <div id="score">R:0 | B:0</div>
         </div>
-        
-        <div class="main-container">
-            <div class="map-container">
+
+        <div class="content">
+            <div class="map-box">
                 <div id="map-rotate"><div id="map"></div></div>
-                <div id="player-pointer">▲</div>
-                <div id="nav-overlay" class="nav-hud" style="display:none;">
+                <div id="pointer">▲</div>
+                <div id="nav-hud" style="display:none;">
                     <div id="nav-arrow">⬆</div>
-                    <div id="nav-text">---</div>
-                    <button onclick="stopNavigation()">❌</button>
+                    <div id="nav-info">OBJ: -- | 0m</div>
+                    <button onclick="closeNav()">❌</button>
                 </div>
-                <button class="center-btn" onclick="centerMap()">🎯</button>
+                <button class="btn-recenter" onclick="recenter()">🎯</button>
             </div>
 
-            <div class="info-panel">
-                <div class="sect">
-                    <p>📍 OBIETTIVI</p>
-                    <ul id="scoreboard" class="data-list"></ul>
+            <div class="side-panel">
+                <div class="panel-sect">
+                    <h3>📍 OBIETTIVI</h3>
+                    <ul id="objList"></ul>
                 </div>
-                <div class="sect">
-                    <p>👥 TEAM RADAR</p>
-                    <ul id="playerList" class="data-list"></ul>
+                <div class="panel-sect">
+                    <h3>👥 TEAM</h3>
+                    <ul id="teamList"></ul>
                 </div>
             </div>
         </div>
