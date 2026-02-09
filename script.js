@@ -2,34 +2,50 @@ const BIN_ID = "696d4940ae596e708fe53514";
 const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
 const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-let state = { isMaster: false, playerName: "", playerTeam: "", playerMarker: null, autoCenter: true, targetObj: null, navLine: null, activeMarkers: [] };
+let state = { 
+    isMaster: false, playerName: "", playerTeam: "", 
+    playerMarker: null, autoCenter: true, targetObj: null, 
+    navLine: null, activeMarkers: [], teamNames: { RED: "ROSSI", BLUE: "BLU" }
+};
 let map;
 
-// 1. GESTIONE MASTER
 function checkMasterPass() {
     if (document.getElementById("masterPass").value === "71325") {
         state.isMaster = true;
         document.getElementById("masterTools").style.display = "block";
+        const container = document.getElementById("masterObjInputs");
+        if (container.innerHTML === "") {
+            addObjRow("ALFA", 45.2377, 8.8097);
+            addObjRow("BRAVO", 45.2385, 8.8105);
+        }
     }
 }
 
-// 2. BUSSOLA E AVVIO
+function addObjRow(n="", lat="", lon="") {
+    const div = document.createElement("div");
+    div.className = "obj-row-edit";
+    div.innerHTML = `
+        <input type="text" class="in-name" value="${n}" placeholder="OBJ">
+        <input type="number" class="in-lat" value="${lat}" step="0.0001">
+        <input type="number" class="in-lon" value="${lon}" step="0.0001">
+    `;
+    document.getElementById("masterObjInputs").appendChild(div);
+}
+
 async function initApp() {
     state.playerName = document.getElementById("playerName").value.toUpperCase();
     if (!state.playerName) return alert("INSERISCI NOME!");
     state.playerTeam = document.getElementById("teamSelect").value;
+    state.teamNames.RED = document.getElementById("nameRed").value.toUpperCase();
+    state.teamNames.BLUE = document.getElementById("nameBlue").value.toUpperCase();
 
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        const res = await DeviceOrientationEvent.requestPermission();
-        if (res === 'granted') window.addEventListener('deviceorientation', (e) => {
-            let h = e.webkitCompassHeading || (360 - e.alpha);
-            if (h) document.getElementById("map-rotate").style.transform = `rotate(${-h}deg)`;
-        });
+        try {
+            const res = await DeviceOrientationEvent.requestPermission();
+            if (res === 'granted') window.addEventListener('deviceorientation', handleRot);
+        } catch(e) {}
     } else {
-        window.addEventListener('deviceorientation', (e) => {
-            let h = e.webkitCompassHeading || (360 - e.alpha);
-            if (h) document.getElementById("map-rotate").style.transform = `rotate(${-h}deg)`;
-        });
+        window.addEventListener('deviceorientation', handleRot);
     }
     
     document.getElementById("setup-screen").style.display = "none";
@@ -51,7 +67,11 @@ async function initApp() {
     setInterval(sync, 4000);
 }
 
-// 3. SINCRONIZZAZIONE E LOGICA
+function handleRot(e) {
+    let h = e.webkitCompassHeading || (360 - e.alpha);
+    if (h) document.getElementById("map-rotate").style.transform = `rotate(${-h}deg)`;
+}
+
 async function sync() {
     try {
         const res = await fetch(`${URL}/latest`, { headers: { "X-Master-Key": SECRET_KEY }, cache: 'no-store' });
@@ -65,7 +85,10 @@ async function sync() {
             const d = getDist(myPos.lat, myPos.lng, obj.lat, obj.lon);
             if (d < 15 && obj.owner !== state.playerTeam) {
                 obj.progress = (obj.progress || 0) + 4;
-                if (obj.progress >= 180) { obj.owner = state.playerTeam; obj.progress = 0; }
+                if (obj.progress >= (record.game.capTime || 180)) { 
+                    obj.owner = state.playerTeam; 
+                    obj.progress = 0; 
+                }
             }
         });
 
@@ -74,6 +97,7 @@ async function sync() {
                 if (o.owner === 'RED') record.game.scoreRed += 1;
                 if (o.owner === 'BLUE') record.game.scoreBlue += 1;
             });
+            record.game.teamNames = state.teamNames;
         }
 
         updateUI(record);
@@ -82,7 +106,9 @@ async function sync() {
 }
 
 function updateUI(r) {
-    document.getElementById("score").innerText = `R: ${Math.floor(r.game.scoreRed/10)} | B: ${Math.floor(r.game.scoreBlue/10)}`;
+    const tNames = r.game.teamNames || { RED: "ROSSI", BLUE: "BLU" };
+    document.getElementById("score").innerText = `${tNames.RED}: ${Math.floor(r.game.scoreRed/10)} | ${tNames.BLUE}: ${Math.floor(r.game.scoreBlue/10)}`;
+    
     state.activeMarkers.forEach(m => map.removeLayer(m));
     state.activeMarkers = [];
 
@@ -90,7 +116,8 @@ function updateUI(r) {
     r.objectives.forEach(obj => {
         let col = obj.owner === 'RED' ? '#f00' : (obj.owner === 'BLUE' ? '#0ff' : '#fff');
         let li = document.createElement("li");
-        li.style.color = col; li.innerHTML = `[${obj.owner}] ${obj.name}`;
+        li.style.color = col;
+        li.innerHTML = `[${obj.owner === 'LIBERO' ? 'LIB' : tNames[obj.owner]}] ${obj.name} ${obj.progress > 0 ? '⏳' : ''}`;
         li.onclick = () => { state.targetObj = obj; document.getElementById("nav-overlay").style.display = "flex"; };
         sb.appendChild(li);
         state.activeMarkers.push(L.circle([obj.lat, obj.lon], { radius: 15, color: col, fillOpacity: 0.3 }).addTo(map));
@@ -99,31 +126,43 @@ function updateUI(r) {
     const pl = document.getElementById("playerList"); pl.innerHTML = "";
     Object.entries(r.players).forEach(([n, p]) => {
         if (Date.now() - p.last < 30000 && p.team === state.playerTeam && n !== state.playerName) {
-            pl.innerHTML += `<li>${n} (${getDist(p.lat, p.lon, state.playerMarker.getLatLng().lat, state.playerMarker.getLatLng().lng)}m)</li>`;
+            const d = getDist(p.lat, p.lon, state.playerMarker.getLatLng().lat, state.playerMarker.getLatLng().lng);
+            pl.innerHTML += `<li>${n} (${d}m)</li>`;
             state.activeMarkers.push(L.circleMarker([p.lat, p.lon], { radius: 7, color: p.team === 'RED' ? 'red' : 'cyan', fillOpacity: 1 }).addTo(map));
         }
     });
 }
 
-// 4. UTILITY
+async function resetDatabase() {
+    if (!confirm("CONFERMI RESET?")) return;
+    let objs = [];
+    document.querySelectorAll(".obj-row-edit").forEach(row => {
+        const ins = row.querySelectorAll("input");
+        if (ins[0].value) {
+            objs.push({ name: ins[0].value.toUpperCase(), lat: parseFloat(ins[1].value), lon: parseFloat(ins[2].value), owner: "LIBERO", progress: 0 });
+        }
+    });
+
+    const data = { 
+        game: { 
+            scoreRed: 0, scoreBlue: 0, start: Date.now(), 
+            duration: parseInt(document.getElementById("gameDuration").value) || 30,
+            capTime: parseInt(document.getElementById("captureTime").value) || 180,
+            teamNames: { RED: document.getElementById("nameRed").value, BLUE: document.getElementById("nameBlue").value }
+        }, 
+        players: {}, 
+        objectives: objs 
+    };
+    await fetch(URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(data) });
+    alert("PARTITA CONFIGURATA!");
+}
+
 function getDist(la1, lo1, la2, lo2) {
     const R = 6371000;
     const dLat = (la2 - la1) * Math.PI / 180;
     const dLon = (lo2 - lo1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(la1 * Math.PI / 180) * Math.cos(la2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
     return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-}
-
-async function resetDatabase() {
-    if (!confirm("RESET?")) return;
-    let objs = [];
-    document.querySelectorAll(".obj-row-edit").forEach(row => {
-        const ins = row.querySelectorAll("input");
-        objs.push({ name: ins[0].value.toUpperCase(), lat: parseFloat(ins[1].value), lon: parseFloat(ins[2].value), owner: "LIBERO", progress: 0 });
-    });
-    const data = { game: { scoreRed: 0, scoreBlue: 0, start: Date.now(), duration: 30 }, players: {}, objectives: objs };
-    await fetch(URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(data) });
-    alert("INVIATO!");
 }
 
 function stopNavigation() { state.targetObj = null; document.getElementById("nav-overlay").style.display = "none"; }
