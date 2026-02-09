@@ -6,7 +6,9 @@ const PWD_MASTER = "71325";
 const DEFAULT_OBJS = [
     { name: "ALFA", lat: 45.2377, lon: 8.8097, owner: "LIBERO", progress: 0, capturingTeam: null },
     { name: "BRAVO", lat: 45.2385, lon: 8.8105, owner: "LIBERO", progress: 0, capturingTeam: null },
-    { name: "CHARLIE", lat: 45.2369, lon: 8.8115, owner: "LIBERO", progress: 0, capturingTeam: null }
+    { name: "CHARLIE", lat: 45.2369, lon: 8.8115, owner: "LIBERO", progress: 0, capturingTeam: null },
+    { name: "DELTA", lat: 45.2392, lon: 8.8085, owner: "LIBERO", progress: 0, capturingTeam: null },
+    { name: "ECHO", lat: 45.2360, lon: 8.8075, owner: "LIBERO", progress: 0, capturingTeam: null }
 ];
 
 let state = { 
@@ -45,7 +47,7 @@ async function loadConfigFromServer() {
         const container = document.getElementById("objSlotContainer");
         container.innerHTML = "";
         const currentObjs = (record.objectives && record.objectives.length > 0) ? record.objectives : DEFAULT_OBJS;
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 10; i++) {
             let o = currentObjs[i] || { name: `OBJ${i+1}`, lat: "", lon: "" };
             container.innerHTML += `
                 <div class="obj-slot">
@@ -61,6 +63,7 @@ async function loadConfigFromServer() {
 function handleRotation(e) {
     let compass = e.webkitCompassHeading || (360 - e.alpha);
     if(compass) {
+        // Punto 6: Ruota la mappa e segui il movimento
         document.getElementById("map-rotate").style.transform = `rotate(${-compass}deg)`;
     }
 }
@@ -119,21 +122,20 @@ async function sync(forceMaster, duration) {
 
         const captureRequired = parseInt(document.getElementById("captureTime")?.value || 180);
 
-        // LOGICA DI CONQUISTA E CONTESA (Richieste 1, 2, 3)
+        // LOGICA DI CONQUISTA (Punti 1, 2, 3)
         record.objectives.forEach(obj => {
-            let playersInRadius = Object.values(record.players).filter(p => (Date.now() - p.last < 10000) && getDist(p.lat, p.lon, obj.lat, obj.lon) <= 15);
-            let redHere = playersInRadius.some(p => p.team === 'RED');
-            let blueHere = playersInRadius.some(p => p.team === 'BLUE');
+            let inArea = Object.values(record.players).filter(p => (Date.now() - p.last < 10000) && getDistRaw(p.lat, p.lon, obj.lat, obj.lon) <= 15);
+            let redHere = inArea.some(p => p.team === 'RED');
+            let blueHere = inArea.some(p => p.team === 'BLUE');
 
             if (redHere && blueHere) {
-                obj.isContested = true; 
+                obj.contested = true; // Punto 3: Allerta contesa
             } else {
-                obj.isContested = false;
+                obj.contested = false;
                 let activeTeam = redHere ? 'RED' : (blueHere ? 'BLUE' : null);
-
-                // Requisito 2: Per riconquistare non deve esserci il team precedente
                 let ownerPresent = (obj.owner === 'RED' && redHere) || (obj.owner === 'BLUE' && blueHere);
                 
+                // Punto 1 e 2: Conquista se il proprietario non c'è e il tempo passa
                 if (activeTeam && !ownerPresent && obj.owner !== activeTeam) {
                     obj.capturingTeam = activeTeam;
                     obj.progress = (obj.progress || 0) + 4;
@@ -141,14 +143,13 @@ async function sync(forceMaster, duration) {
                         obj.owner = activeTeam;
                         obj.progress = 0;
                     }
-                } else if (!activeTeam || ownerPresent) {
+                } else {
                     obj.progress = 0;
                     obj.capturingTeam = null;
                 }
             }
         });
 
-        // Gestione Master e Punteggio
         if(state.isMaster || forceMaster) {
             record.game = { 
                 mode: state.selectedMode, 
@@ -174,13 +175,12 @@ async function sync(forceMaster, duration) {
         }
         await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
         updateUI(record);
-    } catch(e) { console.error("Sync Error:", e); }
+    } catch(e) { console.error("Sync Error"); }
 }
 
 function updateUI(r) {
     activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
     
-    // Timer
     const timerEl = document.getElementById("timer");
     const remain = ((r.game.duration || 30) * 60) - Math.floor((Date.now() - r.game.start) / 1000);
     if(remain > 0) {
@@ -191,33 +191,31 @@ function updateUI(r) {
     document.getElementById("scoreRed").innerText = Math.floor(r.game.scoreRed/10);
     document.getElementById("scoreBlue").innerText = Math.floor(r.game.scoreBlue/10);
 
-    // Lista Obiettivi (Richiesta 5: Senza scorrere)
     const scoreboard = document.getElementById("scoreboard");
     scoreboard.innerHTML = "";
     r.objectives.forEach(obj => {
         let color = obj.owner === 'RED' ? '#f00' : (obj.owner === 'BLUE' ? '#0ff' : '#fff');
-        let status = obj.isContested ? '<span style="color:yellow">! CONTESA !</span>' : 
-                    (obj.progress > 0 ? `CATTURA ${obj.capturingTeam} ${Math.round((obj.progress/parseInt(document.getElementById("captureTime")?.value || 180))*100)}%` : obj.owner);
+        let statusText = obj.contested ? '<span style="color:yellow">! CONTESA !</span>' : 
+                        (obj.progress > 0 ? `CATTURA ${obj.capturingTeam} ${Math.round((obj.progress/parseInt(document.getElementById("captureTime")?.value || 180))*100)}%` : obj.owner);
         
-        scoreboard.innerHTML += `<li style="border-left:5px solid ${color}"><b>${obj.name}</b>: ${status}</li>`;
+        scoreboard.innerHTML += `<li style="border-left:5px solid ${color}"><b>${obj.name}</b>: ${statusText}</li>`;
         
-        let m = L.circle([obj.lat, obj.lon], {radius: 15, color: obj.isContested ? 'yellow' : color, weight: 3, fillOpacity: 0.3}).addTo(map);
+        let m = L.circle([obj.lat, obj.lon], {radius: 15, color: obj.contested ? 'yellow' : color, weight: 3, fillOpacity: 0.3}).addTo(map);
         activeMarkers.push(m);
     });
 
-    // Radar Team
     const pList = document.getElementById("playerList");
     pList.innerHTML = "";
     Object.entries(r.players).forEach(([name, p]) => {
         if(Date.now() - p.last < 30000 && p.team === state.playerTeam && name !== state.playerName) {
-            let d = getDist(p.lat, p.lon, state.playerMarker?.getLatLng().lat, state.playerMarker?.getLatLng().lng);
+            let d = getDistRaw(p.lat, p.lon, state.playerMarker?.getLatLng().lat, state.playerMarker?.getLatLng().lng);
             pList.innerHTML += `<li>${name} [${d}m]</li>`;
             activeMarkers.push(L.circleMarker([p.lat, p.lon], {radius: 6, color: p.team==='RED'?'red':'cyan', fillOpacity:1}).addTo(map));
         }
     });
 }
 
-function getDist(lat1, lon1, lat2, lon2) {
+function getDistRaw(lat1, lon1, lat2, lon2) {
     if(!lat1 || !lat2) return 999;
     const R = 6371000;
     const dLat = (lat2 - lat1) * Math.PI / 180;
