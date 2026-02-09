@@ -3,132 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX-APP MIL-SPEC v.26</title>
+    <title>SIX-APP OPERATOR v.27</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        :root { --mil-green: #00ff00; --mil-orange: #ff9000; --bg: #000; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Consolas', 'Courier New', monospace; }
-        body { background: var(--bg); color: var(--mil-green); height: 100vh; overflow: hidden; font-weight: bold; }
+        :root { --mil-green: #0f0; --dim-green: #004400; --bg: #000; --warn: #ff9000; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; font-weight: bold; }
+        body { background: var(--bg); color: var(--mil-green); height: 100vh; overflow: hidden; }
 
-        /* SCHERMATA LOGIN - STILE MILITARE AGGRESSIVO */
-        #setup { position: fixed; inset: 0; background: var(--bg); z-index: 10000; padding: 25px; overflow-y: auto; border: 10px solid #111; text-align: center; }
-        .header-frame { border: 3px solid var(--mil-green); padding: 15px; margin-bottom: 25px; background: rgba(0,255,0,0.05); }
-        h1 { font-size: 2.4rem; letter-spacing: 5px; text-shadow: 2px 2px 0px #030; }
-        
-        .inst-box { background: #080808; border: 1px solid #333; padding: 15px; text-align: left; font-size: 0.8rem; color: #aaa; margin-bottom: 20px; border-left: 5px solid var(--mil-green); }
-        
-        input, select, button { width: 100%; padding: 15px; background: #000; border: 2px solid var(--mil-green); color: var(--mil-green); border-radius: 0; margin-bottom: 12px; text-transform: uppercase; font-size: 1rem; }
-        button { cursor: pointer; }
+        /* BLOCCO ORIENTAMENTO */
+        #rotate-warning { position: fixed; inset: 0; background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+        @media (orientation: landscape) { #rotate-warning { display: none; } }
+        .rotate-icon { font-size: 4rem; margin-bottom: 20px; animation: rotate 2s infinite; }
+        @keyframes rotate { 0% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } 100% { transform: rotate(0deg); } }
+
+        /* LOGIN / SETUP */
+        #setup { position: fixed; inset: 0; background: #050505; z-index: 10000; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; border: 10px solid #111; }
+        .m-title { font-size: 2.5rem; letter-spacing: 5px; border: 2px solid var(--mil-green); padding: 10px 30px; margin: 20px 0; }
+        .login-container { width: 100%; max-width: 600px; }
+        input, select, button { width: 100%; padding: 12px; background: #000; border: 1px solid var(--mil-green); color: var(--mil-green); border-radius: 0; margin-bottom: 10px; text-transform: uppercase; font-size: 0.9rem; }
         button:active { background: var(--mil-green); color: #000; }
-        
-        #btn-compass { background: #1a0000; border-color: #500; color: #f00; }
-        #btn-compass.ready { background: #002200 !important; border-color: var(--mil-green) !important; color: var(--mil-green) !important; box-shadow: 0 0 20px rgba(0,255,0,0.4); }
+        #btn-compass.ready { background: var(--dim-green); color: #fff; border-color: #fff; box-shadow: 0 0 15px var(--mil-green); }
 
-        /* PANNELLO MASTER */
-        #master-panel { display: none; margin-top: 30px; padding: 20px; border: 2px dashed var(--mil-orange); color: var(--mil-orange); text-align: left; }
+        /* MASTER PANEL */
+        #master-panel { display: none; border: 1px dashed var(--warn); padding: 15px; color: var(--warn); margin-top: 20px; text-align: left; }
         .m-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .m-row input { border-color: var(--mil-orange); color: var(--mil-orange); font-size: 0.8rem; }
-        .obj-entry { display: flex; gap: 5px; margin-bottom: 5px; }
+        .m-row input { border-color: var(--warn); color: var(--warn); font-size: 0.7rem; }
 
-        /* GAME UI */
-        #game { display: none; flex-direction: column; height: 100%; }
-        .hud-top { height: 50px; background: #000; border-bottom: 2px solid var(--mil-green); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 5000; }
+        /* INTERFACCIA GIOCO (LANDSCAPE) */
+        #game { display: none; height: 100vh; width: 100vw; flex-direction: column; }
+        .hud-header { height: 40px; background: #000; border-bottom: 1px solid var(--mil-green); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; font-size: 0.8rem; z-index: 1000; }
         
-        #map-container { flex-grow: 1; position: relative; background: #000; overflow: hidden; }
+        .main-ui { flex-grow: 1; display: flex; overflow: hidden; }
+        #map-wrap { flex-grow: 1; position: relative; background: #000; }
         #map { width: 100%; height: 100%; }
-        
-        /* RIMOSS_CERCHIO_E_FILTRI: MIRINO BIANCO HUD */
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; transform: translate(-50%, -50%); z-index: 4000; pointer-events: none; border: 1px solid rgba(255,255,255,0.5); border-radius: 50%; }
-        #crosshair::before { content: ''; position: absolute; top: 50%; left: -10px; width: 60px; height: 1px; background: rgba(255,255,255,0.8); }
-        #crosshair::after { content: ''; position: absolute; left: 50%; top: -10px; width: 1px; height: 60px; background: rgba(255,255,255,0.8); }
 
-        /* NAVIGAZIONE AGGRESSIVA */
-        #nav-line { position: absolute; top: 50%; left: 50%; width: 3px; height: 250px; background: linear-gradient(to top, transparent, var(--mil-green)); transform-origin: bottom center; z-index: 3500; display: none; }
-        #dist-pop { position: absolute; top: -40px; left: 50%; transform: translateX(-50%); background: #000; border: 2px solid var(--mil-green); padding: 4px 10px; font-size: 1rem; color: #fff; }
+        /* MIRINO TATTICO SOTTILE */
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; transform: translate(-50%, -50%); z-index: 2000; pointer-events: none; }
+        #crosshair::before { content: ''; position: absolute; top: 25px; left: 0; width: 50px; height: 1px; background: rgba(255,255,255,0.4); }
+        #crosshair::after { content: ''; position: absolute; left: 25px; top: 0; width: 1px; height: 50px; background: rgba(255,255,255,0.4); }
 
-        .btn-recenter { position: absolute; bottom: 30px; left: 20px; width: 65px; height: 65px; border-radius: 50%; z-index: 4500; background: rgba(0,0,0,0.85); border: 3px solid var(--mil-green); color: var(--mil-green); font-size: 2rem; display: flex; align-items: center; justify-content: center; }
-        .btn-recenter.active { background: var(--mil-green); color: #000; }
+        /* NAVIGAZIONE */
+        #nav-line { position: absolute; top: 50%; left: 50%; width: 2px; height: 200px; background: linear-gradient(to top, transparent, var(--mil-green)); transform-origin: bottom center; z-index: 1500; display: none; }
+        #nav-dist { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: #000; border: 1px solid var(--mil-green); padding: 2px 6px; font-size: 0.7rem; white-space: nowrap; }
 
-        /* SIDEBAR LISTE */
-        #sidebar { width: 100%; height: 200px; background: #000; border-top: 2px solid var(--mil-green); display: flex; z-index: 4600; }
-        .col { flex: 1; padding: 10px; overflow-y: auto; border-right: 1px solid #222; }
-        .col h3 { font-size: 0.7rem; color: #666; margin-bottom: 8px; border-bottom: 1px solid #222; }
-        li { padding: 15px 5px; border-bottom: 1px solid #111; font-size: 0.9rem; cursor: pointer; }
+        .btn-center { position: absolute; bottom: 20px; left: 20px; width: 55px; height: 55px; border-radius: 50%; background: rgba(0,0,0,0.8); border: 2px solid var(--mil-green); color: var(--mil-green); z-index: 2500; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .btn-center.active { background: var(--mil-green); color: #000; }
 
-        @media (orientation: landscape) {
-            #game { flex-direction: row; }
-            .main-view { flex-grow: 1; position: relative; height: 100%; }
-            #sidebar { width: 300px; height: 100%; border-top: none; border-left: 2px solid var(--mil-green); flex-direction: column; }
-        }
+        /* SIDEBAR COMPATTA */
+        #sidebar { width: 220px; background: #000; border-left: 1px solid var(--mil-green); display: flex; flex-direction: column; z-index: 1000; }
+        .list-box { flex: 1; overflow-y: auto; padding: 10px; border-bottom: 1px solid #111; }
+        .list-box h3 { font-size: 0.6rem; color: #444; margin-bottom: 5px; letter-spacing: 1px; }
+        ul { list-style: none; }
+        li { padding: 10px 5px; border-bottom: 1px solid #111; font-size: 0.75rem; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body>
 
+    <div id="rotate-warning">
+        <div class="rotate-icon">🔄</div>
+        <h2>RUOTARE IL DISPOSITIVO</h2>
+        <p>L'app funziona esclusivamente in modalità orizzontale.</p>
+    </div>
+
     <div id="setup">
-        <div class="header-frame"><h1>SIX-APP v.26</h1></div>
-        
-        <div class="inst-box">
-            <b>MANUALE TATTICO:</b><br>
-            1. <b>SBLOCCA BUSSOLA:</b> Obbligatorio per orientare la mappa.<br>
-            2. <b>IDENTIFICAZIONE:</b> Inserisci Callsign e Fazione.<br>
-            3. <b>CENTRAGGIO:</b> Il tasto 🎯 aggancia il GPS al centro mirino.<br>
-            4. <b>OBIETTIVI:</b> Tocca un nome in lista per avviare la navigazione.
-        </div>
+        <div class="m-title">SIX-APP v.27</div>
+        <div class="login-container">
+            <input type="text" id="pName" placeholder="CALLSIGN OPERATORE">
+            <select id="pTeam">
+                <option value="RED">TEAM ALPHA (RED)</option>
+                <option value="BLUE">TEAM BRAVO (BLUE)</option>
+            </select>
+            <button id="btn-compass" onclick="requestSensors()">SBLOCCA BUSSOLA (OBBLIGATORIO)</button>
+            <button onclick="startGame()" style="background:#004400; border-color:#0f0; margin-top:10px;">AVVIA MISSIONE</button>
 
-        <input type="text" id="pName" placeholder="OPERATOR CALLSIGN">
-        <select id="pTeam">
-            <option value="RED">TEAM ALPHA (ROSSO)</option>
-            <option value="BLUE">TEAM BRAVO (BLU)</option>
-        </select>
-        
-        <button id="btn-compass" onclick="requestSensors()">🔓 SBLOCCA BUSSOLA SENSORI</button>
-        <button onclick="startGame()" style="background:#003300; font-size:1.3rem; margin-top:15px; border-width:3px;">▶ AVVIA SISTEMA</button>
-
-        <input type="password" id="mPass" placeholder="ADMIN PIN" oninput="checkMaster()" style="margin-top:40px; border-color:#222; font-size:0.8rem;">
-        
-        <div id="master-panel">
-            <h2 style="font-size:1rem; margin-bottom:10px;">MASTER CONFIG</h2>
-            <div class="m-row">
-                <input type="text" id="cfgRed" placeholder="Nome Red">
-                <input type="text" id="cfgBlue" placeholder="Nome Blue">
-            </div>
-            <div class="m-row">
-                <select id="cfgMode"><option value="DOMINIO">DOMINIO</option><option value="RECON">RECON</option></select>
-                <input type="number" id="cfgDur" placeholder="Minuti Partita">
-            </div>
-            <input type="number" id="cfgCap" placeholder="Secondi Cattura (es. 60)">
+            <input type="password" id="mPass" placeholder="ADMIN PIN" oninput="checkMaster()" style="margin-top:30px; border-color:#333; font-size:0.7rem;">
             
-            <button onclick="switchCoords()" id="coord-sw" style="color:white; border-color:white; font-size:0.8rem;">SISTEMA: GPS DECIMALE</button>
-            
-            <div id="obj-editor"></div>
-            <button onclick="newObjRow()" style="border-color:#ff9000; font-size:0.8rem;">+ AGGIUNGI OBJ</button>
-            
-            <div class="m-row" style="margin-top:20px;">
-                <button onclick="updateCloud(false)" style="color:#0ff; border-color:#0ff;">SALVA</button>
-                <button onclick="updateCloud(true)" style="color:#f00; border-color:#f00;">WIPE/RESET</button>
+            <div id="master-panel">
+                <div class="m-row">
+                    <input type="text" id="cfgRed" placeholder="Nome Red">
+                    <input type="text" id="cfgBlue" placeholder="Nome Blue">
+                </div>
+                <div class="m-row">
+                    <select id="cfgMode"><option value="DOMINIO">DOMINIO</option><option value="RECON">RECON</option></select>
+                    <input type="number" id="cfgDur" placeholder="Minuti">
+                </div>
+                <button onclick="toggleCoord()" id="coord-btn" style="color:#f90; font-size:0.7rem;">MODALITÀ: GPS</button>
+                <div id="obj-editor"></div>
+                <button onclick="addObjRow()" style="border-color:#f90; font-size:0.7rem;">+ AGGIUNGI OBJ</button>
+                <div class="m-row" style="margin-top:10px;">
+                    <button onclick="saveCloud(false)" style="color:cyan;">SALVA</button>
+                    <button onclick="saveCloud(true)" style="color:orange;">RESET</button>
+                </div>
             </div>
         </div>
     </div>
 
     <div id="game">
-        <div class="hud-top">
-            <button onclick="location.reload()" style="width:auto; color:red; border-color:red; font-size:0.7rem; padding:4px 10px;">EXIT</button>
-            <span id="timer">--:--</span>
-            <span id="score">00 - 00</span>
-            <button onclick="killNav()" id="btn-nav-stop" style="display:none; width:auto; color:red; font-size:0.7rem;">STOP NAV</button>
+        <div class="hud-header">
+            <span id="timer">00:00</span>
+            <span id="score">0 - 0</span>
+            <button onclick="location.reload()" style="width:auto; border-color:red; color:red; padding:2px 10px; font-size:0.6rem;">CHIUDI</button>
         </div>
         
-        <div id="map-container">
-            <div id="map"></div>
-            <div id="crosshair"></div>
-            <div id="nav-line"><div id="dist-pop">0M</div></div>
-            <div id="recenter-btn" onclick="forceRecenter()" class="btn-recenter active">🎯</div>
-        </div>
-        
-        <div id="sidebar">
-            <div class="col"><h3>OBIETTIVI</h3><ul id="ui-objs"></ul></div>
-            <div class="col"><h3>UNITÀ</h3><ul id="ui-team"></ul></div>
+        <div class="main-ui">
+            <div id="map-wrap">
+                <div id="map"></div>
+                <div id="crosshair"></div>
+                <div id="nav-line"><div id="nav-dist">0M</div></div>
+                <div id="recenter-btn" onclick="forceFollow()" class="btn-center active">🎯</div>
+            </div>
+            
+            <div id="sidebar">
+                <div class="list-box"><h3>OBIETTIVI</h3><ul id="ui-objs"></ul></div>
+                <div class="list-box"><h3>TEAM</h3><ul id="ui-team"></ul></div>
+                <button onclick="stopNav()" id="nav-stop" style="display:none; margin:5px; font-size:0.6rem; color:red; border-color:red;">STOP NAV</button>
+            </div>
         </div>
     </div>
 
@@ -137,43 +127,40 @@
         const BIN_ID = "696d4940ae596e708fe53514";
         const API_URL = "https://api.jsonbin.io/v3/b/" + BIN_ID;
 
-        let st = { lat:0, lon:0, hd:0, target:null, map:null, markers:[], name:"", team:"", follow:true, coordMode:'GPS', master:false };
+        let state = { lat:0, lon:0, hd:0, target:null, map:null, markers:[], name:"", team:"", follow:true, coordType:'GPS', isMaster:false };
 
-        // BUSSOLA
         async function requestSensors() {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const res = await DeviceOrientationEvent.requestPermission();
-                if (res === 'granted') startCompass();
-            } else { startCompass(); }
+                if (res === 'granted') activateCompass();
+            } else { activateCompass(); }
         }
 
-        function startCompass() {
+        function activateCompass() {
             window.addEventListener('deviceorientation', (e) => {
-                st.hd = (e.webkitCompassHeading || (360 - e.alpha)) + (window.orientation || 0);
-                if(st.map) document.getElementById('map').style.transform = `rotate(${-st.hd}deg)`;
+                state.hd = (e.webkitCompassHeading || (360 - e.alpha)) + (window.orientation || 0);
+                if(state.map) document.getElementById('map').style.transform = `rotate(${-state.hd}deg)`;
             });
-            let b = document.getElementById("btn-compass");
-            b.classList.add("ready");
-            b.innerText = "✓ SENSORI ATTIVI";
+            document.getElementById("btn-compass").classList.add("ready");
+            document.getElementById("btn-compass").innerText = "✓ BUSSOLA ATTIVA";
         }
 
-        // MASTER ADMIN
         function checkMaster() {
             if(document.getElementById("mPass").value === "71325") {
-                st.master = true;
+                state.isMaster = true;
                 document.getElementById("master-panel").style.display = "block";
                 loadConfig();
             }
         }
 
-        function switchCoords() {
-            st.coordMode = st.coordMode === 'GPS' ? '32T' : 'GPS';
-            document.getElementById("coord-sw").innerText = "SISTEMA: " + (st.coordMode === 'GPS' ? "GPS DECIMALE" : "UTM 32T");
+        function toggleCoord() {
+            state.coordType = state.coordType === 'GPS' ? '32T' : 'GPS';
+            document.getElementById("coord-btn").innerText = "MODALITÀ: " + state.coordType;
         }
 
-        function newObjRow(n="", c1="", c2="") {
-            const d = document.createElement("div"); d.className = "obj-entry";
-            d.innerHTML = `<input type="text" class="o-n" value="${n}" placeholder="NAME" style="width:30%"><input type="number" class="o-1" value="${c1}" placeholder="C1" style="width:35%"><input type="number" class="o-2" value="${c2}" placeholder="C2" style="width:35%">`;
+        function addObjRow(n="", c1="", c2="") {
+            const d = document.createElement("div"); d.className = "m-row";
+            d.innerHTML = `<input type="text" class="o-n" value="${n}" placeholder="OBJ" style="width:30%"><input type="number" class="o-1" value="${c1}" placeholder="C1" style="width:35%"><input type="number" class="o-2" value="${c2}" placeholder="C2" style="width:35%">`;
             document.getElementById("obj-editor").appendChild(d);
         }
 
@@ -184,106 +171,101 @@
             document.getElementById("cfgBlue").value = r.game.names.BLUE;
             document.getElementById("cfgMode").value = r.game.mode;
             document.getElementById("cfgDur").value = r.game.duration;
-            document.getElementById("cfgCap").value = r.game.capTime;
             document.getElementById("obj-editor").innerHTML = "";
-            r.objectives.forEach(o => newObjRow(o.name, o.lat, o.lon));
+            r.objectives.forEach(o => addObjRow(o.name, o.lat, o.lon));
         }
 
-        async function updateCloud(reset) {
+        async function saveCloud(reset) {
             let res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": API_KEY } });
             let r = (await res.json()).record;
             let objs = [];
-            document.querySelectorAll(".obj-entry").forEach(row => {
+            document.querySelectorAll("#obj-editor .m-row").forEach(row => {
                 let n = row.querySelector(".o-n").value.toUpperCase();
                 let v1 = parseFloat(row.querySelector(".o-1").value);
                 let v2 = parseFloat(row.querySelector(".o-2").value);
                 if(n && v1) {
                     let lat = v1, lon = v2;
-                    if(st.coordMode === '32T') { // Conversione UTM 32T approssimativa
-                        lat = v2 / 111132.95;
-                        lon = 9 + ((v1 - 500000) / (111319.49 * Math.cos(lat * Math.PI / 180)));
+                    if(state.coordType === '32T') {
+                        lat = v2 / 111132.952;
+                        lon = 9 + ((v1 - 500000) / (111319.491 * Math.cos(lat * Math.PI / 180)));
                     }
                     objs.push({ name: n, lat, lon, owner: "LIBERO", progress: 0 });
                 }
             });
-            r.game = { start: reset ? Date.now() : r.game.start, mode: document.getElementById("cfgMode").value, duration: document.getElementById("cfgDur").value, capTime: document.getElementById("cfgCap").value, names: { RED: document.getElementById("cfgRed").value, BLUE: document.getElementById("cfgBlue").value }, scoreRed: reset ? 0 : r.game.scoreRed, scoreBlue: reset ? 0 : r.game.scoreBlue };
+            r.game = { start: reset ? Date.now() : r.game.start, mode: document.getElementById("cfgMode").value, duration: document.getElementById("cfgDur").value, names: { RED: document.getElementById("cfgRed").value, BLUE: document.getElementById("cfgBlue").value }, scoreRed: reset ? 0 : r.game.scoreRed, scoreBlue: reset ? 0 : r.game.scoreBlue };
             r.objectives = objs;
             await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(r) });
-            alert("DATA UPLOAD COMPLETED");
+            alert("SISTEMA AGGIORNATO");
         }
 
-        // START GAME
         function startGame() {
-            st.name = document.getElementById("pName").value.toUpperCase();
-            st.team = document.getElementById("pTeam").value;
-            if(!st.name) return alert("CALLSIGN REQUIRED");
+            state.name = document.getElementById("pName").value.toUpperCase();
+            state.team = document.getElementById("pTeam").value;
+            if(!state.name) return alert("CALLSIGN?");
             document.getElementById("setup").style.display = "none";
             document.getElementById("game").style.display = "flex";
             
-            st.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([45, 9], 18);
-            // MAPPA SAT PURA - NO CERCHI - NO FILTRI
-            L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}').addTo(st.map);
-            
-            st.map.on('dragstart', () => { st.follow = false; document.getElementById("recenter-btn").classList.remove("active"); });
+            state.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([45, 9], 18);
+            L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}').addTo(state.map);
+            state.map.on('dragstart', () => { state.follow = false; document.getElementById("recenter-btn").classList.remove("active"); });
 
-            navigator.geolocation.watchPosition(p => { st.lat = p.coords.latitude; st.lon = p.coords.longitude; }, null, { enableHighAccuracy: true });
-            setInterval(sync, 3000);
-            renderLoop();
+            navigator.geolocation.watchPosition(p => { state.lat = p.coords.latitude; state.lon = p.coords.longitude; }, null, { enableHighAccuracy: true });
+            setInterval(loop, 3000);
+            render();
         }
 
-        function forceRecenter() { st.follow = true; document.getElementById("recenter-btn").classList.add("active"); }
+        function forceFollow() { state.follow = true; document.getElementById("recenter-btn").classList.add("active"); }
 
-        function renderLoop() {
-            if(st.follow && st.lat) st.map.panTo([st.lat, st.lon]);
-            if(st.target) {
+        function render() {
+            if(state.follow && state.lat) state.map.panTo([state.lat, state.lon]);
+            if(state.target) {
                 const line = document.getElementById("nav-line"); line.style.display = "block";
-                const d = getDist(st.lat, st.lon, st.target.lat, st.target.lon);
-                const brng = getBrng(st.lat, st.lon, st.target.lat, st.target.lon);
-                line.style.transform = `translate(-50%, -100%) rotate(${brng - st.hd}deg)`;
-                document.getElementById("dist-pop").innerText = d + "M";
+                const d = getD(state.lat, state.lon, state.target.lat, state.target.lon);
+                const br = getB(state.lat, state.lon, state.target.lat, state.target.lon);
+                line.style.transform = `translate(-50%, -100%) rotate(${br - state.hd}deg)`;
+                document.getElementById("nav-dist").innerText = d + "M";
             }
-            requestAnimationFrame(renderLoop);
+            requestAnimationFrame(render);
         }
 
-        async function sync() {
+        async function loop() {
             try {
                 let res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": API_KEY } });
                 let r = (await res.json()).record;
-                r.players[st.name] = { team: st.team, lat: st.lat, lon: st.lon, last: Date.now() };
+                r.players[state.name] = { team: state.team, lat: state.lat, lon: state.lon, last: Date.now() };
                 
                 if(r.game.mode === "DOMINIO") {
                     r.objectives.forEach(o => {
-                        if(getDist(st.lat, st.lon, o.lat, o.lon) < 20 && o.owner !== st.team) {
+                        if(getD(state.lat, state.lon, o.lat, o.lon) < 20 && o.owner !== state.team) {
                             o.progress += 3;
-                            if(o.progress >= r.game.capTime) { o.owner = st.team; o.progress = 0; }
+                            if(o.progress >= 60) { o.owner = state.team; o.progress = 0; }
                         }
                     });
-                    if(st.master) r.objectives.forEach(o => { if(o.owner==='RED') r.game.scoreRed++; if(o.owner==='BLUE') r.game.scoreBlue++; });
+                    if(state.isMaster) r.objectives.forEach(o => { if(o.owner==='RED') r.game.scoreRed++; if(o.owner==='BLUE') r.game.scoreBlue++; });
                 }
                 await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(r) });
                 
-                // UI UPDATE
                 const uiO = document.getElementById("ui-objs"); uiO.innerHTML = "";
-                st.markers.forEach(m => st.map.removeLayer(m)); st.markers = [];
+                state.markers.forEach(m => state.map.removeLayer(m)); state.markers = [];
                 r.objectives.forEach(o => {
-                    let col = o.owner === 'RED' ? '#f00' : (o.owner === 'BLUE' ? '#0ff' : '#fff');
-                    let li = document.createElement("li"); li.style.color = col;
-                    li.innerHTML = `${o.name} [${o.owner}] ${o.progress > 0 ? '⏳' : ''}`;
-                    li.onclick = () => { st.target = o; document.getElementById("btn-nav-stop").style.display="block"; };
+                    let c = o.owner === 'RED' ? '#f00' : (o.owner === 'BLUE' ? '#0ff' : '#fff');
+                    let li = document.createElement("li"); li.style.color = c;
+                    li.innerHTML = `[${o.owner[0]}] ${o.name} ${o.progress > 0 ? '...' : ''}`;
+                    li.onclick = () => { state.target = o; document.getElementById("nav-stop").style.display="block"; };
                     uiO.appendChild(li);
-                    st.markers.push(L.circle([o.lat, o.lon], { radius: 15, color: col, fillOpacity: 0.3, weight: 2, fill: true }).addTo(st.map));
+                    state.markers.push(L.circle([o.lat, o.lon], { radius: 15, color: c, weight: 1, fillOpacity: 0.2 }).addTo(state.map));
                 });
                 document.getElementById("score").innerText = `${Math.floor(r.game.scoreRed/10)} - ${Math.floor(r.game.scoreBlue/10)}`;
             } catch(e){}
         }
 
-        function killNav() { st.target = null; document.getElementById("nav-line").style.display = "none"; document.getElementById("btn-nav-stop").style.display = "none"; }
-        function getDist(la1, lo1, la2, lo2) {
+        function stopNav() { state.target = null; document.getElementById("nav-line").style.display = "none"; document.getElementById("nav-stop").style.display = "none"; }
+        function getD(la1, lo1, la2, lo2) {
             const R = 6371000;
             const a = Math.sin(((la2-la1)*Math.PI/180)/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(((lo2-lo1)*Math.PI/180)/2)**2;
             return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
-        function getBrng(la1, lo1, la2, lo2) {
+        function getB(la1, lo1, la2, lo2) {
             const y = Math.sin((lo2-lo1)*Math.PI/180) * Math.cos(la2*Math.PI/180);
             const x = Math.cos(la1*Math.PI/180)*Math.sin(la2*Math.PI/180) - Math.sin(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.cos((lo2-lo1)*Math.PI/180);
             return (Math.atan2(y, x) * 180/Math.PI + 360) % 360;
