@@ -5,7 +5,7 @@ const API_URL = "https://api.jsonbin.io/v3/b/" + BIN_ID;
 let state = { 
     isMaster: false, playerName: "", playerTeam: "", 
     playerMarker: null, autoCenter: true, targetObj: null, 
-    navLine: null, activeMarkers: [], teamNames: { RED: "ROSSI", BLUE: "BLU" }
+    activeMarkers: [], teamNames: { RED: "ROSSI", BLUE: "BLU" }
 };
 let map;
 
@@ -24,16 +24,17 @@ function addObjRow(n="", lt="", ln="") {
     const div = document.createElement("div");
     div.className = "obj-row-edit";
     div.innerHTML = `
-        <input type="text" class="in-name" value="${n}" placeholder="OBJ" style="width:30%">
-        <input type="number" class="in-lat" value="${lt}" step="0.0001" style="width:35%">
-        <input type="number" class="in-lon" value="${ln}" step="0.0001" style="width:35%">
+        <input type="text" placeholder="OBJ" value="${n}" style="width:30%">
+        <input type="number" value="${lt}" step="0.0001" style="width:35%">
+        <input type="number" value="${ln}" step="0.0001" style="width:35%">
     `;
     document.getElementById("masterObjInputs").appendChild(div);
 }
 
 async function initApp() {
     state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
-    if (!state.playerName) return alert("INSERISCI NOME!");
+    if (!state.playerName) return alert("INSERISCI NOME OPERATORE!");
+    
     state.playerTeam = document.getElementById("teamSelect").value;
     state.teamNames.RED = document.getElementById("nameRed").value.toUpperCase();
     state.teamNames.BLUE = document.getElementById("nameBlue").value.toUpperCase();
@@ -86,7 +87,7 @@ async function sync() {
             const d = getDist(myPos.lat, myPos.lng, obj.lat, obj.lon);
             if (d < 15 && obj.owner !== state.playerTeam) {
                 obj.progress = (obj.progress || 0) + 4;
-                if (obj.progress >= (record.game.capTime || 180)) { 
+                if (obj.progress >= (record.game.capTime || 120)) { 
                     obj.owner = state.playerTeam; 
                     obj.progress = 0; 
                 }
@@ -107,6 +108,16 @@ async function sync() {
 }
 
 function updateUI(r) {
+    const elapsed = Math.floor((Date.now() - r.game.start) / 1000);
+    const remaining = ((r.game.duration || 60) * 60) - elapsed;
+    if (remaining > 0) {
+        const m = Math.floor(remaining / 60);
+        const s = remaining % 60;
+        document.getElementById("timer").innerText = `⏱️ ${m}:${s.toString().padStart(2, '0')}`;
+    } else {
+        document.getElementById("timer").innerText = "FINE MISSIONE";
+    }
+
     const tN = r.game.teamNames || { RED: "ROSSI", BLUE: "BLU" };
     document.getElementById("score").innerText = `${tN.RED}:${Math.floor(r.game.scoreRed/10)} | ${tN.BLUE}:${Math.floor(r.game.scoreBlue/10)}`;
     
@@ -134,30 +145,6 @@ function updateUI(r) {
     });
 }
 
-async function resetDatabase() {
-    if (!confirm("CONFERMI RESET?")) return;
-    let objs = [];
-    document.querySelectorAll(".obj-row-edit").forEach(row => {
-        const ins = row.querySelectorAll("input");
-        if (ins[0].value) {
-            objs.push({ name: ins[0].value.toUpperCase(), lat: parseFloat(ins[1].value), lon: parseFloat(ins[2].value), owner: "LIBERO", progress: 0 });
-        }
-    });
-
-    const data = { 
-        game: { 
-            scoreRed: 0, scoreBlue: 0, start: Date.now(), 
-            duration: parseInt(document.getElementById("gameDuration").value) || 30,
-            capTime: parseInt(document.getElementById("captureTime").value) || 180,
-            teamNames: { RED: document.getElementById("nameRed").value, BLUE: document.getElementById("nameBlue").value }
-        }, 
-        players: {}, 
-        objectives: objs 
-    };
-    await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(data) });
-    alert("PARTITA RESETTATA!");
-}
-
 function getDist(la1, lo1, la2, lo2) {
     const R = 6371000;
     const dLat = (la2 - la1) * Math.PI / 180;
@@ -169,7 +156,23 @@ function getDist(la1, lo1, la2, lo2) {
 function updateNavHUD() {
     const p1 = state.playerMarker.getLatLng();
     const d = getDist(p1.lat, p1.lng, state.targetObj.lat, state.targetObj.lon);
-    document.getElementById("nav-text").innerText = `${state.targetObj.name}: ${d}m`;
+    document.getElementById("nav-text").innerText = `TARGET: ${state.targetObj.name} | DIST: ${d}m`;
 }
 
 function stopNavigation() { state.targetObj = null; document.getElementById("nav-overlay").style.display = "none"; }
+function centerMap() { state.autoCenter = true; map.panTo(state.playerMarker.getLatLng()); }
+
+async function resetDatabase() {
+    if (!confirm("RESET TOTALE?")) return;
+    let objs = [];
+    document.querySelectorAll(".obj-row-edit").forEach(row => {
+        const ins = row.querySelectorAll("input");
+        if (ins[0].value) objs.push({ name: ins[0].value.toUpperCase(), lat: parseFloat(ins[1].value), lon: parseFloat(ins[2].value), owner: "LIBERO", progress: 0 });
+    });
+    const data = { 
+        game: { scoreRed: 0, scoreBlue: 0, start: Date.now(), duration: parseInt(document.getElementById("gameDuration").value), capTime: parseInt(document.getElementById("captureTime").value), teamNames: { RED: document.getElementById("nameRed").value, BLUE: document.getElementById("nameBlue").value } }, 
+        players: {}, objectives: objs 
+    };
+    await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(data) });
+    alert("SISTEMA RESETTATO!");
+}
