@@ -33,7 +33,7 @@ function addObjRow(n="", lat="", lon="") {
 }
 
 async function initApp() {
-    state.playerName = document.getElementById("playerName").value.toUpperCase();
+    state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
     if (!state.playerName) return alert("INSERISCI NOME!");
     state.playerTeam = document.getElementById("teamSelect").value;
     state.teamNames.RED = document.getElementById("nameRed").value.toUpperCase();
@@ -42,10 +42,16 @@ async function initApp() {
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
             const res = await DeviceOrientationEvent.requestPermission();
-            if (res === 'granted') window.addEventListener('deviceorientation', handleRot);
+            if (res === 'granted') window.addEventListener('deviceorientation', (e) => {
+                let h = e.webkitCompassHeading || (360 - e.alpha);
+                if (h) document.getElementById("map-rotate").style.transform = `rotate(${-h}deg)`;
+            });
         } catch(e) {}
     } else {
-        window.addEventListener('deviceorientation', handleRot);
+        window.addEventListener('deviceorientation', (e) => {
+            let h = e.webkitCompassHeading || (360 - e.alpha);
+            if (h) document.getElementById("map-rotate").style.transform = `rotate(${-h}deg)`;
+        });
     }
     
     document.getElementById("setup-screen").style.display = "none";
@@ -65,11 +71,6 @@ async function initApp() {
     }, null, { enableHighAccuracy: true });
 
     setInterval(sync, 4000);
-}
-
-function handleRot(e) {
-    let h = e.webkitCompassHeading || (360 - e.alpha);
-    if (h) document.getElementById("map-rotate").style.transform = `rotate(${-h}deg)`;
 }
 
 async function sync() {
@@ -154,7 +155,7 @@ async function resetDatabase() {
         objectives: objs 
     };
     await fetch(URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(data) });
-    alert("PARTITA CONFIGURATA!");
+    alert("PARTITA RESETTATA!");
 }
 
 function getDist(la1, lo1, la2, lo2) {
