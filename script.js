@@ -18,46 +18,37 @@ function selectGameMode(m) {
     document.getElementById("btnRecon").className = m === 'RECON' ? 'mode-btn active' : 'mode-btn';
 }
 
-// FIX BUSSOLA: Richiesta permessi esplicita
 async function requestPermissions() {
-    // Per iOS 13+
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
             const permission = await DeviceOrientationEvent.requestPermission();
             if (permission === 'granted') {
                 window.addEventListener('deviceorientation', handleOrientation);
             }
-        } catch (error) {
-            console.error("Permessi bussola negati");
-        }
+        } catch (e) { console.error("Sensori negati"); }
     } else {
-        // Android o browser desktop
         window.addEventListener('deviceorientation', handleOrientation);
     }
     enableSensorsAndStart();
 }
 
 function handleOrientation(e) {
-    // Calcolo heading per iOS (webkit) o Android (alpha)
     let heading = e.webkitCompassHeading || (360 - e.alpha);
     if (heading) {
-        const mapRotate = document.getElementById("map-rotate");
-        if(mapRotate) mapRotate.style.transform = `rotate(${-heading}deg)`;
+        document.getElementById("map-rotate").style.transform = `rotate(${-heading}deg)`;
     }
 }
 
 function enableSensorsAndStart() {
     state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
     state.playerTeam = document.getElementById("teamSelect").value;
-    if(!state.playerName) return alert("Inserisci Nome!");
+    if(!state.playerName) return alert("INSERISCI NOME OPERATORE!");
 
     document.getElementById("setup-screen").style.display = "none";
-    document.getElementById("game-ui").style.display = "grid";
+    document.getElementById("game-ui").style.display = "flex";
 
-    if(!map) {
-        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
-        L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21}).addTo(map);
-    }
+    map = L.map('map', { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
+    L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21}).addTo(map);
 
     navigator.geolocation.watchPosition(p => {
         const pos = [p.coords.latitude, p.coords.longitude];
@@ -74,20 +65,24 @@ function enableSensorsAndStart() {
     setInterval(sync, 4000);
 }
 
-// Funzione sync e updateUI (rimaste invariate ma necessarie)
 async function sync() {
     try {
         const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key": SECRET_KEY}, cache: 'no-store' });
         const { record } = await res.json();
+        
+        if(!record.players) record.players = {};
         record.players[state.playerName] = { team: state.playerTeam, lat: playerMarker?.getLatLng().lat || 0, lon: playerMarker?.getLatLng().lng || 0, last: Date.now() };
+
         updateUI(record);
+
         await fetch(URL, { method: "PUT", headers: {"Content-Type": "application/json", "X-Master-Key": SECRET_KEY}, body: JSON.stringify(record) });
-    } catch (e) {}
+    } catch (e) { console.log("Errore sync"); }
 }
 
 function updateUI(r) {
     const remain = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start) / 1000);
     document.getElementById("timer").innerText = remain > 0 ? `⏱️ ${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}` : "FINE";
+    
     document.getElementById("scoreRed").innerText = Math.floor(r.game.scoreRed/10);
     document.getElementById("scoreBlue").innerText = Math.floor(r.game.scoreBlue/10);
     
@@ -98,7 +93,7 @@ function updateUI(r) {
 
     r.objectives.forEach(obj => {
         let color = obj.owner === 'RED' ? '#f00' : (obj.owner === 'BLUE' ? '#0ff' : '#fff');
-        sb.innerHTML += `<li style="border-left:4px solid ${color}; padding-left:5px;"><b>${obj.name}</b>: ${obj.owner}</li>`;
+        sb.innerHTML += `<li style="border-left:4px solid ${color}; padding-left:10px;"><b>${obj.name}</b>: ${obj.owner}</li>`;
         activeMarkers.push(L.circle([obj.lat, obj.lon], {radius: 15, color: color, weight: 2, fillOpacity: 0.2}).addTo(map));
     });
 }
