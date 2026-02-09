@@ -5,17 +5,18 @@ const API_URL = "https://api.jsonbin.io/v3/b/" + BIN_ID;
 let state = { 
     isMaster: false, playerName: "", playerTeam: "", 
     playerMarker: null, autoCenter: true, targetObj: null, 
-    activeMarkers: [], teamNames: { RED: "ROSSI", BLUE: "BLU" }
+    activeMarkers: [], currentHeading: 0,
+    teamNames: { RED: "ROSSI", BLUE: "BLU" }
 };
 let map;
 
+// 1. GESTIONE MASTER
 function checkMasterPass() {
     if (document.getElementById("masterPass").value === "71325") {
         state.isMaster = true;
         document.getElementById("masterTools").style.display = "block";
         if (document.getElementById("masterObjInputs").innerHTML === "") {
             addObjRow("ALFA", 45.2377, 8.8097);
-            addObjRow("BRAVO", 45.2385, 8.8105);
         }
     }
 }
@@ -23,36 +24,40 @@ function checkMasterPass() {
 function addObjRow(n="", lt="", ln="") {
     const div = document.createElement("div");
     div.className = "obj-row-edit";
-    div.innerHTML = `
-        <input type="text" placeholder="OBJ" value="${n}" style="width:30%">
-        <input type="number" value="${lt}" step="0.0001" style="width:35%">
-        <input type="number" value="${ln}" step="0.0001" style="width:35%">
-    `;
+    div.innerHTML = `<input type="text" value="${n}" style="width:30%"><input type="number" value="${lt}" step="0.0001" style="width:35%"><input type="number" value="${ln}" step="0.0001" style="width:35%">`;
     document.getElementById("masterObjInputs").appendChild(div);
 }
 
-async function initApp() {
-    state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
-    if (!state.playerName) return alert("INSERISCI NOME OPERATORE!");
-    
-    state.playerTeam = document.getElementById("teamSelect").value;
-    state.teamNames.RED = document.getElementById("nameRed").value.toUpperCase();
-    state.teamNames.BLUE = document.getElementById("nameBlue").value.toUpperCase();
-
-    // SBLOCCO BUSSOLA (Richiede interazione utente su iOS)
+// 2. BUSSOLA E SENSORI
+async function requestCompass() {
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        try {
-            const permission = await DeviceOrientationEvent.requestPermission();
-            if (permission === 'granted') {
-                window.addEventListener('deviceorientation', handleRot, true);
-            } else {
-                alert("Bussola negata. L'app non ruoterà.");
-            }
-        } catch (e) { console.error(e); }
+        const res = await DeviceOrientationEvent.requestPermission();
+        if (res === 'granted') {
+            window.addEventListener('deviceorientation', handleRot, true);
+            document.getElementById("btn-sensor").style.background = "#008800";
+            document.getElementById("btn-sensor").innerText = "BUSSOLA ATTIVA";
+        }
     } else {
         window.addEventListener('deviceorientation', handleRot, true);
+        document.getElementById("btn-sensor").style.display = "none";
     }
-    
+}
+
+function handleRot(e) {
+    let heading = e.webkitCompassHeading || (360 - e.alpha);
+    if (heading) {
+        state.currentHeading = heading;
+        document.getElementById("map-rotate").style.transform = `rotate(${-heading}deg)`;
+        if (state.targetObj) updateNavHUD();
+    }
+}
+
+// 3. AVVIO E LOGICA
+async function initApp() {
+    state.playerName = document.getElementById("playerName").value.toUpperCase();
+    if (!state.playerName) return alert("NOME?");
+    state.playerTeam = document.getElementById("teamSelect").value;
+
     document.getElementById("setup-screen").style.display = "none";
     document.getElementById("game-ui").style.display = "flex";
     
@@ -68,18 +73,9 @@ async function initApp() {
             state.playerMarker.setLatLng(pos);
             if (state.autoCenter) map.panTo(pos);
         }
-        if (state.targetObj) updateNavHUD();
     }, null, { enableHighAccuracy: true });
 
     setInterval(sync, 4000);
-}
-
-function handleRot(e) {
-    let heading = e.webkitCompassHeading || (360 - e.alpha);
-    if (heading) {
-        // Ruotiamo il contenitore della mappa in senso inverso alla bussola
-        document.getElementById("map-rotate").style.transform = `rotate(${-heading}deg)`;
-    }
 }
 
 async function sync() {
@@ -96,8 +92,7 @@ async function sync() {
             if (d < 15 && obj.owner !== state.playerTeam) {
                 obj.progress = (obj.progress || 0) + 4;
                 if (obj.progress >= (record.game.capTime || 120)) { 
-                    obj.owner = state.playerTeam; 
-                    obj.progress = 0; 
+                    obj.owner = state.playerTeam; obj.progress = 0; 
                 }
             }
         });
@@ -107,7 +102,6 @@ async function sync() {
                 if (o.owner === 'RED') record.game.scoreRed += 1;
                 if (o.owner === 'BLUE') record.game.scoreBlue += 1;
             });
-            record.game.teamNames = state.teamNames;
         }
 
         updateUI(record);
@@ -116,17 +110,8 @@ async function sync() {
 }
 
 function updateUI(r) {
-    const elapsed = Math.floor((Date.now() - r.game.start) / 1000);
-    const remaining = ((r.game.duration || 60) * 60) - elapsed;
-    if (remaining > 0) {
-        const m = Math.floor(remaining / 60);
-        const s = remaining % 60;
-        document.getElementById("timer").innerText = `⏱️ ${m}:${s.toString().padStart(2, '0')}`;
-    } else {
-        document.getElementById("timer").innerText = "FINE PARTITA";
-    }
-
     const tN = r.game.teamNames || { RED: "ROSSI", BLUE: "BLU" };
+    document.getElementById("mode-label").innerText = r.game.mode || "DOMINIO";
     document.getElementById("score").innerText = `${tN.RED}:${Math.floor(r.game.scoreRed/10)} | ${tN.BLUE}:${Math.floor(r.game.scoreBlue/10)}`;
     
     state.activeMarkers.forEach(m => map.removeLayer(m));
@@ -137,23 +122,26 @@ function updateUI(r) {
         let col = obj.owner === 'RED' ? '#f00' : (obj.owner === 'BLUE' ? '#0ff' : '#fff');
         let li = document.createElement("li");
         li.style.color = col;
-        li.innerHTML = `[${obj.owner === 'LIBERO' ? 'LIB' : tN[obj.owner]}] ${obj.name} ${obj.progress > 0 ? '⏳' : ''}`;
-        li.onclick = () => { 
-            state.targetObj = obj; 
-            document.getElementById("nav-overlay").style.display = "flex"; 
-        };
+        li.innerHTML = `${obj.name} [${obj.owner === 'LIBERO' ? 'LIB' : tN[obj.owner]}] ${obj.progress > 0 ? '⏳' : ''}`;
+        li.onclick = () => { state.targetObj = obj; document.getElementById("nav-overlay").style.display = "flex"; };
         sb.appendChild(li);
         state.activeMarkers.push(L.circle([obj.lat, obj.lon], { radius: 15, color: col, fillOpacity: 0.3 }).addTo(map));
     });
+}
 
-    const pl = document.getElementById("playerList"); pl.innerHTML = "";
-    Object.entries(r.players).forEach(([n, p]) => {
-        if (Date.now() - p.last < 30000 && p.team === state.playerTeam && n !== state.playerName) {
-            const d = getDist(p.lat, p.lon, state.playerMarker.getLatLng().lat, state.playerMarker.getLatLng().lng);
-            pl.innerHTML += `<li>${n} (${d}m)</li>`;
-            state.activeMarkers.push(L.circleMarker([p.lat, p.lon], { radius: 7, color: p.team === 'RED' ? 'red' : 'cyan', fillOpacity: 1 }).addTo(map));
-        }
-    });
+function updateNavHUD() {
+    const p1 = state.playerMarker.getLatLng();
+    const d = getDist(p1.lat, p1.lng, state.targetObj.lat, state.targetObj.lon);
+    
+    // CALCOLO DIREZIONE (BEARING)
+    const y = Math.sin((state.targetObj.lon - p1.lng) * Math.PI/180) * Math.cos(state.targetObj.lat * Math.PI/180);
+    const x = Math.cos(p1.lat * Math.PI/180) * Math.sin(state.targetObj.lat * Math.PI/180) - Math.sin(p1.lat * Math.PI/180) * Math.cos(state.targetObj.lat * Math.PI/180) * Math.cos((state.targetObj.lon - p1.lng) * Math.PI/180);
+    const bearing = (Math.atan2(y, x) * 180/Math.PI + 360) % 360;
+    
+    // La freccia deve indicare l'obiettivo compensando la rotazione del telefono
+    const arrowRot = bearing - state.currentHeading;
+    document.getElementById("nav-arrow").style.transform = `rotate(${arrowRot}deg)`;
+    document.getElementById("nav-text").innerText = `${state.targetObj.name}: ${d}m`;
 }
 
 function getDist(la1, lo1, la2, lo2) {
@@ -164,27 +152,20 @@ function getDist(la1, lo1, la2, lo2) {
     return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
-function updateNavHUD() {
-    if (!state.playerMarker || !state.targetObj) return;
-    const p1 = state.playerMarker.getLatLng();
-    const d = getDist(p1.lat, p1.lng, state.targetObj.lat, state.targetObj.lon);
-    document.getElementById("nav-text").innerText = `TARGET: ${state.targetObj.name} | DIST: ${d}m`;
-}
-
 function stopNavigation() { state.targetObj = null; document.getElementById("nav-overlay").style.display = "none"; }
 function centerMap() { state.autoCenter = true; map.panTo(state.playerMarker.getLatLng()); }
 
 async function resetDatabase() {
-    if (!confirm("RESET TOTALE?")) return;
+    if (!confirm("RESET?")) return;
     let objs = [];
     document.querySelectorAll(".obj-row-edit").forEach(row => {
         const ins = row.querySelectorAll("input");
         if (ins[0].value) objs.push({ name: ins[0].value.toUpperCase(), lat: parseFloat(ins[1].value), lon: parseFloat(ins[2].value), owner: "LIBERO", progress: 0 });
     });
     const data = { 
-        game: { scoreRed: 0, scoreBlue: 0, start: Date.now(), duration: parseInt(document.getElementById("gameDuration").value), capTime: parseInt(document.getElementById("captureTime").value), teamNames: { RED: document.getElementById("nameRed").value, BLUE: document.getElementById("nameBlue").value } }, 
+        game: { mode: document.getElementById("gameMode").value, scoreRed: 0, scoreBlue: 0, start: Date.now(), duration: parseInt(document.getElementById("gameDuration").value), capTime: parseInt(document.getElementById("captureTime").value), teamNames: { RED: document.getElementById("nameRed").value, BLUE: document.getElementById("nameBlue").value } }, 
         players: {}, objectives: objs 
     };
     await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": SECRET_KEY }, body: JSON.stringify(data) });
-    alert("SISTEMA RESETTATO!");
+    alert("PARTITA AVVIATA!");
 }
