@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX-APP OPERATOR v.23</title>
+    <title>SIX-APP OPERATOR v.24</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -11,44 +11,44 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; font-weight: bold; }
         body { background: var(--dark-militare); color: var(--neon-green); height: 100vh; overflow: hidden; }
         
-        /* LOGO STENCIL */
-        .military-title { 
-            font-size: 2.2rem; letter-spacing: 3px; color: var(--neon-green); 
-            text-shadow: 2px 2px 0px #030; border: 3px solid var(--neon-green);
-            padding: 10px; display: inline-block; margin: 15px 0; background: rgba(0,255,0,0.05);
-        }
-
         /* SETUP SCREEN */
         #setup { position: fixed; inset: 0; background: var(--dark-militare); z-index: 9999; padding: 15px; overflow-y: auto; text-align: center; border: 8px solid #1a1a1a; }
-        .instruction-box { background: #050505; border: 1px solid #333; padding: 12px; text-align: left; font-size: 0.75rem; color: #888; margin-bottom: 15px; line-height: 1.4; border-left: 4px solid var(--neon-green); }
-        .instruction-box b { color: var(--warning-orange); }
+        .military-title { font-size: 2.2rem; letter-spacing: 3px; color: var(--neon-green); text-shadow: 2px 2px 0px #030; border: 3px solid var(--neon-green); padding: 10px; display: inline-block; margin: 15px 0; }
+        .instruction-box { background: #050505; border: 1px solid #333; padding: 12px; text-align: left; font-size: 0.75rem; color: #888; margin-bottom: 15px; border-left: 4px solid var(--neon-green); }
 
         input, select, button { width: 100%; padding: 12px; background: #111; border: 2px solid var(--neon-green); color: var(--neon-green); border-radius: 0; margin-bottom: 8px; text-transform: uppercase; }
         button:active { background: var(--neon-green); color: #000; }
-        #btn-compass.ready { background: #004d00 !important; color: #fff !important; border-color: #0f0; box-shadow: 0 0 15px var(--neon-green); }
+        #btn-compass.ready { background: #004d00 !important; color: #fff !important; box-shadow: 0 0 15px var(--neon-green); }
 
         #master-panel { display: none; background: #080808; padding: 15px; border: 1px dashed var(--warning-orange); margin: 10px 0; text-align: left; color: var(--warning-orange); }
         .m-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; }
-        .label-admin { font-size: 0.65rem; color: #f90; margin-bottom: 3px; display: block; text-transform: uppercase; }
+        .label-admin { font-size: 0.65rem; color: #f90; margin-bottom: 3px; display: block; }
         .obj-input-row { display: flex; gap: 5px; margin-bottom: 5px; }
-        .coord-type-btn { background: #221100; border-color: #f90; color: #f90; font-size: 0.7rem; padding: 8px; }
 
         /* GAME UI */
         #game { display: none; flex-direction: column; height: 100%; }
         .top-bar { height: 45px; background: #000; border-bottom: 2px solid var(--neon-green); display: flex; justify-content: space-between; align-items: center; padding: 0 10px; z-index: 2000; }
         .main-view { flex-grow: 1; position: relative; display: flex; overflow: hidden; }
-        #map-container { flex-grow: 1; position: relative; overflow: hidden; background: #222; }
+        #map-container { flex-grow: 1; position: relative; overflow: hidden; }
         #map-rotator { width: 100%; height: 100%; transition: transform 0.1s linear; }
-        #map { width: 100%; height: 100%; } /* RIMOSSI FILTRI: COLORI ORIGINALI */
+        #map { width: 100%; height: 100%; }
         
         #pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; color: #fff; font-size: 1.5rem; pointer-events: none; text-shadow: 0 0 5px #000; }
-        .btn-recenter { position: absolute; bottom: 20px; left: 20px; width: 55px; height: 55px; border-radius: 50%; z-index: 1100; background: rgba(0,0,0,0.7); color:var(--neon-green); border: 2px solid var(--neon-green); font-size: 1.5rem; display: flex; align-items: center; justify-content: center; }
-        .btn-recenter.active { background: var(--neon-green); color: #000; }
+        
+        /* BOTTONE CENTRA (UI PULITA) */
+        .btn-recenter { 
+            position: absolute; bottom: 20px; left: 20px; width: 55px; height: 55px; 
+            border-radius: 50%; z-index: 1100; background: rgba(0,0,0,0.6); 
+            color: var(--neon-green); border: 2px solid var(--neon-green); 
+            font-size: 1.8rem; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .btn-recenter.active { background: var(--neon-green); color: #000; box-shadow: 0 0 15px var(--neon-green); }
 
         #sidebar { width: 100%; height: 180px; background: #000; border-top: 2px solid var(--neon-green); display: flex; z-index: 1500; }
         .list-col { flex: 1; padding: 5px; overflow-y: auto; border-right: 1px solid #111; }
-        h3 { font-size: 0.7rem; color: #555; text-transform: uppercase; margin-bottom: 4px; border-bottom: 1px solid #333; }
-        li { padding: 12px 5px; border-bottom: 1px solid #111; font-size: 0.8rem; cursor: pointer; }
+        h3 { font-size: 0.7rem; color: #555; text-transform: uppercase; margin-bottom: 4px; }
+        li { padding: 12px 5px; border-bottom: 1px solid #111; font-size: 0.8rem; }
 
         @media (orientation: landscape) {
             .main-view { flex-direction: row; }
@@ -59,75 +59,57 @@
 <body>
 
     <div id="setup">
-        <div class="military-title">SIX-APP v.23</div>
-        
+        <div class="military-title">SIX-APP v.24</div>
         <div class="instruction-box">
-            <b>MANUALE OPERATIVO:</b><br>
-            • <b>BUSSOLA:</b> Clicca il tasto sblocca per orientare la mappa con il corpo.<br>
-            • <b>IDENTIFICAZIONE:</b> Inserisci nome operatore e team.<br>
-            • <b>INGRESSO:</b> La mappa mostrerà la tua posizione satellite reale.<br>
-            • <b>NAVIGAZIONE:</b> Tocca un obiettivo per attivare la linea di puntamento.
+            <b>SISTEMA DI PUNTAMENTO:</b><br>
+            • <b>CENTRAGGIO:</b> Il tasto 🎯 aggancia la mappa alla tua posizione.<br>
+            • <b>NAVIGAZIONE:</b> La linea verde indica la direzione verso l'obiettivo selezionato.
         </div>
-
-        <input type="text" id="pName" placeholder="CALLSIGN (ES. VIPER)">
+        <input type="text" id="pName" placeholder="CALLSIGN OPERATORE">
         <select id="pTeam">
-            <option value="RED">TEAM ROSSO (ALPHA)</option>
-            <option value="BLUE">TEAM BLU (BRAVO)</option>
+            <option value="RED">TEAM ALPHA (ROSSO)</option>
+            <option value="BLUE">TEAM BRAVO (BLU)</option>
         </select>
-        
-        <button id="btn-compass" onclick="requestSensors()">🔓 SBLOCCA BUSSOLA SENSORI</button>
-        <button onclick="startGame()" style="background:#003300; font-size:1.2rem; margin-top:10px; border-color:#0f0;">▶ AVVIA SISTEMA</button>
-
-        <input type="password" id="mPass" placeholder="ADMIN PIN" oninput="unlockMaster()" style="margin-top:30px; border-color:#333; font-size:0.7rem;">
-        
+        <button id="btn-compass" onclick="requestSensors()">🔓 SBLOCCA SENSORI ORIENTAMENTO</button>
+        <button onclick="startGame()" style="background:#003300; font-size:1.2rem; margin-top:10px;">▶ AVVIA MISSIONE</button>
+        <input type="password" id="mPass" placeholder="ADMIN ACCESS" oninput="unlockMaster()" style="margin-top:20px; border-color:#333;">
         <div id="master-panel">
-            <span class="label-admin">CONFIGURAZIONE GAME</span>
+            <span class="label-admin">PARAMETRI DI GIOCO</span>
+            <div class="m-row"><input type="text" id="cfgRed"><input type="text" id="cfgBlue"></div>
             <div class="m-row">
-                <input type="text" id="cfgRed" placeholder="Nome Team Rosso">
-                <input type="text" id="cfgBlue" placeholder="Nome Team Blu">
-            </div>
-            <div class="m-row">
-                <select id="cfgMode">
-                    <option value="DOMINIO">DOMINIO</option>
-                    <option value="RECON">RECON</option>
-                </select>
+                <select id="cfgMode"><option value="DOMINIO">DOMINIO</option><option value="RECON">RECON</option></select>
                 <input type="number" id="cfgDur" placeholder="Minuti">
             </div>
-            <input type="number" id="cfgCap" placeholder="Secondi Cattura (es. 120)">
-
-            <span class="label-admin">SISTEMA COORDINATE</span>
-            <button class="coord-type-btn" id="coord-toggle" onclick="toggleCoordSystem()">FORMATO ATTUALE: GOOGLE GPS</button>
-            
-            <span class="label-admin" style="margin-top:10px;">OBIETTIVI MISSIONE</span>
+            <input type="number" id="cfgCap" placeholder="Sec. Cattura">
+            <button class="coord-type-btn" id="coord-toggle" onclick="toggleCoordSystem()" style="background:#221100; color:#f90; border-color:#f90; margin:10px 0;">FORMATO: GOOGLE GPS</button>
             <div id="obj-edit-zone"></div>
-            <button onclick="addObjRow()" style="border-color:#f90; font-size:0.7rem;">+ AGGIUNGI OBIETTIVO</button>
-            
+            <button onclick="addObjRow()" style="border-color:#f90; font-size:0.7rem;">+ AGGIUNGI OBJ</button>
             <div class="m-row" style="margin-top:15px;">
-                <button onclick="masterUpdate(false)" style="color:cyan; border-color:cyan;">SALVA CONFIG</button>
-                <button onclick="masterUpdate(true)" style="color:orange; border-color:orange;">RESET PARTITA</button>
+                <button onclick="masterUpdate(false)" style="color:cyan;">SALVA</button>
+                <button onclick="masterUpdate(true)" style="color:orange;">RESET</button>
             </div>
         </div>
     </div>
 
     <div id="game">
         <div class="top-bar">
-            <button onclick="location.reload()" style="width:auto; border-color:red; color:red; padding:2px 10px; font-size:0.7rem;">CHIUDI</button>
+            <button onclick="location.reload()" style="width:auto; color:red; border-color:red; font-size:0.7rem;">CHIUDI</button>
             <span id="timer">--:--</span>
             <span id="score">00 - 00</span>
-            <button onclick="stopNav()" id="btn-stop-nav" style="display:none; width:auto; color:red; font-size:0.7rem;">NAV STOP</button>
+            <button onclick="stopNav()" id="btn-stop-nav" style="display:none; width:auto; color:red; font-size:0.7rem;">STOP NAV</button>
         </div>
         <div class="main-view">
             <div id="map-container">
                 <div id="map-rotator"><div id="map"></div></div>
                 <div id="pointer">▲</div>
                 <div id="nav-line" style="position: absolute; top: 50%; left: 50%; width: 2px; height: 150px; background: linear-gradient(to top, transparent, #0f0); transform-origin: bottom center; z-index: 1001; display: none;">
-                    <div id="nav-dist-mini" style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); border:1px solid #0f0; padding:2px 5px; font-size:0.7rem; white-space:nowrap;">0M</div>
+                    <div id="nav-dist-mini" style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); border:1px solid #0f0; padding:2px 5px; font-size:0.7rem; color:#0f0; white-space:nowrap;">0M</div>
                 </div>
-                <button id="recenter-btn" onclick="toggleRecenter()" class="btn-recenter active">🎯</button>
+                <div id="recenter-btn" onclick="toggleRecenter()" class="btn-recenter active">🎯</div>
             </div>
             <div id="sidebar">
                 <div class="list-col"><h3>Obiettivi</h3><ul id="ui-objs"></ul></div>
-                <div class="list-col"><h3>Team</h3><ul id="ui-team"></ul></div>
+                <div class="list-col"><h3>Squadra</h3><ul id="ui-team"></ul></div>
             </div>
         </div>
     </div>
@@ -139,7 +121,6 @@
 
         let state = { lat:0, lon:0, hd:0, target:null, markers:[], map:null, name:"", team:"", isM:false, follow:true, coordSystem:'GPS' };
 
-        // BUSSOLA E SENSORI
         async function requestSensors() {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const res = await DeviceOrientationEvent.requestPermission();
@@ -148,15 +129,11 @@
         }
 
         function activateCompass() {
-            window.addEventListener('deviceorientation', (e) => {
-                state.hd = (e.webkitCompassHeading || (360 - e.alpha)) + (window.orientation || 0);
-            });
-            let btn = document.getElementById("btn-compass");
-            btn.classList.add("ready");
-            btn.innerHTML = "✓ BUSSOLA ATTIVA";
+            window.addEventListener('deviceorientation', (e) => state.hd = (e.webkitCompassHeading || (360 - e.alpha)) + (window.orientation || 0));
+            document.getElementById("btn-compass").classList.add("ready");
+            document.getElementById("btn-compass").innerText = "✓ SENSORI ATTIVI";
         }
 
-        // MASTER PANEL & COORDINATE
         function unlockMaster() {
             if(document.getElementById("mPass").value === "71325") {
                 state.isM = true;
@@ -167,41 +144,21 @@
 
         function toggleCoordSystem() {
             state.coordSystem = state.coordSystem === 'GPS' ? '32T' : 'GPS';
-            document.getElementById("coord-toggle").innerText = "SISTEMA ATTUALE: " + (state.coordSystem === 'GPS' ? "GOOGLE GPS" : "32T UTM");
-            document.querySelectorAll(".ol").forEach(i => i.placeholder = state.coordSystem === 'GPS' ? "Lat" : "32T E");
-            document.querySelectorAll(".oo").forEach(i => i.placeholder = state.coordSystem === 'GPS' ? "Lon" : "32T N");
+            document.getElementById("coord-toggle").innerText = "FORMATO: " + (state.coordSystem === 'GPS' ? "GOOGLE GPS" : "32T UTM");
         }
 
         function addObjRow(n="", la="", lo="") {
             const d = document.createElement("div"); d.className = "obj-input-row";
-            d.innerHTML = `<input type="text" class="on" value="${n}" placeholder="NOME" style="width:30%">
-                           <input type="number" class="ol" value="${la}" placeholder="COORD 1" style="width:35%">
-                           <input type="number" class="oo" value="${lo}" placeholder="COORD 2" style="width:35%">`;
+            d.innerHTML = `<input type="text" class="on" value="${n}" placeholder="NOME" style="width:30%"><input type="number" class="ol" value="${la}" placeholder="C1" style="width:35%"><input type="number" class="oo" value="${lo}" placeholder="C2" style="width:35%">`;
             document.getElementById("obj-edit-zone").appendChild(d);
         }
 
-        // Conversione 32T approssimativa (per Nord/Centro Italia)
         function convertCoords(v1, v2) {
             if(state.coordSystem === 'GPS') return { lat: v1, lon: v2 };
-            const x = v1 - 500000;
-            const y = v2;
+            const x = v1 - 500000; const y = v2;
             const lat = y / 111132.952;
             const lon = 9 + (x / (111319.491 * Math.cos(lat * Math.PI / 180)));
             return { lat, lon };
-        }
-
-        async function loadConfig() {
-            try {
-                let res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": API_KEY } });
-                let r = (await res.json()).record;
-                document.getElementById("cfgRed").value = r.game.names.RED;
-                document.getElementById("cfgBlue").value = r.game.names.BLUE;
-                document.getElementById("cfgMode").value = r.game.mode;
-                document.getElementById("cfgDur").value = r.game.duration;
-                document.getElementById("cfgCap").value = r.game.capTime;
-                document.getElementById("obj-edit-zone").innerHTML = "";
-                r.objectives.forEach(o => addObjRow(o.name, o.lat, o.lon));
-            } catch(e) {}
         }
 
         async function masterUpdate(reset) {
@@ -217,30 +174,32 @@
                     objs.push({ name: n, lat: c.lat, lon: c.lon, owner: "LIBERO", progress: 0 });
                 }
             });
-            r.game = { 
-                start: reset ? Date.now() : r.game.start, 
-                mode: document.getElementById("cfgMode").value, 
-                duration: document.getElementById("cfgDur").value, 
-                capTime: document.getElementById("cfgCap").value,
-                names: { RED: document.getElementById("cfgRed").value, BLUE: document.getElementById("cfgBlue").value },
-                scoreRed: reset ? 0 : r.game.scoreRed, 
-                scoreBlue: reset ? 0 : r.game.scoreBlue
-            };
+            r.game = { start: reset ? Date.now() : r.game.start, mode: document.getElementById("cfgMode").value, duration: document.getElementById("cfgDur").value, capTime: document.getElementById("cfgCap").value, names: { RED: document.getElementById("cfgRed").value, BLUE: document.getElementById("cfgBlue").value }, scoreRed: reset ? 0 : r.game.scoreRed, scoreBlue: reset ? 0 : r.game.scoreBlue };
             r.objectives = objs;
             await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(r) });
-            alert("SISTEMA AGGIORNATO");
+            alert("CONFIGURAZIONE INVIATA");
         }
 
-        // GAME LOGIC
+        async function loadConfig() {
+            let res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": API_KEY } });
+            let r = (await res.json()).record;
+            document.getElementById("cfgRed").value = r.game.names.RED;
+            document.getElementById("cfgBlue").value = r.game.names.BLUE;
+            document.getElementById("cfgMode").value = r.game.mode;
+            document.getElementById("cfgDur").value = r.game.duration;
+            document.getElementById("cfgCap").value = r.game.capTime;
+            document.getElementById("obj-edit-zone").innerHTML = "";
+            r.objectives.forEach(o => addObjRow(o.name, o.lat, o.lon));
+        }
+
         function startGame() {
             state.name = document.getElementById("pName").value.toUpperCase();
             state.team = document.getElementById("pTeam").value;
             if(!state.name) return alert("INSERISCI CALLSIGN");
             document.getElementById("setup").style.display = "none";
             document.getElementById("game").style.display = "flex";
-            
             if(!state.map) {
-                state.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([45.2, 9.0], 18);
+                state.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([45.0, 9.0], 18);
                 L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}').addTo(state.map);
                 state.map.on('dragstart', () => { state.follow = false; document.getElementById("recenter-btn").classList.remove("active"); });
             }
@@ -265,7 +224,6 @@
                 let res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": API_KEY }, cache: 'no-store' });
                 let r = (await res.json()).record;
                 r.players[state.name] = { team: state.team, lat: state.lat, lon: state.lon, last: Date.now() };
-                
                 if(r.game.mode === "DOMINIO") {
                     r.objectives.forEach(o => {
                         let dist = getD(state.lat, state.lon, o.lat, o.lon);
@@ -274,9 +232,7 @@
                             if(o.progress >= r.game.capTime) { o.owner = state.team; o.progress = 0; }
                         }
                     });
-                    if(state.isM) { // Solo il master aggiorna i punteggi globali
-                        r.objectives.forEach(o => { if(o.owner==='RED') r.game.scoreRed++; if(o.owner==='BLUE') r.game.scoreBlue++; });
-                    }
+                    if(state.isM) r.objectives.forEach(o => { if(o.owner==='RED') r.game.scoreRed++; if(o.owner==='BLUE') r.game.scoreBlue++; });
                 }
                 await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(r) });
                 renderUI(r);
@@ -290,8 +246,7 @@
             r.objectives.forEach(o => {
                 let color = o.owner === 'RED' ? '#f00' : (o.owner === 'BLUE' ? '#0ff' : '#fff');
                 let li = document.createElement("li");
-                li.style.color = color;
-                li.innerHTML = `${o.name} [${o.owner}] ${o.progress > 0 ? '⚡' : ''}`;
+                li.style.color = color; li.innerHTML = `${o.name} [${o.owner}] ${o.progress > 0 ? '⚡' : ''}`;
                 li.onclick = () => { state.target = o; document.getElementById("btn-stop-nav").style.display="block"; };
                 uiO.appendChild(li);
                 state.markers.push(L.circle([o.lat, o.lon], { radius: 15, color: color, fillOpacity: 0.3 }).addTo(state.map));
@@ -315,8 +270,7 @@
         function stopNav() { state.target = null; document.getElementById("btn-stop-nav").style.display = "none"; }
         function getD(la1, lo1, la2, lo2) {
             const R = 6371000;
-            const dLat = (la2-la1)*Math.PI/180; const dLon = (lo2-lo1)*Math.PI/180;
-            const a = Math.sin(dLat/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLon/2)**2;
+            const a = Math.sin(((la2-la1)*Math.PI/180)/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(((lo2-lo1)*Math.PI/180)/2)**2;
             return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
     </script>
