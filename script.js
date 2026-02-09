@@ -2,6 +2,15 @@ const BIN_ID = "696d4940ae596e708fe53514";
 const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
 const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
+// Obiettivi di base caricati subito se non ce ne sono
+const DEFAULT_OBJS = [
+    { name: "ALFA", lat: 45.2377, lon: 8.8097 },
+    { name: "BRAVO", lat: 45.2385, lon: 8.8105 },
+    { name: "CHARLIE", lat: 45.2369, lon: 8.8115 },
+    { name: "DELTA", lat: 45.2392, lon: 8.8085 },
+    { name: "ECHO", lat: 45.2360, lon: 8.8075 }
+];
+
 let state = {
     isMaster: false, playerName: "", playerTeam: "", playerMarker: null,
     autoCenter: true, selectedMode: "DOMINATION", targetObj: null, navLine: null,
@@ -9,21 +18,18 @@ let state = {
 };
 let map;
 
-// --- GESTIONE MASTER ---
+// --- FUNZIONE CRUCIALE: POPOLA LISTA MASTER ---
 function checkMasterPass() {
     if(document.getElementById("masterPass").value === "71325") {
         state.isMaster = true;
         document.getElementById("masterTools").style.display = "block";
-        loadCurrentConfig(); // Carica OB esistenti negli input
+        
+        // Se la lista è vuota, carichiamo i default per permettere l'edit
+        const container = document.getElementById("masterObjInputs");
+        if(container.innerHTML.trim() === "") {
+            DEFAULT_OBJS.forEach(obj => addObjRow(obj.name, obj.lat, obj.lon));
+        }
     }
-}
-
-async function loadCurrentConfig() {
-    const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key": SECRET_KEY} });
-    const { record } = await res.json();
-    const container = document.getElementById("masterObjInputs");
-    container.innerHTML = "";
-    record.objectives.forEach((obj, i) => addObjRow(obj.name, obj.lat, obj.lon));
 }
 
 function addObjRow(name="", lat="", lon="") {
@@ -31,8 +37,8 @@ function addObjRow(name="", lat="", lon="") {
     div.className = "obj-row-edit";
     div.innerHTML = `
         <input type="text" placeholder="Nome" class="in-name" value="${name}" style="width:30%">
-        <input type="number" placeholder="Lat" class="in-lat" value="${lat}" style="width:35%">
-        <input type="number" placeholder="Lon" class="in-lon" value="${lon}" style="width:35%">
+        <input type="number" placeholder="Lat" class="in-lat" value="${lat}" style="width:35%" step="0.000001">
+        <input type="number" placeholder="Lon" class="in-lon" value="${lon}" style="width:35%" step="0.000001">
     `;
     document.getElementById("masterObjInputs").appendChild(div);
 }
@@ -40,17 +46,21 @@ function addObjRow(name="", lat="", lon="") {
 function selectGameMode(m) {
     state.selectedMode = m;
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(m === 'DOMINATION' ? 'btnDomination' : 'btnRecon').classList.add('active');
+    if(m === 'DOMINATION') document.getElementById('btnDomination').classList.add('active');
+    else document.getElementById('btnRecon').classList.add('active');
 }
 
-// --- GIOCO ---
+// --- LOGICA GIOCO ---
 async function requestPermissions() {
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try { await DeviceOrientationEvent.requestPermission(); } catch(e){}
     }
     window.addEventListener('deviceorientation', (e) => {
         let h = e.webkitCompassHeading || (360 - e.alpha);
-        if(h) document.getElementById("map-rotate").style.transform = `rotate(${-h}deg)`;
+        if(h) {
+            const el = document.getElementById("map-rotate");
+            if(el) el.style.transform = `rotate(${-h}deg)`;
+        }
     });
     startGame();
 }
@@ -58,7 +68,7 @@ async function requestPermissions() {
 function startGame() {
     state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
     state.playerTeam = document.getElementById("teamSelect").value;
-    if(!state.playerName) return alert("Inserisci Nome!");
+    if(!state.playerName) return alert("Inserisci Nome Operatore!");
 
     document.getElementById("setup-screen").style.display = "none";
     document.getElementById("game-ui").style.display = "flex";
@@ -88,12 +98,13 @@ async function sync() {
         let { record } = await res.json();
         
         const myPos = state.playerMarker.getLatLng();
+        if(!record.players) record.players = {};
         record.players[state.playerName] = { team: state.playerTeam, lat: myPos.lat, lon: myPos.lng, last: Date.now() };
 
-        // Logica Cattura
         const capTime = parseInt(document.getElementById("captureTime").value) || 180;
+        
         record.objectives.forEach(obj => {
-            const near = Object.values(record.players).filter(p => (Date.now() - p.last < 10000) && getDist(myPos.lat, myPos.lng, obj.lat, obj.lon) < 15);
+            const near = Object.values(record.players).filter(p => (Date.now() - p.last < 10000) && getDist(p.lat, p.lon, obj.lat, obj.lon) < 15);
             const reds = near.some(p => p.team === 'RED');
             const blues = near.some(p => p.team === 'BLUE');
 
@@ -136,32 +147,38 @@ function updateUI(r) {
         if(obj.contested) col = 'yellow';
         
         let li = document.createElement("li");
-        li.style.color = col;
-        li.innerHTML = `${obj.name} - ${obj.contested?'CONTESO':obj.owner}`;
-        li.onclick = () => { state.targetObj = obj; document.getElementById("nav-overlay").style.display="flex"; };
+        li.style.borderLeft = `4px solid ${col}`;
+        li.style.paddingLeft = "8px";
+        li.innerHTML = `<b>${obj.name}</b> - <span style="color:${col}">${obj.contested?'CONTESO':obj.owner}</span>`;
+        li.onclick = () => { state.targetObj = obj; document.getElementById("nav-overlay").style.display="flex"; updateNavHUD(); };
         sb.appendChild(li);
 
-        state.activeMarkers.push(L.circle([obj.lat, obj.lon], {radius: 15, color: col, fillOpacity: 0.2}).addTo(map));
+        state.activeMarkers.push(L.circle([obj.lat, obj.lon], {radius: 15, color: col, fillOpacity: 0.2, weight: 1}).addTo(map));
     });
 
     const pl = document.getElementById("playerList"); pl.innerHTML = "";
     Object.entries(r.players).forEach(([n, p]) => {
         if(Date.now()-p.last < 30000 && p.team === state.playerTeam && n !== state.playerName) {
-            pl.innerHTML += `<li>${n}</li>`;
-            state.activeMarkers.push(L.circleMarker([p.lat, p.lon], {radius: 5, color: p.team==='RED'?'red':'cyan'}).addTo(map));
+            const d = getDist(p.lat, p.lon, state.playerMarker.getLatLng().lat, state.playerMarker.getLatLng().lng);
+            pl.innerHTML += `<li>${n} (${d}m)</li>`;
+            state.activeMarkers.push(L.circleMarker([p.lat, p.lon], {radius: 5, color: p.team==='RED'?'red':'cyan', fillOpacity:1}).addTo(map));
         }
     });
 }
 
 async function resetDatabase() {
-    if(!confirm("Confermi Reset?")) return;
+    if(!confirm("Vuoi azzerare la partita e caricare i nuovi obiettivi?")) return;
     let objs = [];
     document.querySelectorAll(".obj-row-edit").forEach(row => {
         const name = row.querySelector(".in-name").value.toUpperCase();
         const lat = parseFloat(row.querySelector(".in-lat").value);
         const lon = parseFloat(row.querySelector(".in-lon").value);
-        if(name && lat) objs.push({name, lat, lon, owner:"LIBERO", progress:0});
+        if(name && !isNaN(lat) && !isNaN(lon)) {
+            objs.push({name, lat, lon, owner:"LIBERO", progress:0});
+        }
     });
+
+    if(objs.length === 0) return alert("Inserisci almeno un obiettivo valido!");
 
     const data = {
         game: { mode: state.selectedMode, scoreRed: 0, scoreBlue: 0, start: Date.now(), duration: parseInt(document.getElementById("gameDuration").value) },
@@ -169,7 +186,7 @@ async function resetDatabase() {
         objectives: objs
     };
     await fetch(URL, { method: "PUT", headers: {"Content-Type": "application/json", "X-Master-Key": SECRET_KEY}, body: JSON.stringify(data) });
-    alert("Partita Iniziata!");
+    alert("PARTITA AVVIATA!");
 }
 
 function getDist(lat1, lon1, lat2, lon2) {
@@ -181,11 +198,12 @@ function getDist(lat1, lon1, lat2, lon2) {
 }
 
 function updateNavHUD() {
+    if(!state.targetObj || !state.playerMarker) return;
     const d = getDist(state.playerMarker.getLatLng().lat, state.playerMarker.getLatLng().lng, state.targetObj.lat, state.targetObj.lon);
     document.getElementById("nav-text").innerText = `${state.targetObj.name}: ${d}m`;
     if(state.navLine) map.removeLayer(state.navLine);
-    state.navLine = L.polyline([state.playerMarker.getLatLng(), [state.targetObj.lat, state.targetObj.lon]], {color:'yellow', dashArray:'5,10'}).addTo(map);
+    state.navLine = L.polyline([state.playerMarker.getLatLng(), [state.targetObj.lat, state.targetObj.lon]], {color:'yellow', weight: 2, dashArray:'5,10'}).addTo(map);
 }
 
 function stopNavigation() { state.targetObj = null; if(state.navLine) map.removeLayer(state.navLine); document.getElementById("nav-overlay").style.display="none"; }
-function centerMap() { state.autoCenter = true; map.panTo(state.playerMarker.getLatLng()); }
+function centerMap() { state.autoCenter = true; if(state.playerMarker) map.panTo(state.playerMarker.getLatLng()); }
