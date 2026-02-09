@@ -3,86 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP v.5.0 TACTICAL</title>
+    <title>SIX APP v.5.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="setup-screen">
-        <header id="main-header">
-            <h1 class="brand-title">SIX APP</h1>
-            <div class="credits">by Fulvio 5.3</div>
-        </header>
-
+        <h1 class="brand-title">SIX APP</h1>
         <div id="menu">
             <input id="playerName" type="text" placeholder="NOME OPERATORE">
             <select id="teamSelect">
                 <option value="RED">TEAM ROSSO</option>
                 <option value="BLUE">TEAM BLU</option>
             </select>
-
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
-                
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">COMANDO OPERAZIONE (MASTER)</p>
                     <div class="mode-selector">
-                        <button id="btnDomination" type="button" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
-                        <button id="btnRecon" type="button" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
+                        <button id="btnDomination" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
+                        <button id="btnRecon" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
                     </div>
-                    <div class="m-config-grid">
-                        <div class="m-row"><span>MINUTI:</span><input id="gameDuration" type="number" value="30"></div>
-                        <div class="m-row"><span>CATTURA (SEC):</span><input id="captureTime" type="number" value="180"></div>
+                    <div class="m-config">
+                        <input id="gameDuration" type="number" value="30">
+                        <input id="captureTime" type="number" value="180">
                     </div>
-                    <div id="objSlotContainer" class="slot-list"></div>
-                    
-                    <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 AVVIA PER TUTTI</button>
-                    <button class="btn-danger" onclick="resetBin()">🔥 RESET DATABASE</button>
                 </div>
             </div>
-            
-            <button id="playerStartBtn" class="btn-start" onclick="enableSensorsAndStart(false)">▶ ENTRA IN OPERAZIONE</button>
+            <button class="btn-start" onclick="requestPermissions()">INIZIA OPERAZIONE</button>
         </div>
     </div>
 
     <div id="game-ui" style="display:none;">
-        <button class="exit-btn" onclick="exitGame()">LOGOUT</button>
-        
         <div class="top-bar">
-            <div id="timer" class="countdown-display">⏱️ --:--</div>
-            <div id="score-panel" class="score-display">
-                <div class="score-box red">R: <span id="scoreRed">0</span></div>
-                <div class="score-box blue">B: <span id="scoreBlue">0</span></div>
+            <div id="timer">⏱️ --:--</div>
+            <div class="scores">
+                <span class="r-txt">R: <span id="scoreRed">0</span></span>
+                <span class="b-txt">B: <span id="scoreBlue">0</span></span>
             </div>
         </div>
-
         <div class="map-system">
             <div class="map-main-container">
-                <div id="map-rotate">
-                    <div id="map"></div>
-                </div>
+                <div id="map-rotate"><div id="map"></div></div>
                 <div id="player-pointer">▲</div>
             </div>
-
-            <div class="map-controls-external">
-                <button onclick="centerMap()" class="ext-btn">🎯</button>
-                <button onclick="zoomIn()" class="ext-btn">➕</button>
-                <button onclick="zoomOut()" class="ext-btn">➖</button>
+            <div class="map-controls">
+                <button onclick="map.zoomIn()">➕</button>
+                <button onclick="map.zoomOut()">➖</button>
+                <button onclick="state.autoCenter=true">🎯</button>
             </div>
         </div>
-
         <div class="game-info-container">
             <div class="info-section">
                 <h3>📍 OBIETTIVI</h3>
                 <ul id="scoreboard" class="data-list"></ul>
             </div>
             <div class="info-section">
-                <h3>👥 TEAM RADAR</h3>
+                <h3>👥 RADAR</h3>
                 <ul id="playerList" class="data-list"></ul>
             </div>
         </div>
     </div>
-
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
 </body>
