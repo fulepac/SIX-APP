@@ -15,7 +15,7 @@
         </header>
 
         <div id="menu">
-            <button class="btn-info" onclick="alert('GUIDA:\n1. Avvicinati a 15m per catturare.\n2. GIALLO = Conteso.\n3. Clicca un obiettivo in lista per attivare la navigazione GPS.')">📖 MANUALE OPERATIVO</button>
+            <button class="btn-info" onclick="alert('GUIDA MASTER:\n1. Inserisci Password.\n2. Modifica Nomi/Coordinate se necessario.\n3. Clicca RESET per inviare i nuovi obiettivi al server.')">📖 MANUALE MASTER</button>
 
             <input id="playerName" type="text" placeholder="NOME OPERATORE">
             <select id="teamSelect">
@@ -26,23 +26,24 @@
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">CENTRO COMANDO MASTER</p>
+                    <p class="m-title">PANNELLO COMANDO MASTER</p>
                     <div class="mode-selector">
                         <button id="btnDomination" type="button" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
                         <button id="btnRecon" type="button" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
                     </div>
+                    
                     <div class="m-config-grid">
                         <div class="m-row"><span>MINUTI:</span><input id="gameDuration" type="number" value="30"></div>
                         <div class="m-row"><span>CATTURA (SEC):</span><input id="captureTime" type="number" value="180"></div>
                     </div>
-                    
+
                     <div class="obj-management">
-                        <p class="m-title">GESTIONE OBIETTIVI</p>
-                        <div id="masterObjList" class="master-obj-list">
+                        <p class="m-title">EDIT OBIETTIVI (NOME | LAT | LON)</p>
+                        <div id="masterObjInputs">
                             </div>
                     </div>
 
-                    <button class="btn-danger" onclick="resetDatabase()">🔥 RESET E AVVIA PARTITA</button>
+                    <button class="btn-danger" onclick="resetDatabase()">🔥 RESET E CARICA CONFIGURAZIONE</button>
                 </div>
             </div>
             
@@ -63,13 +64,11 @@
             <div class="map-main-container">
                 <div id="map-rotate"><div id="map"></div></div>
                 <div id="player-pointer">▲</div>
-                
                 <div id="nav-overlay" class="nav-hud" style="display:none;">
                     <div id="nav-text">DISTANZA: ---</div>
                     <button onclick="stopNavigation()" class="nav-stop-btn">❌</button>
                 </div>
             </div>
-
             <div class="map-controls-external">
                 <button onclick="centerMap()" class="ext-btn">🎯</button>
                 <button onclick="map.zoomIn()" class="ext-btn">➕</button>
@@ -83,7 +82,7 @@
                 <ul id="scoreboard" class="data-list"></ul>
             </div>
             <div class="info-section">
-                <h3>👥 TEAM RADAR</h3>
+                <h3>👥 RADAR TEAM</h3>
                 <ul id="playerList" class="data-list"></ul>
             </div>
         </div>
