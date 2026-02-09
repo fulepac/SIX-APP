@@ -9,14 +9,12 @@
 </head>
 <body>
     <div id="setup-screen">
-        <header id="main-header">
+        <header>
             <h1 class="brand-title">SIX APP</h1>
             <div class="credits">Creato da Fulvio v.5.0_TACTICAL</div>
         </header>
 
         <div id="menu">
-            <button class="btn-info" onclick="alert('GUIDA MASTER:\n1. Inserisci Password.\n2. Modifica Nomi/Coordinate se necessario.\n3. Clicca RESET per inviare i nuovi obiettivi al server.')">📖 MANUALE MASTER</button>
-
             <input id="playerName" type="text" placeholder="NOME OPERATORE">
             <select id="teamSelect">
                 <option value="RED">TEAM ROSSO</option>
@@ -26,24 +24,24 @@
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">PANNELLO COMANDO MASTER</p>
+                    <p class="m-title">CONFIGURAZIONE MISSIONE</p>
                     <div class="mode-selector">
-                        <button id="btnDomination" type="button" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
-                        <button id="btnRecon" type="button" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
+                        <button id="btnDomination" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
+                        <button id="btnRecon" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
                     </div>
                     
                     <div class="m-config-grid">
                         <div class="m-row"><span>MINUTI:</span><input id="gameDuration" type="number" value="30"></div>
-                        <div class="m-row"><span>CATTURA (SEC):</span><input id="captureTime" type="number" value="180"></div>
+                        <div class="m-row"><span>CATTURA (S):</span><input id="captureTime" type="number" value="180"></div>
                     </div>
 
                     <div class="obj-management">
-                        <p class="m-title">EDIT OBIETTIVI (NOME | LAT | LON)</p>
-                        <div id="masterObjInputs">
-                            </div>
+                        <p class="m-title">GESTIONE OBIETTIVI (NOME | LAT | LON)</p>
+                        <div id="masterObjInputs"></div>
+                        <button class="btn-add" onclick="addObjRow()">➕ AGGIUNGI OB</button>
                     </div>
 
-                    <button class="btn-danger" onclick="resetDatabase()">🔥 RESET E CARICA CONFIGURAZIONE</button>
+                    <button class="btn-danger" onclick="resetDatabase()">🔥 RESET E AVVIA PARTITA</button>
                 </div>
             </div>
             
@@ -53,7 +51,7 @@
 
     <div id="game-ui" style="display:none;">
         <div class="top-bar">
-            <div id="timer" class="countdown-display">⏱️ --:--</div>
+            <div id="timer">⏱️ --:--</div>
             <div class="score-display">
                 <div class="score-box red">R: <span id="scoreRed">0</span></div>
                 <div class="score-box blue">B: <span id="scoreBlue">0</span></div>
@@ -65,14 +63,14 @@
                 <div id="map-rotate"><div id="map"></div></div>
                 <div id="player-pointer">▲</div>
                 <div id="nav-overlay" class="nav-hud" style="display:none;">
-                    <div id="nav-text">DISTANZA: ---</div>
-                    <button onclick="stopNavigation()" class="nav-stop-btn">❌</button>
+                    <span id="nav-text">---</span>
+                    <button onclick="stopNavigation()">❌</button>
                 </div>
             </div>
-            <div class="map-controls-external">
-                <button onclick="centerMap()" class="ext-btn">🎯</button>
-                <button onclick="map.zoomIn()" class="ext-btn">➕</button>
-                <button onclick="map.zoomOut()" class="ext-btn">➖</button>
+            <div class="map-controls">
+                <button onclick="centerMap()">🎯</button>
+                <button onclick="map.zoomIn()">➕</button>
+                <button onclick="map.zoomOut()">➖</button>
             </div>
         </div>
 
@@ -82,7 +80,7 @@
                 <ul id="scoreboard" class="data-list"></ul>
             </div>
             <div class="info-section">
-                <h3>👥 RADAR TEAM</h3>
+                <h3>👥 RADAR SQUADRA</h3>
                 <ul id="playerList" class="data-list"></ul>
             </div>
         </div>
