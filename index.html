@@ -26,8 +26,8 @@
                 <div id="masterTools" style="display:none;">
                     <p class="m-title">CONFIGURAZIONE MISSIONE</p>
                     <div class="mode-selector">
-                        <button id="btnDomination" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
-                        <button id="btnRecon" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
+                        <button id="btnDomination" type="button" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
+                        <button id="btnRecon" type="button" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
                     </div>
                     
                     <div class="m-config-grid">
@@ -37,11 +37,12 @@
 
                     <div class="obj-management">
                         <p class="m-title">GESTIONE OBIETTIVI (NOME | LAT | LON)</p>
-                        <div id="masterObjInputs"></div>
-                        <button class="btn-add" onclick="addObjRow()">➕ AGGIUNGI OB</button>
+                        <div id="masterObjInputs">
+                            </div>
+                        <button type="button" class="btn-add" onclick="addObjRow()">➕ AGGIUNGI OBIETTIVO</button>
                     </div>
 
-                    <button class="btn-danger" onclick="resetDatabase()">🔥 RESET E AVVIA PARTITA</button>
+                    <button type="button" class="btn-danger" onclick="resetDatabase()">🔥 RESET E AVVIA PARTITA</button>
                 </div>
             </div>
             
@@ -80,7 +81,7 @@
                 <ul id="scoreboard" class="data-list"></ul>
             </div>
             <div class="info-section">
-                <h3>👥 RADAR SQUADRA</h3>
+                <h3>👥 RADAR TEAM</h3>
                 <ul id="playerList" class="data-list"></ul>
             </div>
         </div>
