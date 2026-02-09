@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP v.5.0</title>
+    <title>SIX APP v.5.0 TACTICAL</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
@@ -15,7 +15,7 @@
         </header>
 
         <div id="menu">
-            <button class="btn-info" onclick="alert('MANUALE: Conquista gli obiettivi (15m). Se il cerchio è GIALLO, c\'è un nemico vicino: la conquista è ferma!')">📖 COME FUNZIONA?</button>
+            <button class="btn-info" onclick="alert('MANUALE:\n1. Entra nel raggio di 15m da un obiettivo per conquistarlo.\n2. Se il cerchio diventa GIALLO, l\'obiettivo è CONTESO (nemici vicini).\n3. Clicca un obiettivo nella lista per attivare la linea di navigazione.')">📖 COME FUNZIONA?</button>
 
             <input id="playerName" placeholder="NOME OPERATORE">
             <select id="teamSelect">
@@ -45,8 +45,8 @@
         <div class="top-bar">
             <div id="timer">⏱️ --:--</div>
             <div class="scores">
-                <span class="r-txt">R: <span id="scoreRed">0</span></span>
-                <span class="b-txt">B: <span id="scoreBlue">0</span></span>
+                <div class="score-box red">R: <span id="scoreRed">0</span></div>
+                <div class="score-box blue">B: <span id="scoreBlue">0</span></div>
             </div>
         </div>
 
@@ -54,11 +54,15 @@
             <div class="map-main-container">
                 <div id="map-rotate"><div id="map"></div></div>
                 <div id="player-pointer">▲</div>
+                <div id="nav-overlay" class="nav-hud" style="display:none;">
+                    <div id="nav-text">NAVIGAZIONE...</div>
+                    <button onclick="stopNavigation()" class="nav-stop-btn">❌</button>
+                </div>
             </div>
             <div class="map-controls">
+                <button onclick="centerMap()">🎯</button>
                 <button onclick="map.zoomIn()">➕</button>
                 <button onclick="map.zoomOut()">➖</button>
-                <button onclick="state.autoCenter=true">🎯</button>
             </div>
         </div>
 
