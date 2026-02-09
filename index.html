@@ -15,7 +15,7 @@
         </header>
 
         <div id="menu">
-            <button class="btn-info" onclick="alert('GUIDA RAPIDA:\n1. Avvicinati a un obiettivo (15m) per catturarlo.\n2. Se vedi GIALLO, c\'è un nemico: cattura bloccata!\n3. Seleziona un obiettivo in lista per attivare la navigazione GPS.')">📖 MANUALE OPERATIVO</button>
+            <button class="btn-info" onclick="alert('GUIDA:\n1. Avvicinati a 15m per catturare.\n2. GIALLO = Conteso.\n3. Clicca un obiettivo in lista per attivare la navigazione GPS.')">📖 MANUALE OPERATIVO</button>
 
             <input id="playerName" type="text" placeholder="NOME OPERATORE">
             <select id="teamSelect">
@@ -32,21 +32,28 @@
                         <button id="btnRecon" type="button" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
                     </div>
                     <div class="m-config-grid">
-                        <div class="m-row"><span>DURATA (MIN):</span><input id="gameDuration" type="number" value="30"></div>
+                        <div class="m-row"><span>MINUTI:</span><input id="gameDuration" type="number" value="30"></div>
                         <div class="m-row"><span>CATTURA (SEC):</span><input id="captureTime" type="number" value="180"></div>
                     </div>
-                    <button class="btn-danger" onclick="resetDatabase()">🔥 RESET DATABASE</button>
+                    
+                    <div class="obj-management">
+                        <p class="m-title">GESTIONE OBIETTIVI</p>
+                        <div id="masterObjList" class="master-obj-list">
+                            </div>
+                    </div>
+
+                    <button class="btn-danger" onclick="resetDatabase()">🔥 RESET E AVVIA PARTITA</button>
                 </div>
             </div>
             
-            <button id="playerStartBtn" class="btn-start" onclick="requestPermissions()">▶ ENTRA IN AZIONE</button>
+            <button class="btn-start" onclick="requestPermissions()">▶ ENTRA IN AZIONE</button>
         </div>
     </div>
 
     <div id="game-ui" style="display:none;">
         <div class="top-bar">
             <div id="timer" class="countdown-display">⏱️ --:--</div>
-            <div id="score-panel" class="score-display">
+            <div class="score-display">
                 <div class="score-box red">R: <span id="scoreRed">0</span></div>
                 <div class="score-box blue">B: <span id="scoreBlue">0</span></div>
             </div>
@@ -54,9 +61,7 @@
 
         <div class="map-system">
             <div class="map-main-container">
-                <div id="map-rotate">
-                    <div id="map"></div>
-                </div>
+                <div id="map-rotate"><div id="map"></div></div>
                 <div id="player-pointer">▲</div>
                 
                 <div id="nav-overlay" class="nav-hud" style="display:none;">
@@ -74,11 +79,11 @@
 
         <div class="game-info-container">
             <div class="info-section">
-                <h3>📍 OBIETTIVI TATTICI</h3>
+                <h3>📍 OBIETTIVI</h3>
                 <ul id="scoreboard" class="data-list"></ul>
             </div>
             <div class="info-section">
-                <h3>👥 RADAR SQUADRA</h3>
+                <h3>👥 TEAM RADAR</h3>
                 <ul id="playerList" class="data-list"></ul>
             </div>
         </div>
