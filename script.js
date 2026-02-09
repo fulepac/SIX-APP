@@ -39,13 +39,18 @@ async function initApp() {
     state.teamNames.RED = document.getElementById("nameRed").value.toUpperCase();
     state.teamNames.BLUE = document.getElementById("nameBlue").value.toUpperCase();
 
-    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // SBLOCCO BUSSOLA (Richiede interazione utente su iOS)
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
-            const r = await DeviceOrientationEvent.requestPermission();
-            if (r === 'granted') window.addEventListener('deviceorientation', handleRot);
-        } catch(e) {}
+            const permission = await DeviceOrientationEvent.requestPermission();
+            if (permission === 'granted') {
+                window.addEventListener('deviceorientation', handleRot, true);
+            } else {
+                alert("Bussola negata. L'app non ruoterà.");
+            }
+        } catch (e) { console.error(e); }
     } else {
-        window.addEventListener('deviceorientation', handleRot);
+        window.addEventListener('deviceorientation', handleRot, true);
     }
     
     document.getElementById("setup-screen").style.display = "none";
@@ -70,8 +75,11 @@ async function initApp() {
 }
 
 function handleRot(e) {
-    let h = e.webkitCompassHeading || (360 - e.alpha);
-    if (h) document.getElementById("map-rotate").style.transform = `rotate(${-h}deg)`;
+    let heading = e.webkitCompassHeading || (360 - e.alpha);
+    if (heading) {
+        // Ruotiamo il contenitore della mappa in senso inverso alla bussola
+        document.getElementById("map-rotate").style.transform = `rotate(${-heading}deg)`;
+    }
 }
 
 async function sync() {
@@ -115,7 +123,7 @@ function updateUI(r) {
         const s = remaining % 60;
         document.getElementById("timer").innerText = `⏱️ ${m}:${s.toString().padStart(2, '0')}`;
     } else {
-        document.getElementById("timer").innerText = "FINE MISSIONE";
+        document.getElementById("timer").innerText = "FINE PARTITA";
     }
 
     const tN = r.game.teamNames || { RED: "ROSSI", BLUE: "BLU" };
@@ -130,7 +138,10 @@ function updateUI(r) {
         let li = document.createElement("li");
         li.style.color = col;
         li.innerHTML = `[${obj.owner === 'LIBERO' ? 'LIB' : tN[obj.owner]}] ${obj.name} ${obj.progress > 0 ? '⏳' : ''}`;
-        li.onclick = () => { state.targetObj = obj; document.getElementById("nav-overlay").style.display = "flex"; };
+        li.onclick = () => { 
+            state.targetObj = obj; 
+            document.getElementById("nav-overlay").style.display = "flex"; 
+        };
         sb.appendChild(li);
         state.activeMarkers.push(L.circle([obj.lat, obj.lon], { radius: 15, color: col, fillOpacity: 0.3 }).addTo(map));
     });
@@ -154,6 +165,7 @@ function getDist(la1, lo1, la2, lo2) {
 }
 
 function updateNavHUD() {
+    if (!state.playerMarker || !state.targetObj) return;
     const p1 = state.playerMarker.getLatLng();
     const d = getDist(p1.lat, p1.lng, state.targetObj.lat, state.targetObj.lon);
     document.getElementById("nav-text").innerText = `TARGET: ${state.targetObj.name} | DIST: ${d}m`;
