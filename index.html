@@ -3,87 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX-APP OPERATOR v.28</title>
+    <title>SIX-APP OPERATOR v.29</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        :root { --mil-green: #0f0; --dim-green: #004400; --bg: #000; --warn: #ff9000; }
+        :root { --mil-green: #0f0; --dim-green: #004400; --bg: #000; --warn: #ff9000; --label: #ffffff; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; font-weight: bold; }
         body { background: var(--bg); color: var(--mil-green); height: 100vh; overflow: hidden; }
 
-        #rotate-warning { position: fixed; inset: 0; background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+        /* ORIENTAMENTO */
+        #rotate-warning { position: fixed; inset: 0; background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         @media (orientation: landscape) { #rotate-warning { display: none; } }
         
-        #setup { position: fixed; inset: 0; background: #050505; z-index: 10000; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; border: 10px solid #111; }
-        .m-title { font-size: 2.5rem; letter-spacing: 5px; border: 2px solid var(--mil-green); padding: 10px 30px; margin: 20px 0; }
+        /* LOGIN / SETUP */
+        #setup { position: fixed; inset: 0; background: #050505; z-index: 10000; padding: 20px; overflow-y: auto; border: 8px solid #111; }
+        .m-title { font-size: 2.2rem; letter-spacing: 4px; border-bottom: 3px solid var(--mil-green); display: inline-block; margin-bottom: 20px; }
         
-        input, select, button { width: 100%; padding: 12px; background: #000; border: 1px solid var(--mil-green); color: var(--mil-green); border-radius: 0; margin-bottom: 10px; text-transform: uppercase; }
-        #btn-compass.ready { background: var(--dim-green); color: #fff; border-color: #fff; }
+        .instruction-box { background: rgba(0,255,0,0.05); border: 1px solid #333; padding: 15px; margin-bottom: 20px; border-left: 4px solid var(--mil-green); text-align: left; font-size: 0.8rem; line-height: 1.4; color: #ccc; }
+        
+        .field-group { text-align: left; margin-bottom: 15px; width: 100%; max-width: 500px; margin-left: auto; margin-right: auto; }
+        .mini-label { color: var(--label); font-size: 0.6rem; text-transform: uppercase; margin-bottom: 4px; display: block; letter-spacing: 1px; }
+        
+        input, select, button { width: 100%; padding: 12px; background: #000; border: 1px solid var(--mil-green); color: var(--mil-green); border-radius: 0; text-transform: uppercase; font-size: 1rem; }
+        
+        /* BUSSOLA DINAMICA */
+        #btn-compass { background: #200; border-color: #600; color: #f44; margin-top: 10px; transition: 0.3s; }
+        #btn-compass.ready { background: var(--dim-green) !important; border-color: var(--mil-green) !important; color: var(--mil-green) !important; box-shadow: 0 0 15px var(--mil-green); }
 
-        #master-panel { display: none; border: 1px dashed var(--warn); padding: 15px; color: var(--warn); margin-top: 20px; width: 100%; max-width: 600px; }
-        .m-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        /* MASTER PANEL */
+        #master-panel { display: none; border: 2px dashed var(--warn); padding: 20px; color: var(--warn); margin-top: 30px; }
+        .m-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px; }
         .m-row input { border-color: var(--warn); color: var(--warn); }
+        .m-row .mini-label { color: #fff; }
 
+        /* GAME UI */
         #game { display: none; height: 100vh; width: 100vw; flex-direction: column; }
-        .hud-header { height: 40px; background: #000; border-bottom: 1px solid var(--mil-green); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 1000; }
+        .hud-header { height: 45px; background: #000; border-bottom: 2px solid var(--mil-green); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 1000; }
         
-        .main-ui { flex-grow: 1; display: flex; overflow: hidden; }
-        #map-wrap { flex-grow: 1; position: relative; background: #000; }
+        .main-ui { flex-grow: 1; display: flex; }
+        #map-wrap { flex-grow: 1; position: relative; }
         #map { width: 100%; height: 100%; }
 
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; transform: translate(-50%, -50%); z-index: 2000; pointer-events: none; }
-        #crosshair::before { content: ''; position: absolute; top: 25px; left: 0; width: 50px; height: 1px; background: rgba(255,255,255,0.4); }
-        #crosshair::after { content: ''; position: absolute; left: 25px; top: 0; width: 1px; height: 50px; background: rgba(255,255,255,0.4); }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 60px; height: 60px; transform: translate(-50%, -50%); z-index: 2000; pointer-events: none; }
+        #crosshair::before { content: ''; position: absolute; top: 30px; left: 0; width: 60px; height: 1px; background: rgba(255,255,255,0.6); }
+        #crosshair::after { content: ''; position: absolute; left: 30px; top: 0; width: 1px; height: 60px; background: rgba(255,255,255,0.6); }
 
-        #nav-line { position: absolute; top: 50%; left: 50%; width: 2px; height: 200px; background: linear-gradient(to top, transparent, var(--mil-green)); transform-origin: bottom center; z-index: 1500; display: none; }
-        #nav-dist { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: #000; border: 1px solid var(--mil-green); padding: 2px 6px; font-size: 0.8rem; }
+        #nav-line { position: absolute; top: 50%; left: 50%; width: 2px; height: 180px; background: linear-gradient(to top, transparent, var(--mil-green)); transform-origin: bottom center; z-index: 1500; display: none; }
+        #nav-dist { position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: #000; border: 1px solid var(--mil-green); padding: 4px 8px; font-size: 0.9rem; color: #fff; }
 
-        .btn-center { position: absolute; bottom: 20px; left: 20px; width: 55px; height: 55px; border-radius: 50%; background: rgba(0,0,0,0.8); border: 2px solid var(--mil-green); color: var(--mil-green); z-index: 2500; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .btn-center { position: absolute; bottom: 25px; left: 25px; width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.8); border: 2px solid var(--mil-green); color: var(--mil-green); z-index: 2500; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
         .btn-center.active { background: var(--mil-green); color: #000; }
 
-        #sidebar { width: 220px; background: #000; border-left: 1px solid var(--mil-green); display: flex; flex-direction: column; z-index: 1000; }
-        .list-box { flex: 1; overflow-y: auto; padding: 10px; }
-        li { padding: 10px 5px; border-bottom: 1px solid #111; font-size: 0.75rem; cursor: pointer; }
+        /* SIDEBAR LISTA OBJ - LINEA SINGOLA */
+        #sidebar { width: 240px; background: #000; border-left: 2px solid var(--mil-green); display: flex; flex-direction: column; z-index: 1000; }
+        .list-box { flex: 1; overflow-y: auto; padding: 5px; }
+        .list-box h3 { font-size: 0.7rem; color: #444; margin: 5px; border-bottom: 1px solid #222; }
+        li { padding: 12px 8px; border-bottom: 1px solid #111; font-size: 0.8rem; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body>
 
     <div id="rotate-warning"><h2>RUOTARE IL DISPOSITIVO 🔄</h2></div>
 
-    <div id="setup">
-        <div class="m-title">SIX-APP v.28</div>
-        <div style="width:100%; max-width:600px;">
-            <input type="text" id="pName" placeholder="CALLSIGN">
-            <select id="pTeam"><option value="RED">ALPHA (RED)</option><option value="BLUE">BRAVO (BLUE)</option></select>
-            <button id="btn-compass" onclick="requestSensors()">SBLOCCA BUSSOLA</button>
-            <button onclick="startGame()" style="background:#004400;">AVVIA MISSIONE</button>
+    <div id="setup" style="text-align: center;">
+        <div class="m-title">SIX-APP v.29</div>
+        
+        <div class="instruction-box">
+            <b>MANUALE OPERATIVO:</b><br>
+            • Sblocca la bussola per abilitare la rotazione mappa.<br>
+            • Il tasto 🎯 mantiene il GPS centrato sul mirino.<br>
+            • Seleziona un obiettivo dalla lista per attivare la navigazione HUD.<br>
+            • Cattura restando entro 20 metri dall'obiettivo.
+        </div>
 
-            <input type="password" id="mPass" placeholder="ADMIN PIN" oninput="checkMaster()" style="margin-top:30px; border-color:#333;">
-            <div id="master-panel">
-                <div class="m-row">
-                    <input type="text" id="cfgRed" placeholder="Nome Red">
-                    <input type="text" id="cfgBlue" placeholder="Nome Blue">
-                </div>
-                <div class="m-row">
-                    <input type="number" id="cfgDur" placeholder="Minuti Partita">
-                    <input type="number" id="cfgCap" placeholder="Sec. Cattura">
-                </div>
-                <button onclick="toggleCoord()" id="coord-btn">MODO: GPS</button>
-                <div id="obj-editor"></div>
-                <button onclick="addObjRow()" style="border-color:#f90;">+ AGGIUNGI OBJ</button>
-                <div class="m-row">
-                    <button onclick="saveCloud(false)" style="color:cyan;">SALVA</button>
-                    <button onclick="saveCloud(true)" style="color:orange;">RESET</button>
-                </div>
+        <div class="field-group">
+            <span class="mini-label">CALLSIGN OPERATORE</span>
+            <input type="text" id="pName" placeholder="ES: GHOST-1">
+        </div>
+        
+        <div class="field-group">
+            <span class="mini-label">FAZIONE DI APPARTENENZA</span>
+            <select id="pTeam">
+                <option value="RED">TEAM ALPHA (ROSSO)</option>
+                <option value="BLUE">TEAM BRAVO (BLU)</option>
+            </select>
+        </div>
+
+        <div class="field-group">
+            <button id="btn-compass" onclick="requestSensors()">SBLOCCA BUSSOLA</button>
+            <button onclick="startGame()" style="background:#003300; margin-top:10px;">INIZIA MISSIONE</button>
+        </div>
+
+        <input type="password" id="mPass" placeholder="ADMIN PIN" oninput="checkMaster()" style="margin-top:40px; border-color:#222; width: 200px; font-size: 0.7rem;">
+
+        <div id="master-panel">
+            <div class="m-row">
+                <div class="field-group"><span class="mini-label">NOME TEAM RED</span><input type="text" id="cfgRed"></div>
+                <div class="field-group"><span class="mini-label">NOME TEAM BLUE</span><input type="text" id="cfgBlue"></div>
+            </div>
+            <div class="m-row">
+                <div class="field-group"><span class="mini-label">DURATA (MIN)</span><input type="number" id="cfgDur"></div>
+                <div class="field-group"><span class="mini-label">CATTURA (SEC)</span><input type="number" id="cfgCap"></div>
+            </div>
+            <button onclick="toggleCoord()" id="coord-btn" style="margin-bottom:15px; color:#fff;">SISTEMA: GPS</button>
+            <div id="obj-editor"></div>
+            <button onclick="addObjRow()" style="border-color:var(--warn); margin-bottom:10px;">+ AGGIUNGI OBIETTIVO</button>
+            <div class="m-row">
+                <button onclick="saveCloud(false)" style="color:cyan; border-color:cyan;">SALVA</button>
+                <button onclick="saveCloud(true)" style="color:orange; border-color:orange;">RESET PARTITA</button>
             </div>
         </div>
     </div>
 
     <div id="game">
         <div class="hud-header">
-            <span id="timer">00:00</span>
+            <span id="timer" style="font-size: 1.2rem;">00:00</span>
             <span id="score">0 - 0</span>
-            <button onclick="location.reload()" style="width:auto; border-color:red; color:red; padding:2px 8px;">ESCI</button>
+            <button onclick="location.reload()" style="width:auto; border-color:red; color:red; padding:2px 10px; font-size:0.7rem;">STOP</button>
         </div>
         <div class="main-ui">
             <div id="map-wrap">
@@ -93,8 +129,8 @@
                 <div id="recenter-btn" onclick="forceFollow()" class="btn-center active">🎯</div>
             </div>
             <div id="sidebar">
-                <div class="list-box"><ul id="ui-objs"></ul></div>
-                <div class="list-box"><ul id="ui-team"></ul></div>
+                <div class="list-box"><h3>OBIETTIVI</h3><ul id="ui-objs"></ul></div>
+                <div class="list-box"><h3>SQUADRA</h3><ul id="ui-team"></ul></div>
             </div>
         </div>
     </div>
@@ -119,6 +155,7 @@
                 if(state.map) document.getElementById('map').style.transform = `rotate(${-state.hd}deg)`;
             });
             document.getElementById("btn-compass").classList.add("ready");
+            document.getElementById("btn-compass").innerText = "✓ BUSSOLA ATTIVA";
         }
 
         function checkMaster() {
@@ -129,11 +166,14 @@
             }
         }
 
-        function toggleCoord() { state.coordType = state.coordType === 'GPS' ? '32T' : 'GPS'; document.getElementById("coord-btn").innerText = "MODO: " + state.coordType; }
+        function toggleCoord() { state.coordType = state.coordType === 'GPS' ? '32T' : 'GPS'; document.getElementById("coord-btn").innerText = "SISTEMA: " + state.coordType; }
 
         function addObjRow(n="", c1="", c2="") {
             const d = document.createElement("div"); d.className = "m-row";
-            d.innerHTML = `<input type="text" class="o-n" value="${n}" placeholder="NOME"><input type="number" class="o-1" value="${c1}" placeholder="C1"><input type="number" class="o-2" value="${c2}" placeholder="C2">`;
+            d.innerHTML = `
+                <div class="field-group"><span class="mini-label">NOME OBJ</span><input type="text" class="o-n" value="${n}"></div>
+                <div class="field-group"><span class="mini-label">COORD 1</span><input type="number" class="o-1" value="${c1}"></div>
+                <div class="field-group"><span class="mini-label">COORD 2</span><input type="number" class="o-2" value="${c2}"></div>`;
             document.getElementById("obj-editor").appendChild(d);
         }
 
@@ -175,13 +215,13 @@
             };
             r.objectives = objs;
             await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify(r) });
-            alert("OK");
+            alert("CONFIGURAZIONE SALVATA");
         }
 
         function startGame() {
             state.name = document.getElementById("pName").value.toUpperCase();
             state.team = document.getElementById("pTeam").value;
-            if(!state.name) return;
+            if(!state.name) return alert("INSERIRE CALLSIGN");
             document.getElementById("setup").style.display = "none";
             document.getElementById("game").style.display = "flex";
             state.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([45, 9], 18);
@@ -212,14 +252,10 @@
                 let r = (await res.json()).record;
                 r.players[state.name] = { team: state.team, lat: state.lat, lon: state.lon, last: Date.now() };
                 
-                // TIMER
-                let totalSec = r.game.duration * 60;
-                let elapsed = Math.floor((Date.now() - r.game.start) / 1000);
-                let remain = totalSec - elapsed;
+                let remain = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start) / 1000);
                 if(remain < 0) remain = 0;
                 document.getElementById("timer").innerText = `${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}`;
 
-                // CATTURA OBIETTIVI
                 r.objectives.forEach(o => {
                     let d = getD(state.lat, state.lon, o.lat, o.lon);
                     if(d < 20 && o.owner !== state.team) {
@@ -239,7 +275,7 @@
                 r.objectives.forEach(o => {
                     let c = o.owner === 'RED' ? '#f00' : (o.owner === 'BLUE' ? '#0ff' : '#fff');
                     let li = document.createElement("li"); li.style.color = c;
-                    li.innerHTML = `${o.name} [${o.owner}] ${o.progress > 0 ? '⚡' : ''}`;
+                    li.innerHTML = `[${o.owner[0]}] ${o.name} ${o.progress > 0 ? '⚡' : ''}`;
                     li.onclick = () => { state.target = o; };
                     uiO.appendChild(li);
                     state.markers.push(L.circle([o.lat, o.lon], { radius: 15, color: c, weight: 1, fillOpacity: 0.2 }).addTo(state.map));
@@ -260,5 +296,4 @@
         }
     </script>
 </body>
-</html>
 </html>
