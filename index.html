@@ -3,86 +3,418 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP TACTICAL v.13.0</title>
+    <title>SIX APP TACTICAL - FINAL</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        /* CSS INTEGRATO - NESSUN FILE ESTERNO RICHIESTO */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; font-weight: bold; -webkit-tap-highlight-color: transparent; }
+        body { background: #000; color: #0f0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        /* SCHERMATA SETUP */
+        #setup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; padding: 20px; overflow-y: auto; text-align: center; }
+        h1 { font-size: 2.5rem; text-shadow: 0 0 10px #0f0; margin-bottom: 20px; }
+        
+        .input-group { margin-bottom: 15px; }
+        input, select, button { width: 100%; padding: 15px; background: #111; border: 2px solid #0f0; color: #0f0; font-size: 1.1rem; border-radius: 5px; margin-bottom: 5px; }
+        button:active { background: #0f0; color: #000; }
+        
+        /* ZONA MASTER NASCOSTA */
+        #master-panel { border: 1px dashed #444; padding: 10px; margin: 15px 0; display: none; background: #050505; }
+        .master-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .master-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #aaa; margin: 5px 0; }
+        
+        /* UI GIOCO */
+        #game { display: none; flex-direction: column; height: 100%; width: 100%; }
+        
+        /* TOP BAR */
+        .top-bar { height: 50px; background: #050505; border-bottom: 2px solid #0f0; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; font-size: 1.2rem; }
+        
+        /* MAPPA E LAYOUT */
+        .main-view { flex-grow: 1; position: relative; display: flex; overflow: hidden; }
+        #map-container { flex-grow: 1; position: relative; overflow: hidden; background: #000; }
+        #map-rotator { width: 100%; height: 100%; transition: transform 0.2s linear; }
+        #map { width: 100%; height: 100%; }
+        
+        /* PUNTATORE GIOCATORE */
+        #pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; font-size: 3rem; color: #fff; text-shadow: 0 0 5px #000; pointer-events: none; }
+        
+        /* HUD NAVIGAZIONE */
+        #nav-hud { position: absolute; top: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.85); border: 2px solid yellow; color: yellow; padding: 10px; z-index: 1100; border-radius: 8px; display: none; align-items: center; justify-content: space-between; }
+        #nav-arrow { font-size: 2.5rem; display: block; }
+        .btn-close { width: auto; padding: 5px 15px; background: #330000; border-color: red; color: red; }
+
+        /* LISTA OBIETTIVI (SIDEBAR O BOTTOM) */
+        #sidebar { width: 100%; height: 200px; background: #000; border-top: 2px solid #0f0; display: flex; overflow: hidden; }
+        .list-col { flex: 1; padding: 5px; overflow-y: auto; border-right: 1px solid #222; }
+        .list-col h3 { font-size: 0.8rem; border-bottom: 1px solid #333; margin-bottom: 5px; color: #888; }
+        ul { list-style: none; }
+        li { padding: 8px 5px; border-bottom: 1px solid #111; font-size: 0.9rem; cursor: pointer; }
+
+        /* MODALITÀ LANDSCAPE (ORIZZONTALE) */
+        @media (orientation: landscape) {
+            .main-view { flex-direction: row; }
+            #sidebar { width: 300px; height: 100%; border-top: none; border-left: 2px solid #0f0; flex-direction: column; }
+            .list-col { flex: 1; border-right: none; border-bottom: 1px solid #222; }
+        }
+
+        /* ERRORE DEBUG */
+        #debug-log { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,0,0,0.8); color: white; font-size: 0.7rem; padding: 5px; z-index: 10000; display: none; }
+    </style>
 </head>
 <body>
-    <div id="setup-screen">
-        <div class="header-box">
-            <span class="version">v.13.0</span>
-            <h1>SIX APP TACTICAL</h1>
-        </div>
 
-        <div class="setup-form">
-            <input id="playerName" type="text" placeholder="NOME OPERATORE (ES. GHOST)">
-            <select id="teamSelect">
-                <option value="RED">SQUADRA ROSSA</option>
-                <option value="BLUE">SQUADRA BLU</option>
+    <div id="debug-log"></div>
+
+    <div id="setup">
+        <h1>SIX APP v.13</h1>
+        
+        <div class="input-group">
+            <input type="text" id="pName" placeholder="NOME OPERATORE">
+            <select id="pTeam">
+                <option value="RED">TEAM ROSSO</option>
+                <option value="BLUE">TEAM BLU</option>
             </select>
+        </div>
 
-            <div class="master-section">
-                <input id="masterPass" type="password" placeholder="PIN MASTER" oninput="checkMaster()">
-                <div id="masterPanel" style="display:none;">
-                    <p class="label">CONFIGURAZIONE MISSIONE</p>
-                    <div class="grid">
-                        <input id="nameRed" type="text" value="ATTACCO" placeholder="NOME ROSSI">
-                        <input id="nameBlue" type="text" value="DIFESA" placeholder="NOME BLU">
-                    </div>
-                    <select id="gameMode">
-                        <option value="DOMINIO">MODALITÀ: DOMINIO</option>
-                        <option value="RECON">MODALITÀ: RECON</option>
-                    </select>
-                    <div class="grid">
-                        <div class="col">TEMPO (MIN)<input id="gameDur" type="number" value="60"></div>
-                        <div class="col">CATTURA (SEC)<input id="capTime" type="number" value="120"></div>
-                    </div>
-                    <div id="objContainer"></div>
-                    <button type="button" class="btn-add" onclick="addObjField()">➕ AGGIUNGI OBIETTIVO</button>
-                    <button class="btn-reset" onclick="hardReset()">🔥 RESET E AVVIA PARTITA</button>
-                </div>
+        <input type="password" id="mPass" placeholder="PIN MASTER (Solo Caposquadra)" oninput="unlockMaster()">
+        
+        <div id="master-panel">
+            <h3>CONFIGURAZIONE MISSIONE</h3>
+            <div class="input-group">
+                <input type="text" id="cfgRed" value="ROSSI" placeholder="Nome Rossi">
+                <input type="text" id="cfgBlue" value="BLU" placeholder="Nome Blu">
             </div>
+            <select id="cfgMode">
+                <option value="DOMINIO">DOMINIO (Conquista Punti)</option>
+                <option value="RECON">RECON (Ricerca)</option>
+            </select>
+            <div class="master-grid">
+                <div class="master-row">MINUTI:<input type="number" id="cfgDur" value="60" style="width:60px"></div>
+                <div class="master-row">CATTURA(s):<input type="number" id="cfgCap" value="120" style="width:60px"></div>
+            </div>
+            <div id="obj-list-edit"></div>
+            <button onclick="addObjInput()" style="background:#222; margin-top:5px;">➕ Agg. Obiettivo</button>
+            <button onclick="masterReset()" style="border-color:red; color:red; margin-top:10px;">🔥 RESET E AVVIA</button>
+        </div>
 
-            <div class="actions">
-                <button id="compassBtn" class="btn-compass" onclick="unlockCompass()">🔓 SBLOCCA BUSSOLA</button>
-                <button class="btn-start" onclick="startApp()">▶ ENTRA IN AZIONE</button>
-            </div>
+        <div style="margin-top: 30px;">
+            <button id="btn-compass" onclick="requestSensors()" style="background:#333;">🔓 1. SBLOCCA SENSORI</button>
+            <button onclick="startGame()" style="background:#004400; margin-top:10px; font-size:1.5rem;">▶ 2. INIZIA MISSIONE</button>
         </div>
     </div>
 
-    <div id="game-ui" style="display:none;">
-        <div class="top-nav">
-            <div id="timer">00:00</div>
-            <div id="m-label">DOMINIO</div>
-            <div id="score">R:0 | B:0</div>
+    <div id="game">
+        <div class="top-bar">
+            <span id="timer">00:00</span>
+            <span id="score">R:0 | B:0</span>
         </div>
-
-        <div class="content">
-            <div class="map-box">
-                <div id="map-rotate"><div id="map"></div></div>
+        
+        <div class="main-view">
+            <div id="map-container">
+                <div id="map-rotator"><div id="map"></div></div>
                 <div id="pointer">▲</div>
-                <div id="nav-hud" style="display:none;">
-                    <div id="nav-arrow">⬆</div>
-                    <div id="nav-info">OBJ: -- | 0m</div>
-                    <button onclick="closeNav()">❌</button>
+                
+                <div id="nav-hud">
+                    <div style="text-align:center;">
+                        <span id="nav-arrow">⬆</span><br>
+                        <span id="nav-dist">0m</span>
+                    </div>
+                    <div style="flex-grow:1; margin-left:10px;">
+                        <span id="nav-name" style="font-size:1.2rem">TARGET</span>
+                    </div>
+                    <button class="btn-close" onclick="stopNav()">X</button>
                 </div>
-                <button class="btn-recenter" onclick="recenter()">🎯</button>
+
+                <button onclick="recenterMap()" style="position:absolute; bottom:20px; right:20px; width:50px; height:50px; border-radius:50%; z-index:1000; background:#000;">🎯</button>
             </div>
 
-            <div class="side-panel">
-                <div class="panel-sect">
-                    <h3>📍 OBIETTIVI</h3>
-                    <ul id="objList"></ul>
+            <div id="sidebar">
+                <div class="list-col">
+                    <h3>OBIETTIVI</h3>
+                    <ul id="ui-obj-list"></ul>
                 </div>
-                <div class="panel-sect">
-                    <h3>👥 TEAM</h3>
-                    <ul id="teamList"></ul>
+                <div class="list-col">
+                    <h3>RADAR SQUADRA</h3>
+                    <ul id="ui-team-list"></ul>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js"></script>
+    <script>
+        // CONFIGURAZIONE
+        const API_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
+        const BIN_ID = "696d4940ae596e708fe53514";
+        const API_URL = "https://api.jsonbin.io/v3/b/" + BIN_ID;
+
+        // STATO GLOBALE
+        let app = {
+            name: "", team: "", isMaster: false,
+            lat: 0, lon: 0, heading: 0,
+            target: null, markers: [], map: null,
+            data: null
+        };
+
+        // ERROR LOGGER
+        window.onerror = function(msg, url, line) {
+            const d = document.getElementById("debug-log");
+            d.style.display = "block";
+            d.innerHTML += `ERR: ${msg} (Line ${line})<br>`;
+        };
+
+        // 1. FUNZIONI MASTER
+        function unlockMaster() {
+            if(document.getElementById("mPass").value === "71325") {
+                app.isMaster = true;
+                document.getElementById("master-panel").style.display = "block";
+                if(document.getElementById("obj-list-edit").innerHTML === "") addObjInput("ALPHA", 45.2377, 8.8097);
+            }
+        }
+
+        function addObjInput(n="", la="", lo="") {
+            const div = document.createElement("div");
+            div.className = "master-grid";
+            div.style.marginBottom = "5px";
+            div.innerHTML = `
+                <input type="text" class="o-name" value="${n}" placeholder="Nome">
+                <input type="number" class="o-lat" value="${la}" step="0.0001">
+                <input type="number" class="o-lon" value="${lo}" step="0.0001">
+            `;
+            document.getElementById("obj-list-edit").appendChild(div);
+        }
+
+        async function masterReset() {
+            if(!confirm("CANCELLARE TUTTO E AVVIARE?")) return;
+            
+            let objs = [];
+            document.querySelectorAll("#obj-list-edit .master-grid").forEach(row => {
+                let name = row.querySelector(".o-name").value.toUpperCase();
+                let lat = parseFloat(row.querySelector(".o-lat").value);
+                let lon = parseFloat(row.querySelector(".o-lon").value);
+                if(name && lat && lon) objs.push({ name, lat, lon, owner: "LIBERO", progress: 0 });
+            });
+
+            const newData = {
+                game: {
+                    start: Date.now(),
+                    duration: parseInt(document.getElementById("cfgDur").value),
+                    capTime: parseInt(document.getElementById("cfgCap").value),
+                    mode: document.getElementById("cfgMode").value,
+                    names: { RED: document.getElementById("cfgRed").value, BLUE: document.getElementById("cfgBlue").value },
+                    scoreRed: 0, scoreBlue: 0
+                },
+                players: {},
+                objectives: objs
+            };
+
+            await sendData(newData);
+            alert("PARTITA RESETTATA E AVVIATA!");
+            startGame(); // Il master entra in gioco
+        }
+
+        // 2. SETUP SENSORI
+        async function requestSensors() {
+            const btn = document.getElementById("btn-compass");
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const response = await DeviceOrientationEvent.requestPermission();
+                    if (response === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                        btn.style.background = "#0f0";
+                        btn.style.color = "#000";
+                        btn.innerText = "BUSSOLA ATTIVA ✅";
+                    } else {
+                        alert("PERMESSO NEGATO. La mappa non ruoterà.");
+                    }
+                } catch (e) { alert("Errore sensori: " + e); }
+            } else {
+                // Android o PC
+                window.addEventListener('deviceorientation', handleOrientation);
+                btn.style.background = "#0f0";
+                btn.style.color = "#000";
+                btn.innerText = "BUSSOLA OK (AUTO) ✅";
+            }
+        }
+
+        function handleOrientation(e) {
+            // WebkitCompassHeading è per iOS, alpha per Android
+            let compass = e.webkitCompassHeading || (360 - e.alpha); 
+            if(compass) {
+                app.heading = compass;
+                // Ruota il contenitore della mappa
+                document.getElementById("map-rotator").style.transform = `rotate(${-app.heading}deg)`;
+                // Aggiorna freccia navigazione se attiva
+                if(app.target) updateNavArrow();
+            }
+        }
+
+        // 3. AVVIO GIOCO
+        function startGame() {
+            app.name = document.getElementById("pName").value.trim().toUpperCase();
+            if(!app.name) return alert("INSERISCI NOME!");
+            app.team = document.getElementById("pTeam").value;
+
+            document.getElementById("setup").style.display = "none";
+            document.getElementById("game").style.display = "flex";
+
+            // Inizializza mappa
+            app.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([0,0], 18);
+            L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}').addTo(app.map);
+
+            // Avvia GPS
+            navigator.geolocation.watchPosition(pos => {
+                app.lat = pos.coords.latitude;
+                app.lon = pos.coords.longitude;
+                
+                // Centra se necessario (sempre all'inizio)
+                if(!app.data) app.map.setView([app.lat, app.lon], 18);
+                
+                if(app.target) updateNavArrow();
+            }, err => alert("ERRORE GPS: " + err.message), { enableHighAccuracy: true });
+
+            // Loop di sincronizzazione (ogni 3 sec)
+            setInterval(gameLoop, 3000);
+            gameLoop();
+        }
+
+        // 4. LOGICA DI GIOCO (LOOP)
+        async function gameLoop() {
+            try {
+                // SCARICA DATI
+                let res = await fetch(API_URL + "/latest", { headers: { "X-Master-Key": API_KEY } });
+                let json = await res.json();
+                app.data = json.record;
+                let r = app.data;
+
+                // AGGIORNA ME STESSO
+                if(!r.players) r.players = {};
+                r.players[app.name] = { team: app.team, lat: app.lat, lon: app.lon, last: Date.now() };
+
+                // LOGICA CATTURA
+                r.objectives.forEach(obj => {
+                    let d = getDist(app.lat, app.lon, obj.lat, obj.lon);
+                    if(d < 20 && obj.owner !== app.team) { // Raggio cattura 20m
+                        obj.progress = (obj.progress || 0) + 3; // +3 secondi ogni 3 sec
+                        if(obj.progress >= r.game.capTime) {
+                            obj.owner = app.team;
+                            obj.progress = 0;
+                        }
+                    }
+                });
+
+                // LOGICA PUNTEGGIO (Solo Master calcola)
+                if(app.isMaster) {
+                    r.objectives.forEach(o => {
+                        if(o.owner === 'RED') r.game.scoreRed++;
+                        if(o.owner === 'BLUE') r.game.scoreBlue++;
+                    });
+                }
+
+                // INVIA AGGIORNAMENTI
+                await sendData(r);
+
+                // AGGIORNA GRAFICA
+                renderUI(r);
+
+            } catch(e) { console.error(e); }
+        }
+
+        async function sendData(data) {
+            await fetch(API_URL, { 
+                method: "PUT", 
+                headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, 
+                body: JSON.stringify(data) 
+            });
+        }
+
+        // 5. RENDER UI
+        function renderUI(r) {
+            // Timer e Punteggio
+            let elapsed = Math.floor((Date.now() - r.game.start)/1000);
+            let rem = (r.game.duration * 60) - elapsed;
+            document.getElementById("timer").innerText = rem > 0 ? `${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')}` : "FINE";
+            
+            let names = r.game.names || {RED:"R", BLUE:"B"};
+            document.getElementById("score").innerText = `${names.RED}: ${Math.floor(r.game.scoreRed/20)} | ${names.BLUE}: ${Math.floor(r.game.scoreBlue/20)}`;
+
+            // Pulisci Marker Mappa
+            app.markers.forEach(m => app.map.removeLayer(m));
+            app.markers = [];
+
+            // Disegna Obiettivi
+            const uiObj = document.getElementById("ui-obj-list");
+            uiObj.innerHTML = "";
+            r.objectives.forEach(o => {
+                let color = o.owner === 'RED' ? '#f00' : (o.owner === 'BLUE' ? '#0ff' : '#fff');
+                
+                // Lista
+                let li = document.createElement("li");
+                li.style.color = color;
+                li.innerHTML = `<b>${o.name}</b> [${o.owner}] ${o.progress > 0 ? '⏳ ' + Math.floor((o.progress/r.game.capTime)*100)+'%' : ''}`;
+                li.onclick = () => startNav(o);
+                uiObj.appendChild(li);
+
+                // Mappa Marker
+                let circ = L.circle([o.lat, o.lon], { radius: 20, color: color, fillOpacity: 0.2 }).addTo(app.map);
+                app.markers.push(circ);
+            });
+
+            // Disegna Compagni
+            const uiTeam = document.getElementById("ui-team-list");
+            uiTeam.innerHTML = "";
+            Object.entries(r.players).forEach(([name, p]) => {
+                if(name !== app.name && p.team === app.team && (Date.now() - p.last < 60000)) {
+                    let d = getDist(app.lat, app.lon, p.lat, p.lon);
+                    uiTeam.innerHTML += `<li>${name} (${d}m)</li>`;
+                    let mk = L.circleMarker([p.lat, p.lon], { radius: 5, color: '#0f0', fillOpacity: 1 }).addTo(app.map);
+                    app.markers.push(mk);
+                }
+            });
+        }
+
+        // 6. NAVIGAZIONE E UTILS
+        function startNav(obj) {
+            app.target = obj;
+            document.getElementById("nav-hud").style.display = "flex";
+            document.getElementById("nav-name").innerText = obj.name;
+            updateNavArrow();
+        }
+
+        function stopNav() {
+            app.target = null;
+            document.getElementById("nav-hud").style.display = "none";
+        }
+
+        function updateNavArrow() {
+            if(!app.target) return;
+            let dist = getDist(app.lat, app.lon, app.target.lat, app.target.lon);
+            document.getElementById("nav-dist").innerText = dist + "m";
+
+            // Calcolo direzione (Bearing)
+            let y = Math.sin((app.target.lon - app.lon) * Math.PI/180) * Math.cos(app.target.lat * Math.PI/180);
+            let x = Math.cos(app.lat * Math.PI/180) * Math.sin(app.target.lat * Math.PI/180) -
+                    Math.sin(app.lat * Math.PI/180) * Math.cos(app.target.lat * Math.PI/180) * Math.cos((app.target.lon - app.lon) * Math.PI/180);
+            let bearing = (Math.atan2(y, x) * 180/Math.PI + 360) % 360;
+
+            // La freccia deve puntare al bearing MENO la rotazione attuale del telefono
+            let rot = bearing - app.heading;
+            document.getElementById("nav-arrow").style.transform = `rotate(${rot}deg)`;
+        }
+
+        function getDist(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180, Δλ = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+            return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        }
+
+        function recenterMap() {
+            app.map.setView([app.lat, app.lon]);
+        }
+    </script>
 </body>
 </html>
