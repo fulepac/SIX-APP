@@ -2,396 +2,428 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=any">
-    <title>SIX APP v.6.8 - INTEGRALE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SIX APP v.7.0 - OMNI-OPERATOR EDITION</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- CSS TOTALE - ZERO TAGLI --- */
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-        body { background: #000; color: #0f0; font-family: monospace; margin: 0; padding: 5px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        .brand-title { color: #0f0; font-size: 2.8rem; text-align: center; margin: 5px 0; text-shadow: 0 0 15px #0f0; font-weight: 900; }
-        .credits { text-align: center; color: #008800; font-size: 0.7rem; margin-bottom: 10px; font-weight: bold; }
-
-        #menu { background: #111; padding: 15px; border-radius: 15px; border: 1px solid #333; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex-grow: 1; }
-        input, select { background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; border-radius: 8px; font-size: 1rem; width: 100%; }
+        /* UI GENERALE */
+        .screen { display: none; height: 100%; flex-direction: column; padding: 10px; }
+        .active { display: flex; }
         
-        .master-zone { border: 1px solid #444; padding: 10px; border-radius: 10px; background: #0a0a0a; margin-top: 5px; }
-        .m-title { font-size: 0.75rem; color: #888; margin: 8px 0 5px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; border-bottom: 1px solid #333; }
+        .header { text-align: center; border-bottom: 2px solid #0f0; margin-bottom: 10px; padding-bottom: 5px; }
+        .header h1 { margin: 0; font-size: 2rem; text-shadow: 0 0 10px #0f0; }
         
-        .m-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; margin-bottom: 8px; }
-        .m-row input { width: 100px; padding: 6px; text-align: center; }
-
-        .slot-list { background: #000; border: 1px solid #333; margin: 10px 0; max-height: 150px; overflow-y: auto; }
-        .obj-slot { display: grid; grid-template-columns: 30px 1fr 60px; gap: 5px; padding: 8px 5px; border-bottom: 1px solid #222; align-items: center; }
-        .obj-slot input { padding: 4px; font-size: 0.7rem; }
-
-        /* SISTEMA MAPPA E MIRINI */
-        .map-system { flex-grow: 1; position: relative; display: flex; gap: 5px; min-height: 350px; }
-        .map-main-container { flex-grow: 1; border: 2px solid #0f0; border-radius: 15px; overflow: hidden; position: relative; background: #000; }
-        #map, #selection-map { width: 100%; height: 100%; background: #000; }
+        .scroll-area { flex-grow: 1; overflow-y: auto; padding-right: 5px; }
         
-        /* MIRINO CENTRO MAPPA FISSO */
-        .crosshair {
-            position: absolute; top: 50%; left: 50%; width: 40px; height: 40px;
-            transform: translate(-50%, -50%); z-index: 5000; pointer-events: none;
-        }
-        .crosshair::before, .crosshair::after {
-            content: ''; position: absolute; background: rgba(0, 255, 0, 0.6);
-        }
-        .crosshair::before { top: 50%; left: 0; width: 100%; height: 1px; }
-        .crosshair::after { left: 50%; top: 0; width: 1px; height: 100%; }
-        .cross-dot {
-            position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
-            background: #0f0; border-radius: 50%; transform: translate(-50%, -50%);
-            box-shadow: 0 0 5px #0f0;
-        }
+        /* BOX E INPUT */
+        .box { background: #111; border: 1px solid #333; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+        .label { font-size: 0.7rem; color: #888; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        input, select { background: #000; border: 1px solid #0f0; color: #0f0; padding: 10px; border-radius: 5px; width: 100%; font-family: monospace; }
+        
+        /* MASTER PANEL */
+        .admin-only { border: 1px dashed #f00; padding: 10px; margin-top: 10px; display: none; }
+        .obj-row { display: grid; grid-template-columns: 1fr 1fr 60px 40px; gap: 5px; margin-bottom: 8px; align-items: center; }
+        .obj-row input { padding: 5px; font-size: 0.75rem; }
 
-        #player-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; color: #fff; font-size: 30px; pointer-events: none; text-shadow: 0 0 5px #000; }
+        /* MAPPA E MIRINI */
+        .map-container { flex-grow: 1; position: relative; border: 2px solid #0f0; border-radius: 15px; overflow: hidden; background: #000; }
+        #map, #map-select { width: 100%; height: 100%; }
+        
+        .crosshair { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; transform: translate(-50%, -50%); z-index: 5000; pointer-events: none; }
+        .crosshair::before { content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(0,255,0,0.7); }
+        .crosshair::after { content: ''; position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background: rgba(0,255,0,0.7); }
+        .cross-dot { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #0f0; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 5px #0f0; }
+        
+        #player-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; font-size: 25px; color: #fff; pointer-events: none; text-shadow: 0 0 5px #000; }
+
+        /* TASTI */
+        .btn { background: #0f0; color: #000; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; text-transform: uppercase; margin: 5px 0; }
+        .btn-sec { background: #000; color: #0f0; border: 1px solid #0f0; }
+        .btn:disabled { background: #222; color: #444; }
+        .btn-loc { position: absolute; bottom: 20px; right: 20px; z-index: 1000; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); border: 2px solid #0f0; color: #0f0; font-size: 1.5rem; }
 
         /* UI GIOCO */
-        .top-bar { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 10px; border-radius: 10px; border: 1px solid #040; margin-bottom: 5px; }
-        .score-box { padding: 5px 12px; border-radius: 5px; font-weight: bold; font-size: 1rem; border: 1px solid transparent; text-align: center; }
-        .score-box.team1 { background: #300; color: #f00; border-color: #f00; }
-        .score-box.team2 { background: #003; color: #0ff; border-color: #0ff; }
-
-        .contested-banner { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: #f00; color: #fff; padding: 8px 20px; border-radius: 20px; font-weight: bold; z-index: 6000; display: none; animation: pulse 0.6s infinite; font-size: 0.8rem; border: 2px solid white; }
-        @keyframes pulse { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.05); } 100% { transform: translateX(-50%) scale(1); } }
-
-        .btn-start { background: #0f0; color: #000; padding: 15px; font-weight: bold; border-radius: 10px; border: none; width: 100%; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
-        .btn-start:disabled { background: #222; color: #444; }
-        .ext-btn { background: #111; border: 1.5px solid #0f0; color: #0f0; border-radius: 10px; width: 55px; height: 55px; font-size: 1.3rem; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; }
-
-        #map-selection-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10000; display: none; flex-direction: column; padding: 15px; }
-        .selection-footer { height: 150px; display: flex; flex-direction: column; gap: 8px; padding-top: 10px; color: #0f0; }
-
-        #coord-display { background: rgba(0,0,0,0.8); color: #0f0; font-size: 0.75rem; padding: 5px; text-align: center; border-top: 1px solid #333; }
+        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .score { padding: 5px 10px; border-radius: 5px; font-weight: bold; border: 1px solid #444; }
+        .score.red { color: #f00; border-color: #f00; }
+        .score.blue { color: #0ff; border-color: #0ff; }
+        #coord-bar { font-size: 0.7rem; text-align: center; padding: 5px; color: #0f0; background: #111; }
     </style>
 </head>
 <body>
 
-    <div id="setup-screen">
-        <h1 class="brand-title">SIX APP</h1>
-        <div class="credits">SIX VIGEVANO - TACTICAL v.6.8</div>
+    <div id="screen-setup" class="screen active">
+        <div class="header"><h1>SIX VIGEVANO</h1><small>v7.0 OMNI-PROTOCOL</small></div>
+        <div class="scroll-area">
+            <div class="box">
+                <span class="label">Operatore</span>
+                <input id="playerName" type="text" placeholder="INSERISCI NOME">
+                <span class="label" style="margin-top:10px;">Squadra</span>
+                <select id="teamSelect">
+                    <option value="TEAM1">TEAM ROSSO (ATTACCO)</option>
+                    <option value="TEAM2">TEAM BLU (DIFESA)</option>
+                </select>
+            </div>
 
-        <div id="menu">
-            <input id="playerName" placeholder="NOME OPERATORE">
-            <select id="teamSelect">
-                <option value="TEAM1">TEAM ROSSO (ATTACCO)</option>
-                <option value="TEAM2">TEAM BLU (DIFESA)</option>
-            </select>
+            <div class="box">
+                <span class="label">Accesso Admin</span>
+                <input id="masterPass" type="password" placeholder="PASSWORD" oninput="unlockAdmin()">
+                
+                <div id="admin-panel" class="admin-only">
+                    <span class="label">Visualizzazione Coordinate</span>
+                    <select id="coordFormat">
+                        <option value="DD">Decimali (DD.dddd)</option>
+                        <option value="DDM">Gradi Minuti (DD° MM.mmm')</option>
+                        <option value="32T">UTM 32T (WGS84)</option>
+                    </select>
 
-            <div class="master-zone">
-                <input id="masterPass" type="password" placeholder="ADMIN PASSWORD" oninput="checkMasterPass()">
-                <div id="masterTools" style="display:none;">
-                    <p class="m-title">CONFIGURAZIONE TECNICA</p>
-                    <div class="m-row">
-                        <span>FORMATO COORD:</span>
-                        <select id="coordFormat" style="width: 150px; padding: 5px; font-size: 0.8rem;">
-                            <option value="DD">DECIMALI (DD.dddd)</option>
-                            <option value="DDM">MINUTI (DD° MM.mmm')</option>
-                        </select>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                        <div><span class="label">Gara (min)</span><input id="cfg-dur" type="number" value="30"></div>
+                        <div><span class="label">Conq (sec)</span><input id="cfg-conq" type="number" value="60"></div>
                     </div>
-                    <div class="m-row"><span>DURATA GARA:</span><input id="gameDuration" type="number" value="30"></div>
-                    <div class="m-row"><span>CONQUISTA (S):</span><input id="conqTime" type="number" value="60"></div>
+
+                    <button class="btn btn-sec" onclick="openMapSelect()">📐 DISEGNA AREA GIOCO</button>
+
+                    <span class="label" style="margin-top:10px;">Obiettivi (Nome | Lat | Lon | Rad)</span>
+                    <div id="obj-list-admin">
+                        </div>
+                    <button class="btn btn-sec" style="font-size:0.7rem; padding:5px;" onclick="addObjRow()">+ AGGIUNGI OBIETTIVO</button>
                     
-                    <button class="btn-start" style="background:#004400; color:#0f0; border:1px solid #0f0;" onclick="startAreaSelection()">📐 DISEGNA AREA & RANDOM</button>
-                    
-                    <p class="m-title">OBIETTIVI (ON | NOME | RAGGIO)</p>
-                    <div id="objSlotContainer" class="slot-list"></div>
-                    
-                    <button class="btn-start" onclick="enableSensorsAndStart(true)">🚀 START MISSIONE</button>
+                    <button class="btn" onclick="serverInit()">🚀 INIZIALIZZA MISSIONE</button>
                 </div>
             </div>
-            <button id="playerStartBtn" class="btn-start" onclick="enableSensorsAndStart(false)" disabled>ATTESA OPERAZIONE...</button>
+            <button id="btn-join" class="btn" onclick="joinGame()" disabled>ATTESA AVVIO...</button>
         </div>
     </div>
 
-    <div id="game-ui" style="display:none;">
-        <div id="contested-alert" class="contested-banner">⚠️ ZONA CONTESA</div>
-        
-        <div class="top-bar">
-            <div id="timer" style="font-size: 1.2rem; font-weight: bold; color: #fff;">⏱️ --:--</div>
-            <div style="display:flex; gap:8px;">
-                <div class="score-box team1">R: <span id="scoreRed">0</span></div>
-                <div class="score-box team2">B: <span id="scoreBlue">0</span></div>
-            </div>
-        </div>
-
-        <div class="map-system">
-            <div class="map-main-container">
-                <div id="map-rotate"><div id="map"></div></div>
-                <div class="crosshair"><div class="cross-dot"></div></div>
-                <div id="player-pointer">▲</div>
-            </div>
-            <div style="display:flex; flex-direction:column;">
-                <button onclick="centerMap()" class="ext-btn">🎯</button>
-                <button onclick="map.zoomIn()" class="ext-btn">➕</button>
-                <button onclick="map.zoomOut()" class="ext-btn">➖</button>
-            </div>
-        </div>
-
-        <div id="coord-display">POS: ATTESA GPS...</div>
-
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; height:120px; margin-top:5px;">
-            <div style="background:#0a0a0a; border:1px solid #333; padding:8px; overflow-y:auto; border-radius:10px;">
-                <h3 style="font-size:0.7rem; color:#555; margin:0 0 5px 0;">📍 OBIETTIVI</h3>
-                <ul id="scoreboard" style="list-style:none; padding:0; margin:0; font-size:0.75rem;"></ul>
-            </div>
-            <div style="background:#0a0a0a; border:1px solid #333; padding:8px; overflow-y:auto; border-radius:10px;">
-                <h3 style="font-size:0.7rem; color:#555; margin:0 0 5px 0;">👥 RADAR</h3>
-                <ul id="playerList" style="list-style:none; padding:0; margin:0; font-size:0.75rem;"></ul>
-            </div>
-        </div>
-    </div>
-
-    <div id="map-selection-overlay">
-        <h2 style="color:#0f0; text-align:center; font-size:1.2rem;">DEFINIZIONE CAMPO</h2>
-        <div style="flex-grow:1; position:relative; border:2px solid #0f0; border-radius:15px; overflow:hidden;">
-            <div id="selection-map"></div>
+    <div id="screen-select" class="screen">
+        <div class="header"><h2>SET AREA</h2></div>
+        <div class="map-container">
+            <div id="map-select"></div>
             <div class="crosshair"><div class="cross-dot"></div></div>
-            <button onclick="centerSelectionOnGPS()" style="position:absolute; bottom:20px; right:20px; z-index:11000; width:60px; height:60px; border-radius:50%; background:rgba(0,0,0,0.9); border:2px solid #0f0; color:#0f0; font-size:1.8rem;">🎯</button>
+            <button class="btn-loc" onclick="centerMapOnGPS(sMap)">🎯</button>
         </div>
-        <div class="selection-footer">
-            <div id="area-stats" style="text-align:center; font-weight:bold; font-size:0.9rem;">AREA: 0 m²</div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-start" onclick="confirmArea()">CONFERMA CAMPO</button>
-                <button class="btn-start" style="background:#300; color:red; border:1px solid red;" onclick="closeSelection()">CHIUDI</button>
+        <div id="area-info" style="text-align:center; padding:10px; color:#0f0;">Area: 0 m²</div>
+        <button class="btn" onclick="confirmArea()">CONFERMA AREA</button>
+        <button class="btn btn-sec" onclick="closeMapSelect()">ANNULLA</button>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <div class="game-header">
+            <div id="game-timer" style="font-weight:bold; font-size:1.2rem;">00:00</div>
+            <div style="display:flex; gap:5px;">
+                <div class="score red">R: <span id="s-red">0</span></div>
+                <div class="score blue">B: <span id="s-blue">0</span></div>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div id="map-rotate"><div id="map"></div></div>
+            <div class="crosshair"><div class="cross-dot"></div></div>
+            <div id="player-pointer">▲</div>
+            <button class="btn-loc" onclick="state.autoCenter = true; centerMapOnGPS(map);">🎯</button>
+        </div>
+
+        <div id="coord-bar">COORD: --</div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; height:120px; margin-top:5px;">
+            <div class="box" style="margin:0; overflow-y:auto; font-size:0.75rem;">
+                <b style="color:#555">OBIETTIVI</b><div id="game-obj-list"></div>
+            </div>
+            <div class="box" style="margin:0; overflow-y:auto; font-size:0.75rem;">
+                <b style="color:#555">RADAR</b><div id="game-player-list"></div>
             </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        /* --- LOGICA INTEGRALE --- */
         const BIN_ID = "696d4940ae596e708fe53514";
         const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
-        const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
-        const PWD_MASTER = "71325";
+        const URL_BIN = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+        const MASTER_PASS = "71325";
 
-        let map, sMap, sRectangle, lastCompass = 0, lastLogicTick = Date.now();
-        let activeMarkers = [];
-        let state = { 
-            isMaster: false, playerName: "", playerTeam: "", playerMarker: null, 
-            autoCenter: true, currentPos: [45.2377, 8.8097], customBounds: null,
-            sPlayerMarker: null
+        let map, sMap, sRect;
+        let state = {
+            isAdmin: false,
+            currentPos: [45.2377, 8.8097],
+            autoCenter: true,
+            bounds: null,
+            objs: []
         };
 
-        window.onload = () => { 
-            initMap(); 
-            initSlots();
-            setInterval(checkServerStatus, 3000); 
+        // --- INIZIALIZZAZIONE ---
+        window.onload = () => {
+            initBaseMaps();
+            for(let i=0; i<3; i++) addObjRow(); // Default rows
+            setInterval(checkGlobalStatus, 3000);
         };
 
-        function initMap() {
-            map = L.map("map", { zoomControl: false, attributionControl: false }).setView(state.currentPos, 18);
-            L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21 }).addTo(map);
+        function initBaseMaps() {
+            // Mappa principale
+            map = L.map('map', {zoomControl:false, attributionControl:false}).setView(state.currentPos, 18);
+            L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {subdomains:['mt0','mt1','mt2','mt3'], maxZoom:21}).addTo(map);
+            
             map.on('dragstart', () => state.autoCenter = false);
 
             navigator.geolocation.watchPosition(p => {
                 state.currentPos = [p.coords.latitude, p.coords.longitude];
-                updateCoordDisplay();
-                if(sMap && state.sPlayerMarker) state.sPlayerMarker.setLatLng(state.currentPos);
-            }, null, {enableHighAccuracy: true});
+                updateCoordBar();
+                if(state.autoCenter && map) map.panTo(state.currentPos);
+            }, null, {enableHighAccuracy:true});
+
+            window.addEventListener('deviceorientation', e => {
+                let heading = e.webkitCompassHeading || (360 - e.alpha);
+                if(!heading) return;
+                document.getElementById('map-rotate').style.transform = `rotate(${-heading}deg)`;
+                document.getElementById('player-pointer').style.transform = `translate(-50%,-50%) rotate(${heading}deg)`;
+            });
         }
 
-        function initSlots() {
-            const container = document.getElementById("objSlotContainer");
-            for(let i=1; i<=5; i++) {
-                container.innerHTML += `
-                <div class="obj-slot">
-                    <input type="checkbox" class="s-active" checked>
-                    <input type="text" class="s-name" value="OBJ-${i}">
-                    <input type="number" class="s-rad" value="20">
-                </div>`;
+        // --- FUNZIONI ADMIN ---
+        function unlockAdmin() {
+            if(document.getElementById('masterPass').value === MASTER_PASS) {
+                state.isAdmin = true;
+                document.getElementById('admin-panel').style.display = 'block';
             }
         }
 
-        function checkMasterPass() {
-            if(document.getElementById("masterPass").value === PWD_MASTER) {
-                state.isMaster = true;
-                document.getElementById("masterTools").style.display = "block";
-            }
+        function addObjRow() {
+            const container = document.getElementById('obj-list-admin');
+            const div = document.createElement('div');
+            div.className = 'obj-row';
+            div.innerHTML = `
+                <input type="text" class="o-name" value="OBJ ${container.children.length + 1}">
+                <input type="text" class="o-lat" placeholder="Lat">
+                <input type="text" class="o-lon" placeholder="Lon">
+                <input type="number" class="o-rad" value="20">
+            `;
+            container.appendChild(div);
         }
 
-        /* --- LOGICA SELEZIONE AREA --- */
-        function startAreaSelection() {
-            document.getElementById("map-selection-overlay").style.display = "flex";
-            if (!sMap) {
-                sMap = L.map("selection-map", { zoomControl: false, attributionControl: false }).setView(state.currentPos, 17);
-                L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'] }).addTo(sMap);
-                sRectangle = L.rectangle(sMap.getBounds().pad(-0.2), {color: "#0f0", weight: 2, fill: false}).addTo(sMap);
-                
+        function openMapSelect() {
+            document.getElementById('screen-setup').classList.remove('active');
+            document.getElementById('screen-select').classList.add('active');
+            if(!sMap) {
+                sMap = L.map('map-select', {zoomControl:false, attributionControl:false}).setView(state.currentPos, 17);
+                L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {subdomains:['mt0','mt1','mt2','mt3']}).addTo(sMap);
+                sRect = L.rectangle(sMap.getBounds().pad(-0.2), {color:'#0f0', weight:2, fill:false}).addTo(sMap);
                 sMap.on('move', () => {
-                    const bounds = sMap.getBounds().pad(-0.2);
-                    sRectangle.setBounds(bounds);
-                    calculateArea(bounds);
+                    let b = sMap.getBounds().pad(-0.2);
+                    sRect.setBounds(b);
+                    updateAreaStats(b);
                 });
             }
-            if(!state.sPlayerMarker) {
-                state.sPlayerMarker = L.circleMarker(state.currentPos, {radius: 8, color: '#fff', fillColor: '#007bff', fillOpacity: 1}).addTo(sMap);
-            }
-            setTimeout(() => sMap.invalidateSize(), 300);
+            setTimeout(() => sMap.invalidateSize(), 200);
         }
 
-        function calculateArea(bounds) {
-            const sw = bounds.getSouthWest();
-            const ne = bounds.getNorthEast();
-            const width = getDist(sw.lat, sw.lng, sw.lat, ne.lng);
-            const height = getDist(sw.lat, sw.lng, ne.lat, sw.lng);
-            document.getElementById("area-stats").innerText = `AREA: ${Math.round(width * height)} m²`;
-        }
-
-        function centerSelectionOnGPS() {
-            if(state.currentPos) sMap.setView(state.currentPos, 18);
+        function updateAreaStats(b) {
+            let sw = b.getSouthWest(), ne = b.getNorthEast();
+            let w = getDistance(sw.lat, sw.lng, sw.lat, ne.lng);
+            let h = getDistance(sw.lat, sw.lng, ne.lat, sw.lng);
+            document.getElementById('area-info').innerText = `Area: ${Math.round(w*h)} m²`;
         }
 
         function confirmArea() {
-            state.customBounds = sRectangle.getBounds();
-            alert("Campo di battaglia configurato.");
-            closeSelection();
+            state.bounds = sRect.getBounds();
+            alert("Area impostata. Gli obiettivi vuoti verranno generati casualmente in questa zona.");
+            closeMapSelect();
         }
 
-        function closeSelection() { document.getElementById("map-selection-overlay").style.display = "none"; }
-
-        /* --- CORE GAME --- */
-        async function enableSensorsAndStart(isMasterAction) {
-            state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
-            state.playerTeam = document.getElementById("teamSelect").value;
-            if(!state.playerName) return alert("INSERISCI NOME");
-
-            if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
-                const res = await DeviceOrientationEvent.requestPermission();
-                if(res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-            } else { window.addEventListener('deviceorientation', handleOrientation); }
-
-            if(isMasterAction) {
-                const duration = parseInt(document.getElementById("gameDuration").value);
-                const conqSec = parseInt(document.getElementById("conqTime").value);
-                let objs = [];
-
-                if(state.customBounds) {
-                    for(let i=1; i<=5; i++) {
-                        objs.push({
-                            name: "RND-"+i,
-                            lat: state.customBounds.getSouth() + Math.random()*(state.customBounds.getNorth()-state.customBounds.getSouth()),
-                            lon: state.customBounds.getWest() + Math.random()*(state.customBounds.getEast()-state.customBounds.getWest()),
-                            radius: 25, owner: "LIBERO", status: "NORMAL", progress: 0
-                        });
-                    }
-                } else {
-                    document.querySelectorAll(".obj-slot").forEach(slot => {
-                        if(slot.querySelector(".s-active").checked) {
-                            objs.push({
-                                name: slot.querySelector(".s-name").value,
-                                lat: state.currentPos[0] + (Math.random()-0.5)*0.002,
-                                lon: state.currentPos[1] + (Math.random()-0.5)*0.002,
-                                radius: parseInt(slot.querySelector(".s-rad").value),
-                                owner: "LIBERO", status: "NORMAL", progress: 0
-                            });
-                        }
-                    });
-                }
-
-                await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({
-                    game: { active:true, start:Date.now(), duration, scoreRed:0, scoreBlue:0, conqSec },
-                    players: {},
-                    objectives: objs
-                })});
-            }
-            startGame();
+        function closeMapSelect() {
+            document.getElementById('screen-select').classList.remove('active');
+            document.getElementById('screen-setup').classList.add('active');
         }
 
-        function startGame() {
-            document.getElementById("setup-screen").style.display = "none";
-            document.getElementById("game-ui").style.display = "block";
-            map.invalidateSize();
-            setInterval(sync, 4000);
-        }
+        function centerMapOnGPS(m) { m.setView(state.currentPos, 18); }
 
-        async function sync() {
-            try {
-                const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
-                let { record } = await res.json();
+        // --- LOGICA SERVER ---
+        async function serverInit() {
+            let objs = [];
+            document.querySelectorAll('.obj-row').forEach(row => {
+                let lat = row.querySelector('.o-lat').value;
+                let lon = row.querySelector('.o-lon').value;
                 
-                if(!record.players) record.players = {};
-                record.players[state.playerName] = { 
-                    team: state.playerTeam, lat: state.currentPos[0], lon: state.currentPos[1], last: Date.now() 
-                };
-
-                if(state.isMaster) {
-                    const dt = (Date.now() - lastLogicTick) / 1000;
-                    lastLogicTick = Date.now();
-                    record.objectives.forEach(obj => {
-                        let c1 = 0, c2 = 0;
-                        Object.values(record.players).forEach(p => {
-                            if(Date.now() - p.last < 10000 && getDist(p.lat, p.lon, obj.lat, obj.lon) < obj.radius) {
-                                p.team === 'TEAM1' ? c1++ : c2++;
-                            }
-                        });
-                        if(c1 > 0 && c2 > 0) { obj.status = "CONTESTED"; }
-                        else {
-                            obj.status = "NORMAL";
-                            if(obj.owner === 'TEAM1') record.game.scoreRed += dt * 10;
-                            if(obj.owner === 'TEAM2') record.game.scoreBlue += dt * 10;
-                            let capt = c1 > 0 ? 'TEAM1' : (c2 > 0 ? 'TEAM2' : null);
-                            if(capt && capt !== obj.owner) {
-                                obj.progress += dt;
-                                if(obj.progress >= record.game.conqSec) { obj.owner = capt; obj.progress = 0; }
-                            } else { obj.progress = 0; }
-                        }
-                    });
-                    await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
+                // Se admin non mette coordinate, le genera random nell'area o vicino a lui
+                if(!lat || !lon) {
+                    if(state.bounds) {
+                        lat = state.bounds.getSouth() + Math.random()*(state.bounds.getNorth()-state.bounds.getSouth());
+                        lon = state.bounds.getWest() + Math.random()*(state.bounds.getEast()-state.bounds.getWest());
+                    } else {
+                        lat = state.currentPos[0] + (Math.random()-0.5)*0.002;
+                        lon = state.currentPos[1] + (Math.random()-0.5)*0.002;
+                    }
                 }
-                updateUI(record);
-            } catch(e){}
-        }
 
-        function updateUI(r) {
-            activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
-            const sb = document.getElementById("scoreboard"); sb.innerHTML = "";
-            let anyContested = false;
-
-            r.objectives.forEach(obj => {
-                let color = obj.status === 'CONTESTED' ? '#ff0' : (obj.owner === 'TEAM1' ? '#f00' : (obj.owner === 'TEAM2' ? '#0ff' : '#fff'));
-                if(obj.status === 'CONTESTED') anyContested = true;
-                L.circle([obj.lat, obj.lon], { radius: obj.radius, color, weight: 2, fillOpacity: 0.2 }).addTo(map);
-                activeMarkers.push(L.marker([obj.lat, obj.lon], { icon: L.divIcon({className:'obj-label', html:`<b style="color:${color}; text-shadow:1px 1px #000; font-size:0.8rem;">${obj.name}</b>`}) }).addTo(map));
-                sb.innerHTML += `<li>${obj.name}: <span style="color:${color}">${obj.owner}</span></li>`;
+                objs.push({
+                    name: row.querySelector('.o-name').value,
+                    lat: parseFloat(lat), lon: parseFloat(lon),
+                    radius: parseInt(row.querySelector('.o-rad').value),
+                    owner: 'LIBERO', status: 'NORMAL', progress: 0
+                });
             });
 
-            document.getElementById("contested-alert").style.display = anyContested ? "block" : "none";
-            document.getElementById("scoreRed").innerText = Math.floor(r.game.scoreRed/10);
-            document.getElementById("scoreBlue").innerText = Math.floor(r.game.scoreBlue/10);
+            const data = {
+                game: {
+                    active: true,
+                    start: Date.now(),
+                    duration: parseInt(document.getElementById('cfg-dur').value),
+                    conqTime: parseInt(document.getElementById('cfg-conq').value),
+                    scoreRed: 0, scoreBlue: 0,
+                    coordFormat: document.getElementById('coordFormat').value
+                },
+                objectives: objs,
+                players: {}
+            };
 
-            if(!state.playerMarker) {
-                state.playerMarker = L.circleMarker(state.currentPos, {radius: 9, color: '#fff', fillColor: '#007bff', fillOpacity: 1}).addTo(map);
-            } else { state.playerMarker.setLatLng(state.currentPos); }
-            if(state.autoCenter) map.panTo(state.currentPos);
+            await fetch(URL_BIN, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json', 'X-Master-Key': SECRET_KEY},
+                body: JSON.stringify(data)
+            });
+            joinGame();
         }
 
-        function handleOrientation(e) {
-            let heading = e.webkitCompassHeading || (360 - e.alpha);
-            document.getElementById("map-rotate").style.transform = `rotate(${-heading}deg)`;
-            document.getElementById("player-pointer").style.transform = `translate(-50%,-50%) rotate(${heading}deg)`;
+        async function joinGame() {
+            state.playerName = document.getElementById('playerName').value.toUpperCase();
+            if(!state.playerName) return alert("Inserisci Nome!");
+            
+            document.getElementById('screen-setup').classList.remove('active');
+            document.getElementById('screen-game').classList.add('active');
+            map.invalidateSize();
+            
+            setInterval(gameLoop, 4000);
         }
 
-        function updateCoordDisplay() {
-            const fmt = document.getElementById("coordFormat").value;
+        async function gameLoop() {
+            try {
+                const res = await fetch(`${URL_BIN}/latest`, {headers: {'X-Master-Key': SECRET_KEY}, cache: 'no-store'});
+                const { record } = await res.json();
+                
+                // Update my position
+                record.players[state.playerName] = {
+                    team: document.getElementById('teamSelect').value,
+                    lat: state.currentPos[0], lon: state.currentPos[1],
+                    last: Date.now()
+                };
+
+                if(state.isAdmin) {
+                    processGameLogic(record);
+                    await fetch(URL_BIN, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json', 'X-Master-Key': SECRET_KEY},
+                        body: JSON.stringify(record)
+                    });
+                }
+                updateGameUI(record);
+            } catch(e) { console.error(e); }
+        }
+
+        function processGameLogic(r) {
+            const now = Date.now();
+            const dt = 4; // secondi approssimativi tra loop
+            
+            r.objectives.forEach(obj => {
+                let red = 0, blue = 0;
+                Object.values(r.players).forEach(p => {
+                    if(now - p.last < 10000 && getDistance(p.lat, p.lon, obj.lat, obj.lon) < obj.radius) {
+                        p.team === 'TEAM1' ? red++ : blue++;
+                    }
+                });
+
+                if(red > 0 && blue > 0) {
+                    obj.status = "CONTESTED";
+                } else {
+                    obj.status = "NORMAL";
+                    if(obj.owner === 'TEAM1') r.game.scoreRed += dt;
+                    if(obj.owner === 'TEAM2') r.game.scoreBlue += dt;
+
+                    let captor = red > 0 ? 'TEAM1' : (blue > 0 ? 'TEAM2' : null);
+                    if(captor && captor !== obj.owner) {
+                        obj.progress += dt;
+                        if(obj.progress >= r.game.conqTime) { obj.owner = captor; obj.progress = 0; }
+                    } else { obj.progress = 0; }
+                }
+            });
+        }
+
+        function updateGameUI(r) {
+            // Sincronizza formato coordinate scelto dall'admin
+            state.serverCoordFormat = r.game.coordFormat;
+            
+            // Marker obiettivi
+            activeMarkers().forEach(m => map.removeLayer(m));
+            const objDiv = document.getElementById('game-obj-list'); objDiv.innerHTML = '';
+            
+            r.objectives.forEach(obj => {
+                let color = obj.status === 'CONTESTED' ? '#ff0' : (obj.owner==='TEAM1'?'#f00':(obj.owner==='TEAM2'?'#0ff':'#fff'));
+                L.circle([obj.lat, obj.lon], {radius: obj.radius, color: color, weight:2, fillOpacity:0.2, className:'game-obj'}).addTo(map);
+                
+                objDiv.innerHTML += `<div>${obj.name}: <span style="color:${color}">${obj.owner}</span></div>`;
+            });
+
+            document.getElementById('s-red').innerText = Math.floor(r.game.scoreRed/10);
+            document.getElementById('s-blue').innerText = Math.floor(r.game.scoreBlue/10);
+            
+            // Timer
+            let elapsed = Math.floor((Date.now() - r.game.start) / 1000);
+            let total = r.game.duration * 60;
+            let rem = Math.max(0, total - elapsed);
+            document.getElementById('game-timer').innerText = `${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')}`;
+        }
+
+        // --- UTILS GEOMETRA & CARTOGRAFIA ---
+        function updateCoordBar() {
             let lat = state.currentPos[0], lon = state.currentPos[1];
-            if(fmt === "DD") {
-                document.getElementById("coord-display").innerText = `POS: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-            } else {
-                const toDDM = (v) => {
-                    const d = Math.floor(Math.abs(v));
-                    const m = ((Math.abs(v) - d) * 60).toFixed(4);
+            let fmt = state.serverCoordFormat || document.getElementById('coordFormat').value;
+            let out = "";
+
+            if(fmt === "DD") out = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+            else if(fmt === "DDM") {
+                const toDDM = v => {
+                    let d = Math.floor(Math.abs(v));
+                    let m = ((Math.abs(v)-d)*60).toFixed(4);
                     return `${d}° ${m}'`;
                 };
-                document.getElementById("coord-display").innerText = `POS: N ${toDDM(lat)} E ${toDDM(lon)}`;
+                out = `N ${toDDM(lat)} E ${toDDM(lon)}`;
             }
+            else if(fmt === "32T") {
+                let utm = wgs84ToUTM32T(lat, lon);
+                out = `32T E: ${utm.e.toFixed(0)} N: ${utm.n.toFixed(0)}`;
+            }
+            document.getElementById('coord-bar').innerText = out;
         }
 
-        function getDist(lat1, lon1, lat2, lon2) {
+        function wgs84ToUTM32T(lat, lon) {
+            // Costanti semplificate per proiezione Gauss-Boaga/UTM Zona 32 (Vigevano)
+            const deg2rad = Math.PI / 180;
+            const a = 6378137;
+            const f = 1 / 298.257223563;
+            const k0 = 0.9996;
+            const FE = 500000;
+            
+            let phi = lat * deg2rad;
+            let lambda = lon * deg2rad;
+            let lambda0 = 9 * deg2rad; // Meridiano centrale zona 32
+            
+            let eps = f / (2 - f);
+            let n = a / Math.sqrt(1 - ( (2*f - f*f) * Math.sin(phi)**2 ));
+            let T = Math.tan(phi)**2;
+            let C = ( (2*f - f*f) / (1 - (2*f - f*f)) ) * Math.cos(phi)**2;
+            let A = (lambda - lambda0) * Math.cos(phi);
+            
+            let M = a * ( (1 - (2*f-f*f)/4 - 3*(2*f-f*f)**2/64) * phi - (3*(2*f-f*f)/8 + 3*(2*f-f*f)**2/32) * Math.sin(2*phi) + (15*(2*f-f*f)**2/256) * Math.sin(4*phi) );
+            
+            let easting = FE + k0 * n * ( A + (1-T+C)*A**3/6 + (5-18*T+T**2+72*C)*A**5/120 );
+            let northing = k0 * ( M + n * Math.tan(phi) * ( A**2/2 + (5-T+9*C+4*C**2)*A**4/24 + (61-58*T+T**2+600*C)*A**6/720 ) );
+            
+            return { e: easting, n: northing };
+        }
+
+        function getDistance(lat1, lon1, lat2, lon2) {
             const R = 6371000;
             const dLat = (lat2-lat1)*Math.PI/180;
             const dLon = (lon2-lon1)*Math.PI/180;
@@ -399,13 +431,14 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        function centerMap() { state.autoCenter = true; map.setView(state.currentPos, 19); }
-        async function checkServerStatus() {
+        function activeMarkers() { return [...document.querySelectorAll('.game-obj')].map(el => el._leaflet_id).filter(id => id); }
+
+        async function checkGlobalStatus() {
             try {
-                const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
+                const res = await fetch(`${URL_BIN}/latest`, {headers: {'X-Master-Key': SECRET_KEY}});
                 const { record } = await res.json();
-                document.getElementById("playerStartBtn").disabled = !record.game?.active;
-            } catch(e){}
+                document.getElementById('btn-join').disabled = !record.game.active;
+            } catch(e) {}
         }
     </script>
 </body>
