@@ -3,23 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=any">
-    <title>SIX APP v.5.6</title>
+    <title>SIX APP v.5.8 - PRO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- CSS STYLE --- */
+        /* --- CSS CORE --- */
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
         body { background: #000; color: #0f0; font-family: monospace; margin: 0; padding: 5px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
         .brand-title { color: #0f0; font-size: 3.5rem; text-align: center; margin: 10px 0; text-shadow: 0 0 15px #0f0; font-weight: 900; }
-        .credits { text-align: center; color: #008800; font-size: 0.75rem; margin-bottom: 20px; font-weight: bold; background: rgba(0,20,0,0.5); padding: 5px; border-radius: 5px; }
+        .credits { text-align: center; color: #008800; font-size: 0.75rem; margin-bottom: 20px; font-weight: bold; background: rgba(0,20,0,0.5); padding: 5px; border-radius: 5px; line-height: 1.2; }
         #menu { background: #111; padding: 15px; border-radius: 15px; border: 1px solid #333; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
         input, select { background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; border-radius: 8px; font-size: 1rem; }
 
         .btn-info { background: #003300; color: #0f0; border: 1px solid #0f0; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .overlay-content { background: #111; border: 2px solid #0f0; border-radius: 20px; padding: 20px; width: 100%; max-height: 90%; display: flex; flex-direction: column; }
-        .scroll-text { overflow-y: auto; margin: 15px 0; font-size: 0.9rem; line-height: 1.4; color: #ccc; }
 
         .master-zone { border: 1px solid #444; padding: 10px; border-radius: 10px; background: #0a0a0a; margin: 10px 0; }
         .m-title { font-size: 0.75rem; color: #888; margin: 5px 0; text-transform: uppercase; letter-spacing: 1px; }
@@ -36,6 +32,7 @@
         .obj-slot { display: grid; grid-template-columns: 30px 80px 1fr 1fr; gap: 5px; padding: 8px 5px; border-bottom: 1px solid #222; align-items: center; }
         .obj-slot input { padding: 5px; font-size: 0.7rem; border-color: #333; }
 
+        /* Game UI */
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 10px; border-radius: 10px; border: 1px solid #040; margin-bottom: 5px; height: 50px; }
         .countdown-display { font-size: 1.2rem; font-weight: bold; }
         .score-display { display: flex; gap: 10px; }
@@ -45,8 +42,8 @@
 
         .map-system { flex-grow: 1; position: relative; display: flex; gap: 5px; min-height: 300px; }
         .map-main-container { flex-grow: 1; border: 2px solid #0f0; border-radius: 15px; overflow: hidden; position: relative; background: #000; }
-        #map-rotate, #map { width: 100%; height: 100%; transition: transform 0.1s linear; }
-        #player-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; color: #fff; font-size: 30px; pointer-events: none; text-shadow: 0 0 5px #000; }
+        #map-rotate, #map { width: 100%; height: 100%; transition: transform 0.15s cubic-bezier(0,0,0.5,1); }
+        #player-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; color: #fff; font-size: 30px; pointer-events: none; text-shadow: 0 0 5px #000; transition: transform 0.15s linear; }
         
         .map-controls-external { display: flex; flex-direction: column; gap: 8px; }
         .ext-btn { flex: 1; background: #111; border: 1.5px solid #0f0; color: #0f0; border-radius: 10px; width: 55px; font-size: 1.4rem; cursor: pointer; }
@@ -66,10 +63,14 @@
         
         .obj-label { background: transparent !important; border: none !important; box-shadow: none !important; color: white !important; font-weight: bold; text-shadow: 2px 2px 2px #000; font-size: 11px !important; }
 
-        #area-hint { position: absolute; top: 10px; width: 100%; text-align: center; z-index: 5000; pointer-events: none; }
-        #area-hint span { background: rgba(0,0,0,0.8); color: #0f0; padding: 5px 10px; border: 1px solid #0f0; border-radius: 5px; font-size: 0.7rem; }
+        /* Area Selection Overlay */
+        #map-selection-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: #000; display: none; flex-direction: column; }
+        #selection-map { flex-grow: 1; width: 100%; }
+        #area-hint { position: absolute; top: 10px; width: 100%; text-align: center; z-index: 10005; pointer-events: none; }
+        #area-hint span { background: rgba(0,0,0,0.85); color: #0f0; padding: 8px 15px; border: 1px solid #0f0; border-radius: 5px; font-size: 0.8rem; }
         
-        .floating-center { position: absolute; bottom: 80px; right: 20px; z-index: 10001; background: #111; border: 2px solid #0f0; color: #0f0; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        #btn-center-selection { position: absolute; bottom: 120px; right: 20px; z-index: 10010; background: #111; border: 2.5px solid #0f0; color: #0f0; width: 65px; height: 65px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; box-shadow: 0 0 20px rgba(0,255,0,0.4); cursor: pointer; active { background: #030; } }
+        .selection-footer { height: 100px; background: #000; display: flex; align-items: center; justify-content: center; gap: 15px; padding: 15px; border-top: 1px solid #333; }
     </style>
 </head>
 <body>
@@ -77,11 +78,11 @@
     <div id="setup-screen">
         <header id="main-header">
             <h1 class="brand-title">SIX APP</h1>
-            <div class="credits">Versione: 5.6_080326_1653<br>Ultima Modifica: 08/03/2026 16:53</div>
+            <div class="credits">Versione: 5.8_080326_1658<br>Modifica: 08/03/2026 16:58</div>
         </header>
 
         <div id="menu">
-            <button class="btn-info" onclick="toggleTutorial(true)">📖 GUIDA OPERATIVA</button>
+            <button class="btn-info" onclick="alert('Toccare gli obiettivi per navigare. In modalità orizzontale la mappa ruota col telefono.')">📖 HELP VELOCE</button>
 
             <input id="playerName" placeholder="NOME OPERATORE">
             <select id="teamSelect">
@@ -92,7 +93,7 @@
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">COMANDO OPERAZIONE</p>
+                    <p class="m-title">CONFIGURAZIONE SERVER</p>
                     <div class="mode-selector">
                         <button id="btnDomination" type="button" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
                         <button id="btnRecon" type="button" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
@@ -100,8 +101,8 @@
                     </div>
                     
                     <div class="m-config-grid">
-                        <div class="m-row"><span>MINUTI:</span><input id="gameDuration" type="number" value="30"></div>
-                        <div class="m-row"><span>COORD:</span>
+                        <div class="m-row"><span>DURATA (MIN):</span><input id="gameDuration" type="number" value="30"></div>
+                        <div class="m-row"><span>FORMATO COORD:</span>
                             <select id="coordFormat">
                                 <option value="DEC">DECIMALI</option>
                                 <option value="UTM">UTM (32T)</option>
@@ -112,27 +113,27 @@
                     <div id="random-config" style="display:none; border: 1px dashed #0f0; padding: 10px; margin-top: 10px;">
                         <p class="m-title">RANDOM SETTINGS</p>
                         <div class="m-row"><span>NUMERO OBJ:</span><input id="rndCount" type="number" value="3" min="1"></div>
-                        <button class="btn-info" style="width:100%; margin-top:10px; font-size:0.7rem;" onclick="startAreaSelection()">📐 DISEGNA AREA SULLA MAPPA</button>
+                        <button class="btn-info" style="width:100%; margin-top:10px;" onclick="startAreaSelection()">📐 SELEZIONA AREA DI GIOCO</button>
                     </div>
 
-                    <p id="obj-list-title" class="m-title">OBIETTIVI MISSIONE</p>
+                    <p id="obj-list-title" class="m-title">LISTA OBIETTIVI</p>
                     <div id="objSlotContainer" class="slot-list"></div>
                     
-                    <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 AVVIA SESSIONE</button>
-                    <button class="btn-danger" onclick="resetBin()">🔥 RESET DATABASE</button>
+                    <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 AVVIA E SINCRONIZZA</button>
+                    <button class="btn-danger" onclick="resetBin()">🔥 CANCELLA TUTTO</button>
                 </div>
             </div>
             
-            <button id="playerStartBtn" class="btn-start" onclick="enableSensorsAndStart(false)">▶ ENTRA IN AZIONE</button>
+            <button id="playerStartBtn" class="btn-start" onclick="enableSensorsAndStart(false)">▶ PARTECIPA AL GIOCO</button>
         </div>
     </div>
 
-    <div id="map-selection-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:10000; background:#000;">
-        <div id="area-hint"><span>MUOVI LA MAPPA PER INQUADRARE L'AREA</span></div>
-        <div id="selection-map" style="width:100%; height:85%;"></div>
-        <button class="floating-center" onclick="centerSelectionOnPlayer()">🎯</button>
-        <div style="height:15%; display:flex; align-items:center; justify-content:center; gap:10px; padding:10px;">
-            <button class="btn-start" style="margin:0; flex:1;" onclick="confirmArea()">CONFERMA</button>
+    <div id="map-selection-overlay">
+        <div id="area-hint"><span>TRASCINA LA MAPPA O USA 🎯 PER CENTRARE</span></div>
+        <div id="selection-map"></div>
+        <div id="btn-center-selection" onclick="centerSelectionOnPlayer()">🎯</div>
+        <div class="selection-footer">
+            <button class="btn-start" style="margin:0; flex:2;" onclick="confirmArea()">CONFERMA AREA</button>
             <button class="btn-danger" style="margin:0; flex:1;" onclick="cancelArea()">ANNULLA</button>
         </div>
     </div>
@@ -151,7 +152,7 @@
                 <div id="map-rotate"><div id="map"></div></div>
                 <div id="player-pointer">▲</div>
                 <div id="nav-overlay" class="nav-hud" style="display:none;">
-                    <div id="nav-text">NAVIGAZIONE...</div>
+                    <div id="nav-text">IN NAVIGAZIONE...</div>
                     <button onclick="stopNavigation()" class="nav-stop-btn">CHIUDI</button>
                 </div>
             </div>
@@ -163,11 +164,11 @@
         </div>
         <div class="game-info-container">
             <div class="info-section">
-                <h3>📍 OBIETTIVI</h3>
+                <h3>📍 TARGETS</h3>
                 <ul id="scoreboard" class="data-list"></ul>
             </div>
             <div class="info-section">
-                <h3>👥 TEAM RADAR</h3>
+                <h3>👥 COMPAGNI</h3>
                 <ul id="playerList" class="data-list"></ul>
             </div>
         </div>
@@ -175,16 +176,14 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        /* --- LOGIC CORE --- */
+        /* --- LOGICA SIX APP --- */
         const BIN_ID = "696d4940ae596e708fe53514";
         const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
         const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
         const PWD_MASTER = "71325";
 
-        const mapBounds = [[45.2350, 8.8060], [45.2410, 8.8140]];
         let customRandomBounds = null;
         let lastCompass = 0;
-
         let state = { 
             isMaster: false, playerName: "", playerTeam: "", playerMarker: null, 
             autoCenter: true, selectedMode: "DOMINATION", targetObj: null, navLine: null, startTime: null 
@@ -204,9 +203,70 @@
         };
 
         function initMap() {
-            map = L.map("map", { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
+            map = L.map("map", { zoomControl: false, attributionControl: false, scrollWheelZoom: true }).setView([45.2377, 8.8097], 18);
             L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21 }).addTo(map);
             map.on('dragstart', () => state.autoCenter = false);
+        }
+
+        /* --- CORREZIONE ORIENTAMENTO DINAMICO --- */
+        function handleOrientation(e) {
+            let heading = e.webkitCompassHeading || (360 - e.alpha);
+            // Correzione automatica per rotazione schermo orizzontale/verticale
+            let screenAngle = 0;
+            if (window.screen && window.screen.orientation) {
+                screenAngle = window.screen.orientation.angle;
+            } else if (typeof window.orientation !== 'undefined') {
+                screenAngle = window.orientation;
+            }
+            
+            let correctedHeading = (heading + screenAngle) % 360;
+
+            if(Math.abs(correctedHeading - lastCompass) > 0.8) {
+                lastCompass = correctedHeading;
+                // Ruota la mappa e il puntatore in senso opposto
+                document.getElementById("map-rotate").style.transform = `rotate(${-correctedHeading}deg)`;
+                document.getElementById("player-pointer").style.transform = `translate(-50%, -50%) rotate(${correctedHeading}deg)`;
+            }
+        }
+
+        /* --- SELEZIONE AREA CON CENTRATURA GPS --- */
+        function startAreaSelection() {
+            document.getElementById("map-selection-overlay").style.display = "flex";
+            if (!sMap) {
+                sMap = L.map("selection-map", { attributionControl: false }).setView([45.2377, 8.8097], 17);
+                L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21 }).addTo(sMap);
+                sRectangle = L.rectangle(sMap.getBounds().pad(-0.3), {color: "#0f0", weight: 3, fillOpacity: 0.2, interactive: false}).addTo(sMap);
+                sMap.on('move', () => { sRectangle.setBounds(sMap.getBounds().pad(-0.25)); });
+            }
+            setTimeout(() => { 
+                sMap.invalidateSize();
+                centerSelectionOnPlayer(); // Centra subito all'apertura
+            }, 400);
+        }
+
+        function centerSelectionOnPlayer() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(p => {
+                    const pos = [p.coords.latitude, p.coords.longitude];
+                    sMap.setView(pos, 18);
+                    // Forza il rettangolo a ricalcolarsi sulla nuova vista
+                    sRectangle.setBounds(sMap.getBounds().pad(-0.25));
+                }, (err) => console.log("GPS non pronto"), {enableHighAccuracy: true});
+            }
+        }
+
+        function confirmArea() { customRandomBounds = sRectangle.getBounds(); document.getElementById("map-selection-overlay").style.display = "none"; }
+        function cancelArea() { document.getElementById("map-selection-overlay").style.display = "none"; }
+
+        /* --- FORMATO COORDINATE UTM 32T --- */
+        function formatCoords(lat, lon) {
+            if(document.getElementById("coordFormat")?.value === "UTM") {
+                // Conversione semplificata per zona 32T (Nord Italia)
+                const easting = Math.round((lon - 9) * 80000 + 500000);
+                const northing = Math.round(lat * 111132);
+                return `32T E:${easting} N:${northing}`;
+            }
+            return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
         }
 
         function checkMasterPass() {
@@ -226,62 +286,12 @@
             document.getElementById("objSlotContainer").style.display = (m === 'RANDOM') ? "none" : "block";
         }
 
-        /* --- GPS & ORIENTATION CORRECTION --- */
-        function handleOrientation(e) {
-            // Calcolo orientamento corretto considerando la rotazione dello schermo (window.orientation)
-            let heading = e.webkitCompassHeading || (360 - e.alpha);
-            let screenAngle = window.orientation || 0;
-            let correctedHeading = (heading + screenAngle) % 360;
-
-            if(correctedHeading !== lastCompass) {
-                lastCompass = correctedHeading;
-                document.getElementById("map-rotate").style.transform = `rotate(${-correctedHeading}deg)`;
-                document.getElementById("player-pointer").style.transform = `translate(-50%, -50%) rotate(${correctedHeading}deg)`;
-            }
-        }
-
-        function startAreaSelection() {
-            document.getElementById("map-selection-overlay").style.display = "block";
-            if (!sMap) {
-                sMap = L.map("selection-map", { attributionControl: false }).setView([45.2377, 8.8097], 17);
-                L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21 }).addTo(sMap);
-                sRectangle = L.rectangle(sMap.getBounds().pad(-0.3), {color: "#0f0", weight: 2, fillOpacity: 0.2}).addTo(sMap);
-                sMap.on('move', () => { sRectangle.setBounds(sMap.getBounds().pad(-0.2)); });
-            }
-            setTimeout(() => sMap.invalidateSize(), 200);
-        }
-
-        function centerSelectionOnPlayer() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(p => {
-                    sMap.setView([p.coords.latitude, p.coords.longitude], 18);
-                });
-            }
-        }
-
-        function confirmArea() {
-            customRandomBounds = sRectangle.getBounds();
-            document.getElementById("map-selection-overlay").style.display = "none";
-        }
-
-        function cancelArea() { document.getElementById("map-selection-overlay").style.display = "none"; }
-
-        /* --- COORDINATES UTM 32T CONVERTER --- */
-        function formatCoords(lat, lon) {
-            const mode = document.getElementById("coordFormat")?.value || "DEC";
-            if(mode === "UTM") {
-                // Semplificazione conversione UTM per zona 32T (Nord Italia approssimativo)
-                return `32T E:${Math.round(lon*10000)} N:${Math.round(lat*10000)}`;
-            }
-            return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-        }
-
         async function enableSensorsAndStart(isMasterAction) {
             state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
             state.playerTeam = document.getElementById("teamSelect").value;
             if(!state.playerName) return alert("INSERISCI NOME OPERATORE!");
 
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().then(res => {
                     if(res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
                     isMasterAction ? saveAndStart() : startGame();
@@ -349,7 +359,7 @@
         }
 
         function generateRandomObjectives(count) {
-            const b = customRandomBounds || L.latLngBounds(mapBounds);
+            const b = customRandomBounds || map.getBounds();
             let o = [];
             for(let i=0; i<count; i++) {
                 o.push({
@@ -372,22 +382,19 @@
                 let m = L.circle([obj.lat, obj.lon], {radius: 15, color: color, weight: 3, fillOpacity: 0.2}).addTo(map);
                 m.bindTooltip(obj.name, {permanent:true, direction:'top', className:'obj-label'});
                 
-                // CORREZIONE: Click su obiettivo attiva navigazione in ogni modalità
+                // Navigazione attiva in ogni modalità al click
                 m.on('click', () => startNavigation(obj));
                 activeMarkers.push(m);
-                
                 scoreboard.innerHTML += `<li onclick='startNavigation(${JSON.stringify(obj)})'>${obj.name} <span style="color:${color}">${obj.owner}</span></li>`;
             });
 
-            // Timer e punteggio
             if(r.game) {
                 const remain = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start) / 1000);
-                document.getElementById("timer").innerText = remain > 0 ? `⏱️ ${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}` : "FINE";
+                document.getElementById("timer").innerText = remain > 0 ? `⏱️ ${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}` : "TERMINATO";
                 document.getElementById("scoreRed").innerText = r.game.scoreRed;
                 document.getElementById("scoreBlue").innerText = r.game.scoreBlue;
             }
 
-            // Radar
             const pList = document.getElementById("playerList"); pList.innerHTML = "";
             Object.entries(r.players || {}).forEach(([name, p]) => {
                 if(Date.now() - p.last < 30000 && p.team === state.playerTeam && name !== state.playerName) {
@@ -403,11 +410,7 @@
             updateNavigationLine(); 
         }
 
-        function stopNavigation() { 
-            state.targetObj = null; 
-            if(state.navLine) map.removeLayer(state.navLine); 
-            document.getElementById("nav-overlay").style.display = "none"; 
-        }
+        function stopNavigation() { state.targetObj = null; if(state.navLine) map.removeLayer(state.navLine); document.getElementById("nav-overlay").style.display = "none"; }
 
         function updateNavigationLine() {
             if(!state.targetObj || !state.playerMarker) return;
@@ -444,14 +447,13 @@
         }
 
         function centerMap() { state.autoCenter = true; if(state.playerMarker) map.panTo(state.playerMarker.getLatLng()); }
-        function exitGame() { if(confirm("CHIUDERE SESSIONE?")) location.reload(); }
+        function exitGame() { if(confirm("USCIRE DALLA SESSIONE?")) location.reload(); }
         async function resetBin() {
-            if(confirm("VUOI CANCELLARE TUTTI I DATI?")) {
+            if(confirm("VUOI AZZERARE IL SERVER?")) {
                 await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{mode:"DOMINATION",scoreRed:0,scoreBlue:0,start:Date.now(),duration:30},players:{},objectives:[]})});
                 location.reload();
             }
         }
-        function toggleTutorial(s) { alert("GUIDA: Clicca sugli obiettivi per navigare. In modalità Random, disegna l'area prima di avviare. La bussola si corregge automaticamente se ruoti il telefono."); }
     </script>
 </body>
 </html>
