@@ -13,7 +13,6 @@
         .brand-title { color: #0f0; font-size: 3.5rem; text-align: center; margin: 5px 0; text-shadow: 0 0 15px #0f0; font-weight: 900; }
         .credits { text-align: center; color: #008800; font-size: 0.7rem; margin-bottom: 10px; font-weight: bold; background: rgba(0,20,0,0.3); padding: 5px; border-radius: 5px; }
 
-        /* Stato Server */
         #server-status-box { background: #111; border: 1px solid #333; padding: 10px; border-radius: 10px; margin-bottom: 10px; text-align: center; }
         .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
         .status-free { background: #0f0; box-shadow: 0 0 10px #0f0; }
@@ -40,7 +39,6 @@
         .obj-slot { display: grid; grid-template-columns: 30px 80px 1fr 1fr; gap: 5px; padding: 8px 5px; border-bottom: 1px solid #222; align-items: center; }
         .obj-slot input { padding: 5px; font-size: 0.7rem; border-color: #333; }
 
-        /* Interfaccia Gioco */
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 10px; border-radius: 10px; border: 1px solid #040; margin-bottom: 5px; height: 50px; }
         .countdown-display { font-size: 1.1rem; font-weight: bold; }
         .score-display { display: flex; gap: 8px; }
@@ -71,12 +69,11 @@
         .nav-hud { position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.9); border: 2px solid yellow; padding: 10px; border-radius: 12px; z-index: 4000; display: flex; justify-content: space-between; align-items: center; color: yellow; font-size: 0.8rem; }
         .obj-label { background: transparent !important; border: none !important; color: white !important; font-weight: bold; text-shadow: 2px 2px 2px #000; font-size: 10px !important; }
 
-        /* Guida */
         #help-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 20000; display: none; flex-direction: column; padding: 20px; overflow-y: auto; }
         
-        /* Selezione Area */
         #map-selection-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: #000; display: none; flex-direction: column; }
         #selection-map { flex-grow: 1; width: 100%; }
+        .sel-map-ctrl { position: absolute; top: 20px; right: 20px; z-index: 11000; }
     </style>
 </head>
 <body>
@@ -118,6 +115,7 @@
                         <div class="m-row"><span>DURATA (MIN):</span><input id="gameDuration" type="number" value="30"></div>
                         <div class="m-row"><span>CONQUISTA (SEC):</span><input id="conqTime" type="number" value="60"></div>
                         <div class="m-row"><span>RICONQUISTA (SEC):</span><input id="reconqTime" type="number" value="30"></div>
+                        <div class="m-row"><span>RAGGIO OBJ (MT):</span><input id="objRadius" type="number" value="15"></div>
                         <div class="m-row"><span>NOME SQ. 1:</span><input id="nameTeam1" type="text" value="ROSSI" oninput="updateTeamNames()"></div>
                         <div class="m-row"><span>NOME SQ. 2:</span><input id="nameTeam2" type="text" value="BLU" oninput="updateTeamNames()"></div>
                         <div class="m-row"><span>COORDINATE:</span>
@@ -128,7 +126,7 @@
                         </div>
                     </div>
 
-                    <div id="random-config" style="display:none; border: 1px dashed #0f0; padding: 10px; margin-top: 10px;">
+                    <div id="random-config" style="display:none; border: 1px solid #0f0; padding: 10px; margin-top: 10px;">
                         <p class="m-title">AREA CASUALE</p>
                         <div class="m-row"><span>NUMERO OBJ:</span><input id="rndCount" type="number" value="3"></div>
                         <button class="btn-info" style="width:100%; margin-top:5px;" onclick="startAreaSelection()">📐 DISEGNA AREA</button>
@@ -147,6 +145,9 @@
     </div>
 
     <div id="map-selection-overlay">
+        <div class="sel-map-ctrl">
+            <button class="ext-btn" onclick="centerSelectionMap()">🎯</button>
+        </div>
         <div id="selection-map"></div>
         <div style="height:80px; background:#000; display:flex; padding:15px; gap:10px;">
             <button class="btn-start" onclick="confirmArea()">CONFERMA</button>
@@ -157,10 +158,8 @@
     <div id="help-overlay">
         <div style="color:#ccc; line-height:1.6;">
             <h2 style="color:#0f0">GUIDA SIX APP 6.0</h2>
-            <p>1. <b>Navigazione:</b> Clicca su un obiettivo in lista o mappa per attivare la rotta. La mappa si orienterà automaticamente verso dove stai guardando.</p>
-            <p>2. <b>Ingresso:</b> Puoi entrare solo se l'Admin ha avviato la giocata (Stato: Partita in Corso).</p>
-            <p>3. <b>Team Radar:</b> In basso a destra vedi i tuoi compagni e la loro distanza reale.</p>
-            <p>4. <b>Conquista:</b> Resta nel cerchio per conquistare. Il colore cambierà in base alla squadra.</p>
+            <p>1. <b>Conquista:</b> Entra nel raggio dell'obiettivo. Se sei solo (o con compagni), il tempo di cattura scorre. Se ci sono nemici, l'obiettivo diventa <b>CONTESO</b> e il tempo si ferma finché un team non viene eliminato dall'area.</p>
+            <p>2. <b>Difesa:</b> Chi arriva per primo mantiene il possesso in caso di contesa.</p>
             <button class="btn-start" style="margin-top:20px" onclick="toggleHelp(false)">CHIUDI</button>
         </div>
     </div>
@@ -215,7 +214,7 @@
         window.onload = () => {
             initMap();
             updateTeamNames();
-            setInterval(checkServerStatus, 3000); // Controllo continuo stato server
+            setInterval(checkServerStatus, 3000);
         };
 
         function initMap() {
@@ -240,7 +239,6 @@
                     statusDot.className = "status-dot status-busy";
                     statusText.innerText = "PARTITA IN CORSO";
                     scorePreview.innerText = `${record.game.t1}: ${record.game.scoreRed} | ${record.game.t2}: ${record.game.scoreBlue}`;
-                    // Aggiorna nomi squadre nel menu
                     document.getElementById("opt-team1").innerText = record.game.t1;
                     document.getElementById("opt-team2").innerText = record.game.t2;
                 } else {
@@ -265,13 +263,9 @@
             let heading = e.webkitCompassHeading || (360 - e.alpha);
             let screenAngle = 0;
             if (window.screen && window.screen.orientation) screenAngle = window.screen.orientation.angle;
-            else if (typeof window.orientation !== 'undefined') screenAngle = window.orientation;
-            
             let correctedHeading = (heading + screenAngle) % 360;
-
             if(Math.abs(correctedHeading - lastCompass) > 0.8) {
                 lastCompass = correctedHeading;
-                // Rotazione mappa per mantenere senso marcia in alto
                 document.getElementById("map-rotate").style.transform = `rotate(${-correctedHeading}deg)`;
                 document.getElementById("player-pointer").style.transform = `translate(-50%, -50%) rotate(${correctedHeading}deg)`;
             }
@@ -281,20 +275,16 @@
             state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
             state.playerTeam = document.getElementById("teamSelect").value;
             if(!state.playerName) return alert("INSERISCI NOME OPERATORE!");
-
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const res = await DeviceOrientationEvent.requestPermission();
                 if(res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-            } else {
-                window.addEventListener('deviceorientation', handleOrientation);
-            }
-            
+            } else { window.addEventListener('deviceorientation', handleOrientation); }
             isMasterAction ? saveAndStart() : startGame();
         }
 
         async function saveAndStart() {
             state.startTime = Date.now();
-            await sync(true, parseInt(document.getElementById("gameDuration").value));
+            await sync(true);
             startGame();
         }
 
@@ -318,36 +308,74 @@
             setInterval(() => sync(false), 4000);
         }
 
-        async function sync(forceMaster, duration) {
+        async function sync(forceMaster) {
             try {
                 const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
                 let { record } = await res.json();
+                
                 if(!record.players) record.players = {};
                 record.players[state.playerName] = { team: state.playerTeam, lat: state.playerMarker?.getLatLng().lat || 0, lon: state.playerMarker?.getLatLng().lng || 0, last: Date.now() };
 
                 if(state.isMaster || forceMaster) {
-                    record.game = { 
-                        active: true,
-                        mode: state.selectedMode, scoreRed: record.game?.scoreRed || 0, scoreBlue: record.game?.scoreBlue || 0,
-                        start: forceMaster ? state.startTime : (record.game?.start || Date.now()),
-                        duration: duration || record.game?.duration || 30,
-                        conqSec: parseInt(document.getElementById("conqTime").value),
-                        reconqSec: parseInt(document.getElementById("reconqTime").value),
-                        t1: document.getElementById("nameTeam1").value.toUpperCase(),
-                        t2: document.getElementById("nameTeam2").value.toUpperCase()
-                    };
-                    if (state.selectedMode === 'RANDOM' && forceMaster) {
-                        record.objectives = generateRandomObjectives(parseInt(document.getElementById("rndCount").value));
-                    } else if (state.selectedMode !== 'RANDOM' && (state.isMaster || forceMaster)) {
-                        let newObjs = [];
-                        document.querySelectorAll(".obj-slot").forEach(s => {
-                            if(s.querySelector(".s-active").checked) {
-                                newObjs.push({ name: s.querySelector(".s-name").value, lat: parseFloat(s.querySelector(".s-lat").value), lon: parseFloat(s.querySelector(".s-lon").value), owner: "LIBERO" });
-                            }
-                        });
-                        record.objectives = newObjs;
+                    const now = Date.now();
+                    if(forceMaster) {
+                        record.game = { 
+                            active: true, start: now, 
+                            mode: state.selectedMode, scoreRed: 0, scoreBlue: 0,
+                            duration: parseInt(document.getElementById("gameDuration").value),
+                            conqSec: parseInt(document.getElementById("conqTime").value),
+                            reconqSec: parseInt(document.getElementById("reconqTime").value),
+                            objRadius: parseInt(document.getElementById("objRadius").value),
+                            t1: document.getElementById("nameTeam1").value.toUpperCase(),
+                            t2: document.getElementById("nameTeam2").value.toUpperCase()
+                        };
+                        if (state.selectedMode === 'RANDOM') {
+                            record.objectives = generateRandomObjectives(parseInt(document.getElementById("rndCount").value));
+                        } else {
+                            let newObjs = [];
+                            document.querySelectorAll(".obj-slot").forEach(s => {
+                                if(s.querySelector(".s-active").checked) {
+                                    newObjs.push({ name: s.querySelector(".s-name").value, lat: parseFloat(s.querySelector(".s-lat").value), lon: parseFloat(s.querySelector(".s-lon").value), owner: "LIBERO", progress: 0, lastCheck: now });
+                                }
+                            });
+                            record.objectives = newObjs;
+                        }
                     }
+
+                    // LOGICA DI CONQUISTA (Solo se Master aggiorna)
+                    record.objectives.forEach(obj => {
+                        let playersInArea = Object.values(record.players).filter(p => (now - p.last < 10000) && getDistRaw(p.lat, p.lon, obj.lat, obj.lon) <= record.game.objRadius);
+                        let t1Present = playersInArea.some(p => p.team === 'TEAM1');
+                        let t2Present = playersInArea.some(p => p.team === 'TEAM2');
+
+                        if (t1Present && t2Present) {
+                            obj.status = "CONTESO"; // Entrambi presenti, blocco
+                        } else if (t1Present || t2Present) {
+                            let activeTeam = t1Present ? 'TEAM1' : 'TEAM2';
+                            if (obj.owner === "LIBERO") {
+                                if (obj.claimingTeam !== activeTeam) { obj.progress = 0; obj.claimingTeam = activeTeam; }
+                                obj.progress += 4; // Avanzamento (basato su intervallo sync)
+                                if (obj.progress >= record.game.conqSec) { obj.owner = activeTeam; obj.progress = 0; }
+                            } else if (obj.owner !== activeTeam) {
+                                // Riconquista: deve esserci SOLO il team che riconquista
+                                if (obj.claimingTeam !== activeTeam) { obj.progress = 0; obj.claimingTeam = activeTeam; }
+                                obj.progress += 4;
+                                if (obj.progress >= record.game.reconqSec) { obj.owner = activeTeam; obj.progress = 0; }
+                            } else {
+                                obj.progress = 0; // Stesso team proprietario, reset progresso nemico
+                            }
+                            obj.status = "IN_CATTURA";
+                        } else {
+                            obj.status = "STABILE";
+                            obj.progress = 0;
+                        }
+                        
+                        // Incremento Punteggio
+                        if(obj.owner === 'TEAM1') record.game.scoreRed += 1;
+                        if(obj.owner === 'TEAM2') record.game.scoreBlue += 1;
+                    });
                 }
+                
                 await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
                 updateUI(record);
             } catch(e) {}
@@ -357,27 +385,26 @@
             activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
             const scoreboard = document.getElementById("scoreboard");
             scoreboard.innerHTML = "";
-
             const t1N = r.game?.t1 || "S1";
             const t2N = r.game?.t2 || "S2";
-            document.getElementById("lblTeam1").innerText = t1N;
-            document.getElementById("lblTeam2").innerText = t2N;
 
             (r.objectives || []).forEach(obj => {
                 let color = obj.owner === 'TEAM1' ? '#f00' : obj.owner === 'TEAM2' ? '#0ff' : '#fff';
-                let m = L.circle([obj.lat, obj.lon], {radius: 15, color: color, weight: 3, fillOpacity: 0.2}).addTo(map);
-                m.bindTooltip(obj.name, {permanent:true, direction:'top', className:'obj-label'});
+                let circleColor = obj.status === "CONTESO" ? "#ffff00" : color;
+                let m = L.circle([obj.lat, obj.lon], {radius: r.game.objRadius, color: circleColor, weight: 3, fillOpacity: 0.2}).addTo(map);
+                m.bindTooltip(`${obj.name} ${obj.progress > 0 ? '('+obj.progress+'s)' : ''}`, {permanent:true, direction:'top', className:'obj-label'});
                 m.on('click', () => startNavigation(obj));
                 activeMarkers.push(m);
                 let oTxt = obj.owner === 'TEAM1' ? t1N : obj.owner === 'TEAM2' ? t2N : "LIBERO";
-                scoreboard.innerHTML += `<li onclick='startNavigation(${JSON.stringify(obj)})'><span>${obj.name}</span><span style="color:${color}">${oTxt}</span></li>`;
+                if(obj.status === "CONTESO") oTxt = "!!! CONTESO !!!";
+                scoreboard.innerHTML += `<li onclick='startNavigation(${JSON.stringify(obj)})'><span>${obj.name}</span><span style="color:${circleColor}">${oTxt}</span></li>`;
             });
 
             if(r.game) {
                 const remain = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start) / 1000);
                 document.getElementById("timer").innerText = remain > 0 ? `⏱️ ${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}` : "FINE GIOCO";
-                document.getElementById("scoreRed").innerText = r.game.scoreRed;
-                document.getElementById("scoreBlue").innerText = r.game.scoreBlue;
+                document.getElementById("scoreRed").innerText = Math.floor(r.game.scoreRed/10);
+                document.getElementById("scoreBlue").innerText = Math.floor(r.game.scoreBlue/10);
             }
 
             const pList = document.getElementById("playerList"); pList.innerHTML = "";
@@ -389,32 +416,29 @@
             });
         }
 
-        function startNavigation(obj) { 
-            state.targetObj = obj; 
-            document.getElementById("nav-overlay").style.display = "flex"; 
-            updateNavigationLine(); 
-        }
-
-        function stopNavigation() { state.targetObj = null; if(state.navLine) map.removeLayer(state.navLine); document.getElementById("nav-overlay").style.display = "none"; }
-
-        function updateNavigationLine() {
-            if(!state.targetObj || !state.playerMarker) return;
-            const p1 = state.playerMarker.getLatLng();
-            const p2 = [state.targetObj.lat, state.targetObj.lon];
-            const dist = getDist(p2[0], p2[1]);
-            document.getElementById("nav-text").innerHTML = `<b>${state.targetObj.name}</b>: ${dist}m`;
-            if(state.navLine) map.removeLayer(state.navLine);
-            state.navLine = L.polyline([p1, p2], {color: 'yellow', weight: 4, dashArray: '8, 8'}).addTo(map);
+        function getDistRaw(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
 
         function getDist(lat2, lon2) {
             if(!state.playerMarker) return "?";
             const p1 = state.playerMarker.getLatLng();
-            const R = 6371000;
-            const dLat = (lat2 - p1.lat) * Math.PI / 180;
-            const dLon = (lon2 - p1.lng) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(p1.lat * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-            return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+            return getDistRaw(p1.lat, p1.lng, lat2, lon2);
+        }
+
+        function startNavigation(obj) { state.targetObj = obj; document.getElementById("nav-overlay").style.display = "flex"; updateNavigationLine(); }
+        function stopNavigation() { state.targetObj = null; if(state.navLine) map.removeLayer(state.navLine); document.getElementById("nav-overlay").style.display = "none"; }
+        function updateNavigationLine() {
+            if(!state.targetObj || !state.playerMarker) return;
+            const p1 = state.playerMarker.getLatLng();
+            const p2 = [state.targetObj.lat, state.targetObj.lon];
+            document.getElementById("nav-text").innerHTML = `<b>${state.targetObj.name}</b>: ${getDist(p2[0], p2[1])}m`;
+            if(state.navLine) map.removeLayer(state.navLine);
+            state.navLine = L.polyline([p1, p2], {color: 'yellow', weight: 4, dashArray: '8, 8'}).addTo(map);
         }
 
         function checkMasterPass() {
@@ -457,13 +481,22 @@
             }
             setTimeout(() => sMap.invalidateSize(), 300);
         }
+
+        function centerSelectionMap() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((p) => {
+                    sMap.setView([p.coords.latitude, p.coords.longitude], 18);
+                });
+            }
+        }
+
         function confirmArea() { customRandomBounds = sRectangle.getBounds(); document.getElementById("map-selection-overlay").style.display = "none"; }
         function cancelArea() { document.getElementById("map-selection-overlay").style.display = "none"; }
         function generateRandomObjectives(count) {
             const b = customRandomBounds || map.getBounds();
             let o = [];
             for(let i=0; i<count; i++) {
-                o.push({ name: `RND-${i+1}`, lat: b.getSouth() + Math.random() * (b.getNorth() - b.getSouth()), lon: b.getWest() + Math.random() * (b.getEast() - b.getWest()), owner: "LIBERO" });
+                o.push({ name: `RND-${i+1}`, lat: b.getSouth() + Math.random() * (b.getNorth() - b.getSouth()), lon: b.getWest() + Math.random() * (b.getEast() - b.getWest()), owner: "LIBERO", progress: 0 });
             }
             return o;
         }
@@ -472,8 +505,8 @@
         function centerMap() { state.autoCenter = true; if(state.playerMarker) map.panTo(state.playerMarker.getLatLng()); }
         function exitGame() { if(confirm("CHIUDERE LA SESSIONE?")) location.reload(); }
         async function resetBin() {
-            if(confirm("AZZERARE IL SERVER? TUTTI I GIOCATORI VERRANNO ESPULSI.")) {
-                await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{active:false,scoreRed:0,scoreBlue:0,t1:"ROSSI",t2:"BLU"},players:{},objectives:[]})});
+            if(confirm("AZZERARE IL SERVER?")) {
+                await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{active:false},players:{},objectives:[]})});
                 location.reload();
             }
         }
