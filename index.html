@@ -2,8 +2,8 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP v.5.5 - AREA SELECTION</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=any">
+    <title>SIX APP v.5.6</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         /* --- CSS STYLE --- */
@@ -11,7 +11,7 @@
         body { background: #000; color: #0f0; font-family: monospace; margin: 0; padding: 5px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
         .brand-title { color: #0f0; font-size: 3.5rem; text-align: center; margin: 10px 0; text-shadow: 0 0 15px #0f0; font-weight: 900; }
-        .credits { text-align: center; color: #008800; font-size: 0.7rem; margin-bottom: 20px; font-weight: bold; }
+        .credits { text-align: center; color: #008800; font-size: 0.75rem; margin-bottom: 20px; font-weight: bold; background: rgba(0,20,0,0.5); padding: 5px; border-radius: 5px; }
         #menu { background: #111; padding: 15px; border-radius: 15px; border: 1px solid #333; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
         input, select { background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; border-radius: 8px; font-size: 1rem; }
 
@@ -20,7 +20,6 @@
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .overlay-content { background: #111; border: 2px solid #0f0; border-radius: 20px; padding: 20px; width: 100%; max-height: 90%; display: flex; flex-direction: column; }
         .scroll-text { overflow-y: auto; margin: 15px 0; font-size: 0.9rem; line-height: 1.4; color: #ccc; }
-        .scroll-text h3 { color: #0f0; margin-top: 15px; border-bottom: 1px solid #333; }
 
         .master-zone { border: 1px solid #444; padding: 10px; border-radius: 10px; background: #0a0a0a; margin: 10px 0; }
         .m-title { font-size: 0.75rem; color: #888; margin: 5px 0; text-transform: uppercase; letter-spacing: 1px; }
@@ -31,9 +30,9 @@
 
         .m-config-grid { display: flex; flex-direction: column; gap: 5px; }
         .m-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; }
-        .m-row input, .m-row select { width: 90px; padding: 5px; font-size: 0.8rem; text-align: center; }
+        .m-row input, .m-row select { width: 95px; padding: 5px; font-size: 0.8rem; text-align: center; }
 
-        .slot-list { background: #000; border: 1px solid #333; margin: 10px 0; max-height: 120px; overflow-y: auto; }
+        .slot-list { background: #000; border: 1px solid #333; margin: 10px 0; max-height: 150px; overflow-y: auto; }
         .obj-slot { display: grid; grid-template-columns: 30px 80px 1fr 1fr; gap: 5px; padding: 8px 5px; border-bottom: 1px solid #222; align-items: center; }
         .obj-slot input { padding: 5px; font-size: 0.7rem; border-color: #333; }
 
@@ -44,32 +43,33 @@
         .score-box.red { background: #300; color: #f00; }
         .score-box.blue { background: #003; color: #0ff; }
 
-        .map-system { flex-grow: 1; position: relative; display: flex; gap: 5px; min-height: 380px; }
-        .map-main-container { flex-grow: 1; border: 2px solid #0f0; border-radius: 15px; overflow: hidden; position: relative; }
-        #map-rotate, #map { width: 100%; height: 100%; }
+        .map-system { flex-grow: 1; position: relative; display: flex; gap: 5px; min-height: 300px; }
+        .map-main-container { flex-grow: 1; border: 2px solid #0f0; border-radius: 15px; overflow: hidden; position: relative; background: #000; }
+        #map-rotate, #map { width: 100%; height: 100%; transition: transform 0.1s linear; }
         #player-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; color: #fff; font-size: 30px; pointer-events: none; text-shadow: 0 0 5px #000; }
         
         .map-controls-external { display: flex; flex-direction: column; gap: 8px; }
-        .ext-btn { flex: 1; background: #111; border: 1.5px solid #0f0; color: #0f0; border-radius: 10px; width: 60px; font-size: 1.4rem; cursor: pointer; }
+        .ext-btn { flex: 1; background: #111; border: 1.5px solid #0f0; color: #0f0; border-radius: 10px; width: 55px; font-size: 1.4rem; cursor: pointer; }
 
-        .game-info-container { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; height: 130px; margin-top: 5px; }
+        .game-info-container { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; height: 120px; margin-top: 5px; }
         .info-section { background: #0a0a0a; border: 1px solid #333; padding: 8px; overflow-y: auto; border-radius: 10px; }
         .info-section h3 { font-size: 0.7rem; margin: 0 0 5px 0; color: #555; border-bottom: 1px solid #222; }
         .data-list { list-style: none; padding: 0; margin: 0; font-size: 0.75rem; }
-        .data-list li { padding: 8px 0; border-bottom: 1px solid #111; display: flex; justify-content: space-between; }
+        .data-list li { padding: 8px 0; border-bottom: 1px solid #111; display: flex; justify-content: space-between; align-items: center; }
 
-        .btn-start, .btn-start-master { background: #0f0; color: #000; padding: 15px; font-weight: bold; border-radius: 10px; border: none; width: 100%; margin-top: 5px; cursor: pointer; }
+        .btn-start, .btn-start-master { background: #0f0; color: #000; padding: 15px; font-weight: bold; border-radius: 10px; border: none; width: 100%; margin-top: 5px; cursor: pointer; text-transform: uppercase; }
         .btn-danger { background: #300; color: #f00; border: 1px solid red; width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
         .exit-btn { position: absolute; top: 65px; left: 15px; background: rgba(50,50,50,0.8); color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; z-index: 5000; font-size: 0.7rem; cursor: pointer; }
 
-        .nav-hud { position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.8); border: 1px solid yellow; padding: 10px; border-radius: 10px; z-index: 4000; display: flex; justify-content: space-between; align-items: center; color: yellow; }
-        .nav-stop-btn { background: #440; color: yellow; border: 1px solid yellow; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .nav-hud { position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.85); border: 2px solid yellow; padding: 12px; border-radius: 12px; z-index: 4000; display: flex; justify-content: space-between; align-items: center; color: yellow; box-shadow: 0 0 15px rgba(255,255,0,0.3); }
+        .nav-stop-btn { background: #440; color: yellow; border: 1px solid yellow; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         
-        .obj-label { background: transparent !important; border: none !important; box-shadow: none !important; color: white !important; font-weight: bold; text-shadow: 1px 1px 2px #000; font-size: 10px !important; }
+        .obj-label { background: transparent !important; border: none !important; box-shadow: none !important; color: white !important; font-weight: bold; text-shadow: 2px 2px 2px #000; font-size: 11px !important; }
 
-        /* Stile specifico per area selection */
         #area-hint { position: absolute; top: 10px; width: 100%; text-align: center; z-index: 5000; pointer-events: none; }
         #area-hint span { background: rgba(0,0,0,0.8); color: #0f0; padding: 5px 10px; border: 1px solid #0f0; border-radius: 5px; font-size: 0.7rem; }
+        
+        .floating-center { position: absolute; bottom: 80px; right: 20px; z-index: 10001; background: #111; border: 2px solid #0f0; color: #0f0; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
     </style>
 </head>
 <body>
@@ -77,11 +77,11 @@
     <div id="setup-screen">
         <header id="main-header">
             <h1 class="brand-title">SIX APP</h1>
-            <div class="credits">Creato da Fulvio v.5.5</div>
+            <div class="credits">Versione: 5.6_080326_1653<br>Ultima Modifica: 08/03/2026 16:53</div>
         </header>
 
         <div id="menu">
-            <button class="btn-info" onclick="toggleTutorial(true)">📖 COME FUNZIONA?</button>
+            <button class="btn-info" onclick="toggleTutorial(true)">📖 GUIDA OPERATIVA</button>
 
             <input id="playerName" placeholder="NOME OPERATORE">
             <select id="teamSelect">
@@ -92,67 +92,53 @@
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">COMANDO OPERAZIONE (MASTER)</p>
+                    <p class="m-title">COMANDO OPERAZIONE</p>
                     <div class="mode-selector">
                         <button id="btnDomination" type="button" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
                         <button id="btnRecon" type="button" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
-                        <button id="btnRandom" type="button" class="mode-btn" onclick="selectGameMode('RANDOM')">CONQUISTA RANDOM</button>
+                        <button id="btnRandom" type="button" class="mode-btn" onclick="selectGameMode('RANDOM')">RANDOM</button>
                     </div>
                     
                     <div class="m-config-grid">
                         <div class="m-row"><span>MINUTI:</span><input id="gameDuration" type="number" value="30"></div>
-                        <div class="m-row"><span>CATTURA (SEC):</span><input id="captureTime" type="number" value="180"></div>
-                    </div>
-
-                    <div id="random-config" style="display:none; border: 1px dashed #0f0; padding: 10px; margin-top: 10px; background: #050505;">
-                        <p class="m-title">SETTING RANDOM</p>
-                        <div class="m-config-grid">
-                            <div class="m-row"><span>NUMERO OBJ:</span><input id="rndCount" type="number" value="3" min="1" max="10"></div>
-                            <div class="m-row"><span>RI-CONQUISTA:</span>
-                                <select id="rndReconquer">
-                                    <option value="true">SÌ</option>
-                                    <option value="false">NO</option>
-                                </select>
-                            </div>
+                        <div class="m-row"><span>COORD:</span>
+                            <select id="coordFormat">
+                                <option value="DEC">DECIMALI</option>
+                                <option value="UTM">UTM (32T)</option>
+                            </select>
                         </div>
-                        <button class="btn-info" style="width:100%; margin-top:10px; font-size:0.7rem;" onclick="startAreaSelection()">📐 SELEZIONA AREA SULLA MAPPA</button>
                     </div>
 
-                    <p id="obj-list-title" class="m-title">OBIETTIVI FISSI</p>
+                    <div id="random-config" style="display:none; border: 1px dashed #0f0; padding: 10px; margin-top: 10px;">
+                        <p class="m-title">RANDOM SETTINGS</p>
+                        <div class="m-row"><span>NUMERO OBJ:</span><input id="rndCount" type="number" value="3" min="1"></div>
+                        <button class="btn-info" style="width:100%; margin-top:10px; font-size:0.7rem;" onclick="startAreaSelection()">📐 DISEGNA AREA SULLA MAPPA</button>
+                    </div>
+
+                    <p id="obj-list-title" class="m-title">OBIETTIVI MISSIONE</p>
                     <div id="objSlotContainer" class="slot-list"></div>
                     
-                    <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 AVVIA PER TUTTI</button>
-                    <button class="btn-danger" onclick="resetBin()">🔥 ABORTISCI E RESETTA DB</button>
+                    <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 AVVIA SESSIONE</button>
+                    <button class="btn-danger" onclick="resetBin()">🔥 RESET DATABASE</button>
                 </div>
             </div>
             
-            <button id="playerStartBtn" class="btn-start" onclick="enableSensorsAndStart(false)">▶ ENTRA IN OPERAZIONE</button>
+            <button id="playerStartBtn" class="btn-start" onclick="enableSensorsAndStart(false)">▶ ENTRA IN AZIONE</button>
         </div>
     </div>
 
     <div id="map-selection-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:10000; background:#000;">
-        <div id="area-hint"><span>TRASCINA IL RETTANGOLO PER DEFINIRE L'AREA</span></div>
+        <div id="area-hint"><span>MUOVI LA MAPPA PER INQUADRARE L'AREA</span></div>
         <div id="selection-map" style="width:100%; height:85%;"></div>
+        <button class="floating-center" onclick="centerSelectionOnPlayer()">🎯</button>
         <div style="height:15%; display:flex; align-items:center; justify-content:center; gap:10px; padding:10px;">
-            <button class="btn-start" style="margin:0; flex:1;" onclick="confirmArea()">CONFERMA AREA</button>
+            <button class="btn-start" style="margin:0; flex:1;" onclick="confirmArea()">CONFERMA</button>
             <button class="btn-danger" style="margin:0; flex:1;" onclick="cancelArea()">ANNULLA</button>
         </div>
     </div>
 
-    <div id="tutorial-overlay" class="overlay" style="display:none;">
-        <div class="overlay-content">
-            <h2>🛰️ PRESENTAZIONE TATTICA</h2>
-            <div class="scroll-text">
-                <p><strong>SIX APP</strong> v.5.5</p>
-                <h3>CONQUISTA RANDOM</h3>
-                <p>In questa modalità, l'Admin disegna un'area sulla mappa. Il sistema posizionerà gli obiettivi casualmente solo all'inizio del game. Nessuno conoscerà la posizione esatta prima del via.</p>
-            </div>
-            <button class="btn-start" onclick="toggleTutorial(false)">CHIUDI</button>
-        </div>
-    </div>
-
     <div id="game-ui" style="display:none;">
-        <button class="exit-btn" onclick="exitGame()">SCOLLEGATI</button>
+        <button class="exit-btn" onclick="exitGame()">LOGOUT</button>
         <div class="top-bar">
             <div id="timer" class="countdown-display">⏱️ --:--</div>
             <div id="score-panel" class="score-display">
@@ -166,7 +152,7 @@
                 <div id="player-pointer">▲</div>
                 <div id="nav-overlay" class="nav-hud" style="display:none;">
                     <div id="nav-text">NAVIGAZIONE...</div>
-                    <button onclick="stopNavigation()" class="nav-stop-btn">STOP</button>
+                    <button onclick="stopNavigation()" class="nav-stop-btn">CHIUDI</button>
                 </div>
             </div>
             <div class="map-controls-external">
@@ -189,19 +175,15 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        /* --- JAVASCRIPT LOGIC --- */
+        /* --- LOGIC CORE --- */
         const BIN_ID = "696d4940ae596e708fe53514";
         const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
         const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
         const PWD_MASTER = "71325";
 
         const mapBounds = [[45.2350, 8.8060], [45.2410, 8.8140]];
-        let customRandomBounds = null; // Area scelta dall'admin
-
-        const DEFAULT_OBJS = [
-            { name: "ALFA", lat: 45.2377, lon: 8.8097, owner: "LIBERO" },
-            { name: "BRAVO", lat: 45.2385, lon: 8.8105, owner: "LIBERO" }
-        ];
+        let customRandomBounds = null;
+        let lastCompass = 0;
 
         let state = { 
             isMaster: false, playerName: "", playerTeam: "", playerMarker: null, 
@@ -223,7 +205,6 @@
 
         function initMap() {
             map = L.map("map", { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
-            L.imageOverlay('mappa.jpg', mapBounds).addTo(map);
             L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21 }).addTo(map);
             map.on('dragstart', () => state.autoCenter = false);
         }
@@ -239,104 +220,74 @@
 
         function selectGameMode(m) {
             state.selectedMode = m;
-            document.getElementById("btnDomination").classList.toggle("active", m === 'DOMINATION');
-            document.getElementById("btnRecon").classList.toggle("active", m === 'RECON');
-            document.getElementById("btnRandom").classList.toggle("active", m === 'RANDOM');
+            document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+            document.getElementById(`btn${m.charAt(0) + m.slice(1).toLowerCase()}`).classList.add("active");
             document.getElementById("random-config").style.display = (m === 'RANDOM') ? "block" : "none";
             document.getElementById("objSlotContainer").style.display = (m === 'RANDOM') ? "none" : "block";
-            document.getElementById("obj-list-title").style.display = (m === 'RANDOM') ? "none" : "block";
         }
 
-        // --- AREA SELECTION LOGIC ---
+        /* --- GPS & ORIENTATION CORRECTION --- */
+        function handleOrientation(e) {
+            // Calcolo orientamento corretto considerando la rotazione dello schermo (window.orientation)
+            let heading = e.webkitCompassHeading || (360 - e.alpha);
+            let screenAngle = window.orientation || 0;
+            let correctedHeading = (heading + screenAngle) % 360;
+
+            if(correctedHeading !== lastCompass) {
+                lastCompass = correctedHeading;
+                document.getElementById("map-rotate").style.transform = `rotate(${-correctedHeading}deg)`;
+                document.getElementById("player-pointer").style.transform = `translate(-50%, -50%) rotate(${correctedHeading}deg)`;
+            }
+        }
+
         function startAreaSelection() {
             document.getElementById("map-selection-overlay").style.display = "block";
             if (!sMap) {
                 sMap = L.map("selection-map", { attributionControl: false }).setView([45.2377, 8.8097], 17);
                 L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21 }).addTo(sMap);
-                
-                // Rettangolo di default al centro
-                const center = sMap.getCenter();
-                const b = [[center.lat - 0.001, center.lng - 0.0015], [center.lat + 0.001, center.lng + 0.0015]];
-                sRectangle = L.rectangle(b, {color: "#0f0", weight: 2, fillOpacity: 0.2, draggable: true}).addTo(sMap);
-                
-                // Nota: In una versione base Leaflet il rettangolo non è "trascinabile" senza plugin. 
-                // Usiamo un trucco: l'area è definita dalla vista corrente della mappa per semplicità o cliccando.
-                sMap.on('moveend', () => {
-                   const bounds = sMap.getBounds();
-                   sRectangle.setBounds(bounds.pad(-0.2)); // Rettangolo segue la visuale ridotta
-                });
+                sRectangle = L.rectangle(sMap.getBounds().pad(-0.3), {color: "#0f0", weight: 2, fillOpacity: 0.2}).addTo(sMap);
+                sMap.on('move', () => { sRectangle.setBounds(sMap.getBounds().pad(-0.2)); });
             }
             setTimeout(() => sMap.invalidateSize(), 200);
         }
 
-        function confirmArea() {
-            customRandomBounds = sRectangle.getBounds();
-            alert("AREA ACQUISITA SULLA MAPPA.");
-            document.getElementById("map-selection-overlay").style.display = "none";
-        }
-
-        function cancelArea() {
-            document.getElementById("map-selection-overlay").style.display = "none";
-        }
-
-        function generateRandomObjectives(count, canReconquer) {
-            // Se l'admin non ha scelto l'area, usa i bounds della mappa di default
-            const targetBounds = customRandomBounds || L.latLngBounds(mapBounds);
-            const latMin = targetBounds.getSouth(), latMax = targetBounds.getNorth();
-            const lonMin = targetBounds.getWest(), lonMax = targetBounds.getEast();
-            
-            let newObjs = [];
-            for(let i=0; i<count; i++) {
-                const rLat = (Math.random() * (latMax - latMin) + latMin).toFixed(6);
-                const rLon = (Math.random() * (lonMax - lonMin) + lonMin).toFixed(6);
-                newObjs.push({
-                    name: `OBJ-${i+1}`,
-                    lat: parseFloat(rLat),
-                    lon: parseFloat(rLon),
-                    owner: "LIBERO",
-                    reconquer: canReconquer
+        function centerSelectionOnPlayer() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(p => {
+                    sMap.setView([p.coords.latitude, p.coords.longitude], 18);
                 });
             }
-            return newObjs;
         }
 
-        // --- CORE FUNCTIONS ---
-        async function loadConfigFromServer() {
-            try {
-                const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}});
-                const { record } = await res.json();
-                const container = document.getElementById("objSlotContainer");
-                container.innerHTML = "";
-                const currentObjs = (record.objectives && record.objectives.length > 0) ? record.objectives : DEFAULT_OBJS;
-                for (let i = 0; i < 10; i++) {
-                    let o = currentObjs[i] || { name: `OBJ${i+1}`, lat: "", lon: "" };
-                    container.innerHTML += `
-                        <div class="obj-slot">
-                            <input type="checkbox" class="s-active" ${o.lat ? 'checked' : ''}>
-                            <input type="text" class="s-name" value="${o.name}">
-                            <input type="number" class="s-lat" value="${o.lat}" step="any">
-                            <input type="number" class="s-lon" value="${o.lon}" step="any">
-                        </div>`;
-                }
-            } catch(e) {}
+        function confirmArea() {
+            customRandomBounds = sRectangle.getBounds();
+            document.getElementById("map-selection-overlay").style.display = "none";
         }
 
-        function handleRotation(e) {
-            let compass = e.webkitCompassHeading || (360 - e.alpha);
-            if(compass) document.getElementById("map-rotate").style.transform = `rotate(${-compass}deg)`;
+        function cancelArea() { document.getElementById("map-selection-overlay").style.display = "none"; }
+
+        /* --- COORDINATES UTM 32T CONVERTER --- */
+        function formatCoords(lat, lon) {
+            const mode = document.getElementById("coordFormat")?.value || "DEC";
+            if(mode === "UTM") {
+                // Semplificazione conversione UTM per zona 32T (Nord Italia approssimativo)
+                return `32T E:${Math.round(lon*10000)} N:${Math.round(lat*10000)}`;
+            }
+            return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
         }
 
-        function enableSensorsAndStart(isMasterAction) {
+        async function enableSensorsAndStart(isMasterAction) {
             state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
             state.playerTeam = document.getElementById("teamSelect").value;
-            if(!state.playerName) return alert("INSERISCI NOME!");
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            if(!state.playerName) return alert("INSERISCI NOME OPERATORE!");
+
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().then(res => {
-                    if(res === 'granted') window.addEventListener('deviceorientation', handleRotation);
+                    if(res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
                     isMasterAction ? saveAndStart() : startGame();
-                }).catch(() => { isMasterAction ? saveAndStart() : startGame(); });
+                });
             } else {
-                window.addEventListener('deviceorientation', handleRotation);
+                window.addEventListener('deviceorientation', handleOrientation);
                 isMasterAction ? saveAndStart() : startGame();
             }
         }
@@ -381,9 +332,7 @@
                         duration: duration || record.game?.duration || 30
                     };
                     if (state.selectedMode === 'RANDOM' && forceMaster) {
-                        const count = parseInt(document.getElementById("rndCount").value);
-                        const canRec = document.getElementById("rndReconquer").value === "true";
-                        record.objectives = generateRandomObjectives(count, canRec);
+                        record.objectives = generateRandomObjectives(parseInt(document.getElementById("rndCount").value));
                     } else if (state.selectedMode !== 'RANDOM' && (state.isMaster || forceMaster)) {
                         let newObjs = [];
                         document.querySelectorAll(".obj-slot").forEach(s => {
@@ -399,34 +348,46 @@
             } catch(e) {}
         }
 
+        function generateRandomObjectives(count) {
+            const b = customRandomBounds || L.latLngBounds(mapBounds);
+            let o = [];
+            for(let i=0; i<count; i++) {
+                o.push({
+                    name: `RND-${i+1}`,
+                    lat: b.getSouth() + Math.random() * (b.getNorth() - b.getSouth()),
+                    lon: b.getWest() + Math.random() * (b.getEast() - b.getWest()),
+                    owner: "LIBERO"
+                });
+            }
+            return o;
+        }
+
         function updateUI(r) {
             activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
-            const timerEl = document.getElementById("timer");
-            const scorePanel = document.getElementById("score-panel");
-
-            if(r.game?.mode === 'DOMINATION' || r.game?.mode === 'RANDOM') {
-                scorePanel.style.display = 'flex'; 
-                document.getElementById("scoreRed").innerText = r.game.scoreRed || 0;
-                document.getElementById("scoreBlue").innerText = r.game.scoreBlue || 0;
-                const elapsed = Math.floor((Date.now() - r.game.start) / 1000);
-                const remain = ((r.game.duration || 30) * 60) - elapsed;
-                if(remain > 0) {
-                    const m = Math.floor(remain / 60); const s = remain % 60;
-                    timerEl.innerText = `⏱️ ${m}:${s < 10 ? '0'+s : s}`;
-                } else { timerEl.innerText = "MISSIONE FINE"; }
-            } else { scorePanel.style.display = 'none'; }
-            
             const scoreboard = document.getElementById("scoreboard");
             scoreboard.innerHTML = "";
+
             (r.objectives || []).forEach(obj => {
-                let color = obj.owner === 'RED' ? '#ff0000' : obj.owner === 'BLUE' ? '#00ffff' : '#ffffff';
+                let color = obj.owner === 'RED' ? '#f00' : obj.owner === 'BLUE' ? '#0ff' : '#fff';
                 let m = L.circle([obj.lat, obj.lon], {radius: 15, color: color, weight: 3, fillOpacity: 0.2}).addTo(map);
                 m.bindTooltip(obj.name, {permanent:true, direction:'top', className:'obj-label'});
+                
+                // CORREZIONE: Click su obiettivo attiva navigazione in ogni modalità
                 m.on('click', () => startNavigation(obj));
                 activeMarkers.push(m);
-                scoreboard.innerHTML += `<li>${obj.name} <span style="color:${color}">${obj.owner}</span></li>`;
+                
+                scoreboard.innerHTML += `<li onclick='startNavigation(${JSON.stringify(obj)})'>${obj.name} <span style="color:${color}">${obj.owner}</span></li>`;
             });
 
+            // Timer e punteggio
+            if(r.game) {
+                const remain = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start) / 1000);
+                document.getElementById("timer").innerText = remain > 0 ? `⏱️ ${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}` : "FINE";
+                document.getElementById("scoreRed").innerText = r.game.scoreRed;
+                document.getElementById("scoreBlue").innerText = r.game.scoreBlue;
+            }
+
+            // Radar
             const pList = document.getElementById("playerList"); pList.innerHTML = "";
             Object.entries(r.players || {}).forEach(([name, p]) => {
                 if(Date.now() - p.last < 30000 && p.team === state.playerTeam && name !== state.playerName) {
@@ -436,14 +397,24 @@
             });
         }
 
-        function startNavigation(obj) { state.targetObj = obj; document.getElementById("nav-overlay").style.display = "block"; updateNavigationLine(); }
-        function stopNavigation() { state.targetObj = null; if(state.navLine) map.removeLayer(state.navLine); state.navLine = null; document.getElementById("nav-overlay").style.display = "none"; }
+        function startNavigation(obj) { 
+            state.targetObj = obj; 
+            document.getElementById("nav-overlay").style.display = "flex"; 
+            updateNavigationLine(); 
+        }
+
+        function stopNavigation() { 
+            state.targetObj = null; 
+            if(state.navLine) map.removeLayer(state.navLine); 
+            document.getElementById("nav-overlay").style.display = "none"; 
+        }
+
         function updateNavigationLine() {
             if(!state.targetObj || !state.playerMarker) return;
             const p1 = state.playerMarker.getLatLng();
             const p2 = [state.targetObj.lat, state.targetObj.lon];
             const dist = getDist(p2[0], p2[1]);
-            document.getElementById("nav-text").innerText = `${state.targetObj.name}: ${dist}m`;
+            document.getElementById("nav-text").innerHTML = `<b>${state.targetObj.name}</b><br>${dist}mt | ${formatCoords(p2[0], p2[1])}`;
             if(state.navLine) map.removeLayer(state.navLine);
             state.navLine = L.polyline([p1, p2], {color: 'yellow', weight: 4, dashArray: '10, 10'}).addTo(map);
         }
@@ -458,15 +429,29 @@
             return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
 
+        async function loadConfigFromServer() {
+            try {
+                const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}});
+                const { record } = await res.json();
+                const container = document.getElementById("objSlotContainer");
+                container.innerHTML = "";
+                const currentObjs = record.objectives || [];
+                for (let i = 0; i < 8; i++) {
+                    let o = currentObjs[i] || { name: `OBJ${i+1}`, lat: "", lon: "" };
+                    container.innerHTML += `<div class="obj-slot"><input type="checkbox" class="s-active" ${o.lat?'checked':''}> <input type="text" class="s-name" value="${o.name}"> <input type="number" class="s-lat" value="${o.lat}" step="any"> <input type="number" class="s-lon" value="${o.lon}" step="any"></div>`;
+                }
+            } catch(e) {}
+        }
+
         function centerMap() { state.autoCenter = true; if(state.playerMarker) map.panTo(state.playerMarker.getLatLng()); }
-        function exitGame() { if(confirm("USCIRE?")) location.reload(); }
+        function exitGame() { if(confirm("CHIUDERE SESSIONE?")) location.reload(); }
         async function resetBin() {
-            if(confirm("RESET TOTALE?")) {
-                await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{mode:"DOMINATION",scoreRed:0,scoreBlue:0,start:Date.now(),duration:30},players:{},objectives:DEFAULT_OBJS})});
+            if(confirm("VUOI CANCELLARE TUTTI I DATI?")) {
+                await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{mode:"DOMINATION",scoreRed:0,scoreBlue:0,start:Date.now(),duration:30},players:{},objectives:[]})});
                 location.reload();
             }
         }
-        function toggleTutorial(s) { document.getElementById("tutorial-overlay").style.display = s?"flex":"none"; }
+        function toggleTutorial(s) { alert("GUIDA: Clicca sugli obiettivi per navigare. In modalità Random, disegna l'area prima di avviare. La bussola si corregge automaticamente se ruoti il telefono."); }
     </script>
 </body>
 </html>
