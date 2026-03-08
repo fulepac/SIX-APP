@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX APP v.6.0 - UNIFIED</title>
+    <title>SIX APP v.5.5 - AREA SELECTION</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         /* --- CSS STYLE --- */
@@ -12,7 +12,7 @@
 
         .brand-title { color: #0f0; font-size: 3.5rem; text-align: center; margin: 10px 0; text-shadow: 0 0 15px #0f0; font-weight: 900; }
         .credits { text-align: center; color: #008800; font-size: 0.7rem; margin-bottom: 20px; font-weight: bold; }
-        #menu { background: #111; padding: 15px; border-radius: 15px; border: 1px solid #333; display: flex; flex-direction: column; gap: 10px; }
+        #menu { background: #111; padding: 15px; border-radius: 15px; border: 1px solid #333; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
         input, select { background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; border-radius: 8px; font-size: 1rem; }
 
         .btn-info { background: #003300; color: #0f0; border: 1px solid #0f0; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -66,6 +66,10 @@
         .nav-stop-btn { background: #440; color: yellow; border: 1px solid yellow; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         
         .obj-label { background: transparent !important; border: none !important; box-shadow: none !important; color: white !important; font-weight: bold; text-shadow: 1px 1px 2px #000; font-size: 10px !important; }
+
+        /* Stile specifico per area selection */
+        #area-hint { position: absolute; top: 10px; width: 100%; text-align: center; z-index: 5000; pointer-events: none; }
+        #area-hint span { background: rgba(0,0,0,0.8); color: #0f0; padding: 5px 10px; border: 1px solid #0f0; border-radius: 5px; font-size: 0.7rem; }
     </style>
 </head>
 <body>
@@ -73,7 +77,7 @@
     <div id="setup-screen">
         <header id="main-header">
             <h1 class="brand-title">SIX APP</h1>
-            <div class="credits">Creato da Fulvio v.6.0_080326</div>
+            <div class="credits">Creato da Fulvio v.5.5</div>
         </header>
 
         <div id="menu">
@@ -106,14 +110,15 @@
                             <div class="m-row"><span>NUMERO OBJ:</span><input id="rndCount" type="number" value="3" min="1" max="10"></div>
                             <div class="m-row"><span>RI-CONQUISTA:</span>
                                 <select id="rndReconquer">
-                                    <option value="true">SÌ (INFINITE VOLTE)</option>
-                                    <option value="false">NO (SOLO UNA VOLTA)</option>
+                                    <option value="true">SÌ</option>
+                                    <option value="false">NO</option>
                                 </select>
                             </div>
                         </div>
+                        <button class="btn-info" style="width:100%; margin-top:10px; font-size:0.7rem;" onclick="startAreaSelection()">📐 SELEZIONA AREA SULLA MAPPA</button>
                     </div>
 
-                    <p class="m-title">OBIETTIVI FISSI (CHECK PER ATTIVARE)</p>
+                    <p id="obj-list-title" class="m-title">OBIETTIVI FISSI</p>
                     <div id="objSlotContainer" class="slot-list"></div>
                     
                     <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 AVVIA PER TUTTI</button>
@@ -125,18 +130,22 @@
         </div>
     </div>
 
+    <div id="map-selection-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:10000; background:#000;">
+        <div id="area-hint"><span>TRASCINA IL RETTANGOLO PER DEFINIRE L'AREA</span></div>
+        <div id="selection-map" style="width:100%; height:85%;"></div>
+        <div style="height:15%; display:flex; align-items:center; justify-content:center; gap:10px; padding:10px;">
+            <button class="btn-start" style="margin:0; flex:1;" onclick="confirmArea()">CONFERMA AREA</button>
+            <button class="btn-danger" style="margin:0; flex:1;" onclick="cancelArea()">ANNULLA</button>
+        </div>
+    </div>
+
     <div id="tutorial-overlay" class="overlay" style="display:none;">
         <div class="overlay-content">
             <h2>🛰️ PRESENTAZIONE TATTICA</h2>
             <div class="scroll-text">
-                <p><strong>SIX APP</strong> gestisce operazioni sul campo in tempo reale.</p>
-                <hr>
-                <h3>MODALITÀ</h3>
-                <p><strong>DOMINIO:</strong> Cattura i punti fissi per fare punti.<br>
-                <strong>RECON:</strong> Esplorazione obiettivi.<br>
-                <strong>CONQUISTA RANDOM:</strong> Obiettivi generati casualmente dal Master nell'area GPS definita.</p>
-                <h3>NAVIGAZIONE</h3>
-                <p>Clicca un punto sulla mappa per attivare la rotta GPS.</p>
+                <p><strong>SIX APP</strong> v.5.5</p>
+                <h3>CONQUISTA RANDOM</h3>
+                <p>In questa modalità, l'Admin disegna un'area sulla mappa. Il sistema posizionerà gli obiettivi casualmente solo all'inizio del game. Nessuno conoscerà la posizione esatta prima del via.</p>
             </div>
             <button class="btn-start" onclick="toggleTutorial(false)">CHIUDI</button>
         </div>
@@ -144,7 +153,6 @@
 
     <div id="game-ui" style="display:none;">
         <button class="exit-btn" onclick="exitGame()">SCOLLEGATI</button>
-        
         <div class="top-bar">
             <div id="timer" class="countdown-display">⏱️ --:--</div>
             <div id="score-panel" class="score-display">
@@ -152,12 +160,10 @@
                 <div class="score-box blue">B: <span id="scoreBlue">0</span></div>
             </div>
         </div>
-
         <div class="map-system">
             <div class="map-main-container">
                 <div id="map-rotate"><div id="map"></div></div>
                 <div id="player-pointer">▲</div>
-                
                 <div id="nav-overlay" class="nav-hud" style="display:none;">
                     <div id="nav-text">NAVIGAZIONE...</div>
                     <button onclick="stopNavigation()" class="nav-stop-btn">STOP</button>
@@ -169,7 +175,6 @@
                 <button onclick="map.zoomOut()" class="ext-btn">➖</button>
             </div>
         </div>
-
         <div class="game-info-container">
             <div class="info-section">
                 <h3>📍 OBIETTIVI</h3>
@@ -190,14 +195,12 @@
         const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
         const PWD_MASTER = "71325";
 
-        // Definizione Area GPS (Map Bounds)
         const mapBounds = [[45.2350, 8.8060], [45.2410, 8.8140]];
+        let customRandomBounds = null; // Area scelta dall'admin
+
         const DEFAULT_OBJS = [
             { name: "ALFA", lat: 45.2377, lon: 8.8097, owner: "LIBERO" },
-            { name: "BRAVO", lat: 45.2385, lon: 8.8105, owner: "LIBERO" },
-            { name: "CHARLIE", lat: 45.2369, lon: 8.8115, owner: "LIBERO" },
-            { name: "DELTA", lat: 45.2392, lon: 8.8085, owner: "LIBERO" },
-            { name: "ECHO", lat: 45.2360, lon: 8.8075, owner: "LIBERO" }
+            { name: "BRAVO", lat: 45.2385, lon: 8.8105, owner: "LIBERO" }
         ];
 
         let state = { 
@@ -206,7 +209,7 @@
         };
 
         let activeMarkers = [];
-        let map;
+        let map, sMap, sRectangle;
 
         window.onload = () => {
             initMap();
@@ -225,10 +228,6 @@
             map.on('dragstart', () => state.autoCenter = false);
         }
 
-        function toggleTutorial(show) {
-            document.getElementById("tutorial-overlay").style.display = show ? "flex" : "none";
-        }
-
         function checkMasterPass() {
             if(document.getElementById("masterPass").value === PWD_MASTER) {
                 state.isMaster = true;
@@ -244,8 +243,64 @@
             document.getElementById("btnRecon").classList.toggle("active", m === 'RECON');
             document.getElementById("btnRandom").classList.toggle("active", m === 'RANDOM');
             document.getElementById("random-config").style.display = (m === 'RANDOM') ? "block" : "none";
+            document.getElementById("objSlotContainer").style.display = (m === 'RANDOM') ? "none" : "block";
+            document.getElementById("obj-list-title").style.display = (m === 'RANDOM') ? "none" : "block";
         }
 
+        // --- AREA SELECTION LOGIC ---
+        function startAreaSelection() {
+            document.getElementById("map-selection-overlay").style.display = "block";
+            if (!sMap) {
+                sMap = L.map("selection-map", { attributionControl: false }).setView([45.2377, 8.8097], 17);
+                L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21 }).addTo(sMap);
+                
+                // Rettangolo di default al centro
+                const center = sMap.getCenter();
+                const b = [[center.lat - 0.001, center.lng - 0.0015], [center.lat + 0.001, center.lng + 0.0015]];
+                sRectangle = L.rectangle(b, {color: "#0f0", weight: 2, fillOpacity: 0.2, draggable: true}).addTo(sMap);
+                
+                // Nota: In una versione base Leaflet il rettangolo non è "trascinabile" senza plugin. 
+                // Usiamo un trucco: l'area è definita dalla vista corrente della mappa per semplicità o cliccando.
+                sMap.on('moveend', () => {
+                   const bounds = sMap.getBounds();
+                   sRectangle.setBounds(bounds.pad(-0.2)); // Rettangolo segue la visuale ridotta
+                });
+            }
+            setTimeout(() => sMap.invalidateSize(), 200);
+        }
+
+        function confirmArea() {
+            customRandomBounds = sRectangle.getBounds();
+            alert("AREA ACQUISITA SULLA MAPPA.");
+            document.getElementById("map-selection-overlay").style.display = "none";
+        }
+
+        function cancelArea() {
+            document.getElementById("map-selection-overlay").style.display = "none";
+        }
+
+        function generateRandomObjectives(count, canReconquer) {
+            // Se l'admin non ha scelto l'area, usa i bounds della mappa di default
+            const targetBounds = customRandomBounds || L.latLngBounds(mapBounds);
+            const latMin = targetBounds.getSouth(), latMax = targetBounds.getNorth();
+            const lonMin = targetBounds.getWest(), lonMax = targetBounds.getEast();
+            
+            let newObjs = [];
+            for(let i=0; i<count; i++) {
+                const rLat = (Math.random() * (latMax - latMin) + latMin).toFixed(6);
+                const rLon = (Math.random() * (lonMax - lonMin) + lonMin).toFixed(6);
+                newObjs.push({
+                    name: `OBJ-${i+1}`,
+                    lat: parseFloat(rLat),
+                    lon: parseFloat(rLon),
+                    owner: "LIBERO",
+                    reconquer: canReconquer
+                });
+            }
+            return newObjs;
+        }
+
+        // --- CORE FUNCTIONS ---
         async function loadConfigFromServer() {
             try {
                 const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}});
@@ -266,24 +321,6 @@
             } catch(e) {}
         }
 
-        function generateRandomObjectives(count, canReconquer) {
-            const latMin = mapBounds[0][0], latMax = mapBounds[1][0];
-            const lonMin = mapBounds[0][1], lonMax = mapBounds[1][1];
-            let newObjs = [];
-            for(let i=0; i<count; i++) {
-                const randomLat = (Math.random() * (latMax - latMin) + latMin).toFixed(6);
-                const randomLon = (Math.random() * (lonMax - lonMin) + lonMin).toFixed(6);
-                newObjs.push({
-                    name: `RND-${i+1}`,
-                    lat: parseFloat(randomLat),
-                    lon: parseFloat(randomLon),
-                    owner: "LIBERO",
-                    reconquer: canReconquer
-                });
-            }
-            return newObjs;
-        }
-
         function handleRotation(e) {
             let compass = e.webkitCompassHeading || (360 - e.alpha);
             if(compass) document.getElementById("map-rotate").style.transform = `rotate(${-compass}deg)`;
@@ -292,10 +329,7 @@
         function enableSensorsAndStart(isMasterAction) {
             state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
             state.playerTeam = document.getElementById("teamSelect").value;
-            if(!state.playerName) return alert("INSERISCI NOME OPERATORE!");
-            
-            localStorage.setItem("six_app_session", JSON.stringify({name: state.playerName, team: state.playerTeam}));
-            
+            if(!state.playerName) return alert("INSERISCI NOME!");
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().then(res => {
                     if(res === 'granted') window.addEventListener('deviceorientation', handleRotation);
@@ -318,20 +352,17 @@
             document.getElementById("game-ui").style.display = "block";
             map.invalidateSize();
             if ("geolocation" in navigator) {
-                navigator.geolocation.watchPosition(
-                    (p) => {
-                        const pos = [p.coords.latitude, p.coords.longitude];
-                        if(!state.playerMarker) {
-                            state.playerMarker = L.circleMarker(pos, {radius: 9, color: '#fff', fillColor: '#007bff', fillOpacity: 1, weight: 3}).addTo(map);
-                            map.setView(pos, 18);
-                        } else {
-                            state.playerMarker.setLatLng(pos);
-                            if(state.autoCenter) map.panTo(pos);
-                        }
-                        updateNavigationLine();
-                    },
-                    null, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-                );
+                navigator.geolocation.watchPosition((p) => {
+                    const pos = [p.coords.latitude, p.coords.longitude];
+                    if(!state.playerMarker) {
+                        state.playerMarker = L.circleMarker(pos, {radius: 9, color: '#fff', fillColor: '#007bff', fillOpacity: 1, weight: 3}).addTo(map);
+                        map.setView(pos, 18);
+                    } else {
+                        state.playerMarker.setLatLng(pos);
+                        if(state.autoCenter) map.panTo(pos);
+                    }
+                    updateNavigationLine();
+                }, null, { enableHighAccuracy: true });
             }
             setInterval(() => sync(false), 4000);
         }
@@ -340,7 +371,6 @@
             try {
                 const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
                 let { record } = await res.json();
-                
                 if(!record.players) record.players = {};
                 record.players[state.playerName] = { team: state.playerTeam, lat: state.playerMarker?.getLatLng().lat || 0, lon: state.playerMarker?.getLatLng().lng || 0, last: Date.now() };
 
@@ -350,7 +380,6 @@
                         start: forceMaster ? state.startTime : (record.game?.start || Date.now()),
                         duration: duration || record.game?.duration || 30
                     };
-                    
                     if (state.selectedMode === 'RANDOM' && forceMaster) {
                         const count = parseInt(document.getElementById("rndCount").value);
                         const canRec = document.getElementById("rndReconquer").value === "true";
@@ -365,7 +394,6 @@
                         record.objectives = newObjs;
                     }
                 }
-                
                 await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
                 updateUI(record);
             } catch(e) {}
@@ -378,7 +406,6 @@
 
             if(r.game?.mode === 'DOMINATION' || r.game?.mode === 'RANDOM') {
                 scorePanel.style.display = 'flex'; 
-                timerEl.style.display = 'block';
                 document.getElementById("scoreRed").innerText = r.game.scoreRed || 0;
                 document.getElementById("scoreBlue").innerText = r.game.scoreBlue || 0;
                 const elapsed = Math.floor((Date.now() - r.game.start) / 1000);
@@ -387,9 +414,7 @@
                     const m = Math.floor(remain / 60); const s = remain % 60;
                     timerEl.innerText = `⏱️ ${m}:${s < 10 ? '0'+s : s}`;
                 } else { timerEl.innerText = "MISSIONE FINE"; }
-            } else {
-                scorePanel.style.display = 'none'; timerEl.style.display = 'none';
-            }
+            } else { scorePanel.style.display = 'none'; }
             
             const scoreboard = document.getElementById("scoreboard");
             scoreboard.innerHTML = "";
@@ -406,7 +431,7 @@
             Object.entries(r.players || {}).forEach(([name, p]) => {
                 if(Date.now() - p.last < 30000 && p.team === state.playerTeam && name !== state.playerName) {
                     pList.innerHTML += `<li>${name} <span>${getDist(p.lat, p.lon)}m</span></li>`;
-                    activeMarkers.push(L.circleMarker([p.lat, p.lon], {radius: 7, color: p.team==='RED'?'#ff0000':'#00ffff', fillColor: p.team==='RED'?'#ff0000':'#00ffff', fillOpacity:0.8}).addTo(map));
+                    activeMarkers.push(L.circleMarker([p.lat, p.lon], {radius: 7, color: p.team==='RED'?'#f00':'#0ff', fillColor: p.team==='RED'?'#f00':'#0ff', fillOpacity:0.8}).addTo(map));
                 }
             });
         }
@@ -441,6 +466,7 @@
                 location.reload();
             }
         }
+        function toggleTutorial(s) { document.getElementById("tutorial-overlay").style.display = s?"flex":"none"; }
     </script>
 </body>
 </html>
