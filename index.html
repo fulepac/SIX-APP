@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=any">
-    <title>SIX APP v.6.0 - ULTIMATE</title>
+    <title>SIX APP v.6.3 - INTEGRALE</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- STILE CSS --- */
+        /* --- CSS COMPLETO --- */
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
         body { background: #000; color: #0f0; font-family: monospace; margin: 0; padding: 5px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
@@ -20,63 +20,67 @@
         .status-busy { background: #f00; box-shadow: 0 0 10px #f00; }
         .live-score-mini { font-size: 0.8rem; margin-top: 5px; color: #aaa; }
 
+        /* Menu Setup */
         #menu { background: #111; padding: 15px; border-radius: 15px; border: 1px solid #333; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex-grow: 1; }
         input, select { background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; border-radius: 8px; font-size: 1rem; width: 100%; }
+        
+        .btn-info { background: #003300; color: #0f0; border: 1px solid #0f0; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 5px; }
 
-        .btn-info { background: #003300; color: #0f0; border: 1px solid #0f0; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-
+        /* Master Zone */
         .master-zone { border: 1px solid #444; padding: 10px; border-radius: 10px; background: #0a0a0a; margin: 10px 0; }
         .m-title { font-size: 0.75rem; color: #888; margin: 5px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
-
         .mode-selector { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; }
         .mode-btn { background: #222; color: #0f0; border: 1px solid #0f0; padding: 10px 2px; font-size: 0.65rem; border-radius: 5px; font-weight: bold; }
         .mode-btn.active { background: #0f0; color: #000; box-shadow: 0 0 10px #0f0; }
-
         .m-config-grid { display: flex; flex-direction: column; gap: 5px; }
         .m-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; }
-        .m-row input, .m-row select { width: 110px; padding: 5px; font-size: 0.8rem; text-align: center; }
+        .m-row input { width: 110px; padding: 5px; font-size: 0.8rem; text-align: center; }
 
-        .slot-list { background: #000; border: 1px solid #333; margin: 10px 0; max-height: 120px; overflow-y: auto; }
+        /* Slot Obiettivi */
+        .slot-list { background: #000; border: 1px solid #333; margin: 10px 0; max-height: 150px; overflow-y: auto; }
         .obj-slot { display: grid; grid-template-columns: 30px 80px 1fr 1fr; gap: 5px; padding: 8px 5px; border-bottom: 1px solid #222; align-items: center; }
         .obj-slot input { padding: 5px; font-size: 0.7rem; border-color: #333; }
 
-        /* Interfaccia Gioco */
+        /* UI Gioco */
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 10px; border-radius: 10px; border: 1px solid #040; margin-bottom: 5px; height: 50px; }
         .countdown-display { font-size: 1.1rem; font-weight: bold; }
         .score-display { display: flex; gap: 8px; }
-        .score-box { padding: 4px 8px; border-radius: 5px; font-weight: bold; font-size: 0.9rem; }
-        .score-box.team1 { background: #300; color: #f00; border: 1px solid #f00; }
-        .score-box.team2 { background: #003; color: #0ff; border: 1px solid #0ff; }
+        .score-box { padding: 4px 8px; border-radius: 5px; font-weight: bold; font-size: 0.9rem; border: 1px solid transparent; }
+        .score-box.team1 { background: #300; color: #f00; border-color: #f00; }
+        .score-box.team2 { background: #003; color: #0ff; border-color: #0ff; }
 
+        /* Sistema Mappa */
         .map-system { flex-grow: 1; position: relative; display: flex; gap: 5px; min-height: 300px; }
         .map-main-container { flex-grow: 1; border: 2px solid #0f0; border-radius: 15px; overflow: hidden; position: relative; background: #000; }
-        #map-rotate, #map { width: 100%; height: 100%; }
+        #map-rotate, #map { width: 100%; height: 100%; transition: transform 0.1s linear; }
         #player-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; color: #fff; font-size: 30px; pointer-events: none; text-shadow: 0 0 5px #000; }
-        
         .map-controls-external { display: flex; flex-direction: column; gap: 8px; }
         .ext-btn { flex: 1; background: #111; border: 1.5px solid #0f0; color: #0f0; border-radius: 10px; width: 50px; font-size: 1.2rem; cursor: pointer; }
 
+        /* Overlay Navigazione */
+        .nav-hud { position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.9); border: 2px solid yellow; padding: 10px; border-radius: 12px; z-index: 4000; display: flex; justify-content: space-between; align-items: center; color: yellow; font-size: 0.8rem; }
+        .obj-label { background: transparent !important; border: none !important; color: white !important; font-weight: bold; text-shadow: 2px 2px 2px #000; font-size: 10px !important; }
+
+        /* Info Basso */
         .game-info-container { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; height: 110px; margin-top: 5px; }
         .info-section { background: #0a0a0a; border: 1px solid #333; padding: 8px; overflow-y: auto; border-radius: 10px; }
         .info-section h3 { font-size: 0.65rem; margin: 0 0 5px 0; color: #555; border-bottom: 1px solid #222; text-transform: uppercase; }
         .data-list { list-style: none; padding: 0; margin: 0; font-size: 0.7rem; }
-        .data-list li { padding: 6px 0; border-bottom: 1px solid #111; display: flex; justify-content: space-between; }
+        .data-list li { padding: 6px 0; border-bottom: 1px solid #111; display: flex; justify-content: space-between; align-items: center; }
 
+        /* Bottoni start */
         .btn-start, .btn-start-master { background: #0f0; color: #000; padding: 15px; font-weight: bold; border-radius: 10px; border: none; width: 100%; cursor: pointer; text-transform: uppercase; }
         .btn-start:disabled { background: #222; color: #444; cursor: not-allowed; border: 1px solid #333; }
         .btn-danger { background: #300; color: #f00; border: 1px solid red; width: 100%; padding: 12px; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
-        
         .exit-btn { position: absolute; top: 65px; left: 15px; background: rgba(50,50,50,0.8); color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; z-index: 5000; font-size: 0.7rem; }
 
-        .nav-hud { position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.9); border: 2px solid yellow; padding: 10px; border-radius: 12px; z-index: 4000; display: flex; justify-content: space-between; align-items: center; color: yellow; font-size: 0.8rem; }
-        .obj-label { background: transparent !important; border: none !important; color: white !important; font-weight: bold; text-shadow: 2px 2px 2px #000; font-size: 10px !important; }
+        /* Tutorial */
+        #tutorial-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 20000; display: none; padding: 20px; overflow-y: auto; color: #0f0; }
 
-        /* Guida */
-        #help-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 20000; display: none; flex-direction: column; padding: 20px; overflow-y: auto; }
-        
-        /* Selezione Area */
+        /* Selezione Area Random */
         #map-selection-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: #000; display: none; flex-direction: column; }
         #selection-map { flex-grow: 1; width: 100%; }
+        #btn-center-selection { position: absolute; bottom: 100px; right: 20px; z-index: 10010; background: #111; border: 2px solid #0f0; color: #0f0; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
     </style>
 </head>
 <body>
@@ -84,19 +88,19 @@
     <div id="setup-screen">
         <header>
             <h1 class="brand-title">SIX APP</h1>
-            <div class="credits">SVILUPPO PRO - v.6.0</div>
+            <div class="credits">SVILUPPO INTEGRALE - v.6.3</div>
         </header>
 
         <div id="server-status-box">
-            <div id="status-indicator"><span class="status-dot status-free"></span><span id="status-text">CONTROLLO SERVER...</span></div>
+            <div id="status-indicator"><span class="status-dot status-free"></span><span id="status-text">CONTROLLO...</span></div>
             <div id="live-score-preview" class="live-score-mini"></div>
         </div>
 
         <div id="menu">
-            <button class="btn-info" onclick="toggleHelp(true)">📖 GUIDA OPERATIVA</button>
+            <button class="btn-info" onclick="toggleTutorial(true)">📖 COME FUNZIONA?</button>
 
-            <div style="display:flex; flex-direction:column; gap:8px; border: 1px solid #333; padding: 10px; border-radius: 10px;">
-                <p class="m-title" style="margin:0">IDENTIFICAZIONE GIOCATORE</p>
+            <div style="border: 1px solid #333; padding: 10px; border-radius: 10px; display:flex; flex-direction:column; gap:8px;">
+                <p class="m-title" style="margin:0">IDENTIFICAZIONE OPERATORE</p>
                 <input id="playerName" placeholder="TUO NOME">
                 <select id="teamSelect">
                     <option value="TEAM1" id="opt-team1">SQUADRA 1</option>
@@ -107,62 +111,49 @@
             <div class="master-zone">
                 <input id="masterPass" type="password" placeholder="PASSWORD ADMIN" oninput="checkMasterPass()">
                 <div id="masterTools" style="display:none;">
-                    <p class="m-title">CONFIGURAZIONE MISSIONE</p>
+                    <p class="m-title">PARAMETRI MISSIONE</p>
                     <div class="mode-selector">
                         <button id="btnDomination" class="mode-btn active" onclick="selectGameMode('DOMINATION')">DOMINIO</button>
                         <button id="btnRecon" class="mode-btn" onclick="selectGameMode('RECON')">RECON</button>
                         <button id="btnRandom" class="mode-btn" onclick="selectGameMode('RANDOM')">RANDOM</button>
                     </div>
-                    
                     <div class="m-config-grid">
-                        <div class="m-row"><span>DURATA (MIN):</span><input id="gameDuration" type="number" value="30"></div>
-                        <div class="m-row"><span>CONQUISTA (SEC):</span><input id="conqTime" type="number" value="60"></div>
-                        <div class="m-row"><span>RICONQUISTA (SEC):</span><input id="reconqTime" type="number" value="30"></div>
-                        <div class="m-row"><span>NOME SQ. 1:</span><input id="nameTeam1" type="text" value="ROSSI" oninput="updateTeamNames()"></div>
-                        <div class="m-row"><span>NOME SQ. 2:</span><input id="nameTeam2" type="text" value="BLU" oninput="updateTeamNames()"></div>
-                        <div class="m-row"><span>COORDINATE:</span>
-                            <select id="coordFormat">
-                                <option value="DEC">DECIMALI</option>
-                                <option value="UTM">UTM (32T)</option>
-                            </select>
-                        </div>
+                        <div class="m-row"><span>MINUTI GARA:</span><input id="gameDuration" type="number" value="30"></div>
+                        <div class="m-row"><span>CONQ (SEC):</span><input id="conqTime" type="number" value="60"></div>
+                        <div class="m-row"><span>RICONQ (SEC):</span><input id="reconqTime" type="number" value="30"></div>
+                        <div class="m-row"><span>NOME TEAM 1:</span><input id="nameTeam1" type="text" value="ROSSI" oninput="updateTeamNames()"></div>
+                        <div class="m-row"><span>NOME TEAM 2:</span><input id="nameTeam2" type="text" value="BLU" oninput="updateTeamNames()"></div>
                     </div>
-
                     <div id="random-config" style="display:none; border: 1px dashed #0f0; padding: 10px; margin-top: 10px;">
-                        <p class="m-title">AREA CASUALE</p>
-                        <div class="m-row"><span>NUMERO OBJ:</span><input id="rndCount" type="number" value="3"></div>
-                        <button class="btn-info" style="width:100%; margin-top:5px;" onclick="startAreaSelection()">📐 DISEGNA AREA</button>
+                        <button class="btn-info" style="width:100%;" onclick="startAreaSelection()">📐 DISEGNA AREA GIOCO 🎯</button>
                     </div>
-
-                    <p class="m-title">LISTA PUNTI FISSI</p>
+                    <p class="m-title">OBIETTIVI FISSI (MAX 8)</p>
                     <div id="objSlotContainer" class="slot-list"></div>
-                    
-                    <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 AVVIA SESSIONE E PARTECIPA</button>
-                    <button class="btn-danger" onclick="resetBin()">🔥 RESET TOTALE</button>
+                    <button class="btn-start-master" onclick="enableSensorsAndStart(true)">🚀 AVVIA E PARTECIPA</button>
+                    <button class="btn-danger" onclick="resetBin()">🔥 RESET SERVER</button>
                 </div>
             </div>
-            
-            <button id="playerStartBtn" class="btn-start" onclick="enableSensorsAndStart(false)" disabled>▶ IN ATTESA DELL'ADMIN...</button>
+            <button id="playerStartBtn" class="btn-start" onclick="enableSensorsAndStart(false)" disabled>▶ IN ATTESA AVVIO ADMIN...</button>
         </div>
     </div>
 
     <div id="map-selection-overlay">
         <div id="selection-map"></div>
+        <div id="btn-center-selection" onclick="centerSelectionOnPlayer()">🎯</div>
         <div style="height:80px; background:#000; display:flex; padding:15px; gap:10px;">
-            <button class="btn-start" onclick="confirmArea()">CONFERMA</button>
-            <button class="btn-danger" style="margin:0" onclick="cancelArea()">CHIUDI</button>
+            <button class="btn-start" onclick="confirmArea()">CONFERMA AREA</button>
+            <button class="btn-danger" style="margin:0" onclick="cancelArea()">ANNULLA</button>
         </div>
     </div>
 
-    <div id="help-overlay">
-        <div style="color:#ccc; line-height:1.6;">
-            <h2 style="color:#0f0">GUIDA SIX APP 6.0</h2>
-            <p>1. <b>Navigazione:</b> Clicca su un obiettivo in lista o mappa per attivare la rotta. La mappa si orienterà automaticamente verso dove stai guardando.</p>
-            <p>2. <b>Ingresso:</b> Puoi entrare solo se l'Admin ha avviato la giocata (Stato: Partita in Corso).</p>
-            <p>3. <b>Team Radar:</b> In basso a destra vedi i tuoi compagni e la loro distanza reale.</p>
-            <p>4. <b>Conquista:</b> Resta nel cerchio per conquistare. Il colore cambierà in base alla squadra.</p>
-            <button class="btn-start" style="margin-top:20px" onclick="toggleHelp(false)">CHIUDI</button>
-        </div>
+    <div id="tutorial-overlay">
+        <h2>GUIDA RAPIDA</h2>
+        <p><b>1. SETUP:</b> Inserisci il tuo nome e scegli la squadra.</p>
+        <p><b>2. ADMIN:</b> Inserisce la password, sceglie la modalità e preme "AVVIA".</p>
+        <p><b>3. MAPPA:</b> Ruota automaticamente seguendo la tua direzione (anche in orizzontale).</p>
+        <p><b>4. NAVIGAZIONE:</b> Tocca un obiettivo sulla mappa o nella lista per attivare la bussola e la linea tratteggiata.</p>
+        <p><b>5. TEAM RADAR:</b> Vedi i tuoi compagni sulla mappa in tempo reale.</p>
+        <button class="btn-start" onclick="toggleTutorial(false)">CHIUDI GUIDA</button>
     </div>
 
     <div id="game-ui" style="display:none;">
@@ -179,8 +170,8 @@
                 <div id="map-rotate"><div id="map"></div></div>
                 <div id="player-pointer">▲</div>
                 <div id="nav-overlay" class="nav-hud" style="display:none;">
-                    <div id="nav-text">...</div>
-                    <button onclick="stopNavigation()" style="background:none; border:1px solid yellow; color:yellow; padding:4px 8px; border-radius:5px;">X</button>
+                    <div id="nav-text">NAVIGAZIONE...</div>
+                    <button onclick="stopNavigation()" style="background:none; border:1px solid yellow; color:yellow; padding:4px 8px; border-radius:5px; font-weight:bold;">X</button>
                 </div>
             </div>
             <div class="map-controls-external">
@@ -206,17 +197,9 @@
         let activeMarkers = [];
         let customRandomBounds = null;
         let lastCompass = 0;
-        let state = { 
-            isMaster: false, playerName: "", playerTeam: "", playerMarker: null, 
-            autoCenter: true, selectedMode: "DOMINATION", targetObj: null, navLine: null, 
-            startTime: null, gameRunning: false 
-        };
+        let state = { isMaster: false, playerName: "", playerTeam: "", playerMarker: null, autoCenter: true, selectedMode: "DOMINATION", targetObj: null, navLine: null };
 
-        window.onload = () => {
-            initMap();
-            updateTeamNames();
-            setInterval(checkServerStatus, 3000); // Controllo continuo stato server
-        };
+        window.onload = () => { initMap(); updateTeamNames(); setInterval(checkServerStatus, 3000); };
 
         function initMap() {
             map = L.map("map", { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
@@ -234,44 +217,38 @@
                 const scorePreview = document.getElementById("live-score-preview");
 
                 if(record.game && record.game.active) {
-                    state.gameRunning = true;
                     btn.disabled = false;
-                    btn.innerText = "▶ ENTRA NEL CAMPO DI BATTAGLIA";
+                    btn.innerText = "▶ ENTRA IN GIOCO";
                     statusDot.className = "status-dot status-busy";
-                    statusText.innerText = "PARTITA IN CORSO";
+                    statusText.innerText = "MISSIONE IN CORSO";
                     scorePreview.innerText = `${record.game.t1}: ${record.game.scoreRed} | ${record.game.t2}: ${record.game.scoreBlue}`;
-                    // Aggiorna nomi squadre nel menu
                     document.getElementById("opt-team1").innerText = record.game.t1;
                     document.getElementById("opt-team2").innerText = record.game.t2;
                 } else {
-                    state.gameRunning = false;
                     btn.disabled = true;
-                    btn.innerText = "▶ IN ATTESA DELL'ADMIN...";
+                    btn.innerText = "▶ IN ATTESA AVVIO ADMIN...";
                     statusDot.className = "status-dot status-free";
-                    statusText.innerText = "SERVER LIBERO";
-                    scorePreview.innerText = "L'ADMIN DEVE AVVIARE LA SESSIONE";
+                    statusText.innerText = "SERVER DISPONIBILE";
+                    scorePreview.innerText = "L'ADMIN DEVE CONFIGURARE LA GARA";
                 }
             } catch(e) {}
         }
 
-        function updateTeamNames() {
-            const t1 = document.getElementById("nameTeam1").value.toUpperCase();
-            const t2 = document.getElementById("nameTeam2").value.toUpperCase();
-            document.getElementById("opt-team1").innerText = t1;
-            document.getElementById("opt-team2").innerText = t2;
-        }
-
+        // --- GESTIONE ORIENTAMENTO (VERTICALE/ORIZZONTALE) ---
         function handleOrientation(e) {
-            let heading = e.webkitCompassHeading || (360 - e.alpha);
-            let screenAngle = 0;
-            if (window.screen && window.screen.orientation) screenAngle = window.screen.orientation.angle;
-            else if (typeof window.orientation !== 'undefined') screenAngle = window.orientation;
-            
-            let correctedHeading = (heading + screenAngle) % 360;
+            let heading = 0;
+            if (e.webkitCompassHeading) {
+                heading = e.webkitCompassHeading;
+            } else if (e.alpha !== null) {
+                heading = 360 - e.alpha;
+            }
 
-            if(Math.abs(correctedHeading - lastCompass) > 0.8) {
+            // Correzione basata sull'angolo dello schermo (Landscape vs Portrait)
+            let screenAngle = window.screen?.orientation?.angle || window.orientation || 0;
+            let correctedHeading = (heading + screenAngle + 360) % 360;
+
+            if(Math.abs(correctedHeading - lastCompass) > 0.5) {
                 lastCompass = correctedHeading;
-                // Rotazione mappa per mantenere senso marcia in alto
                 document.getElementById("map-rotate").style.transform = `rotate(${-correctedHeading}deg)`;
                 document.getElementById("player-pointer").style.transform = `translate(-50%, -50%) rotate(${correctedHeading}deg)`;
             }
@@ -288,7 +265,6 @@
             } else {
                 window.addEventListener('deviceorientation', handleOrientation);
             }
-            
             isMasterAction ? saveAndStart() : startGame();
         }
 
@@ -323,12 +299,20 @@
                 const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
                 let { record } = await res.json();
                 if(!record.players) record.players = {};
-                record.players[state.playerName] = { team: state.playerTeam, lat: state.playerMarker?.getLatLng().lat || 0, lon: state.playerMarker?.getLatLng().lng || 0, last: Date.now() };
+                
+                // Aggiorna posizione propria
+                record.players[state.playerName] = { 
+                    team: state.playerTeam, 
+                    lat: state.playerMarker?.getLatLng().lat || 0, 
+                    lon: state.playerMarker?.getLatLng().lng || 0, 
+                    last: Date.now() 
+                };
 
                 if(state.isMaster || forceMaster) {
                     record.game = { 
-                        active: true,
-                        mode: state.selectedMode, scoreRed: record.game?.scoreRed || 0, scoreBlue: record.game?.scoreBlue || 0,
+                        active: true, mode: state.selectedMode, 
+                        scoreRed: record.game?.scoreRed || 0, 
+                        scoreBlue: record.game?.scoreBlue || 0,
                         start: forceMaster ? state.startTime : (record.game?.start || Date.now()),
                         duration: duration || record.game?.duration || 30,
                         conqSec: parseInt(document.getElementById("conqTime").value),
@@ -336,13 +320,19 @@
                         t1: document.getElementById("nameTeam1").value.toUpperCase(),
                         t2: document.getElementById("nameTeam2").value.toUpperCase()
                     };
+
                     if (state.selectedMode === 'RANDOM' && forceMaster) {
-                        record.objectives = generateRandomObjectives(parseInt(document.getElementById("rndCount").value));
+                        record.objectives = generateRandomObjectives(3);
                     } else if (state.selectedMode !== 'RANDOM' && (state.isMaster || forceMaster)) {
                         let newObjs = [];
                         document.querySelectorAll(".obj-slot").forEach(s => {
                             if(s.querySelector(".s-active").checked) {
-                                newObjs.push({ name: s.querySelector(".s-name").value, lat: parseFloat(s.querySelector(".s-lat").value), lon: parseFloat(s.querySelector(".s-lon").value), owner: "LIBERO" });
+                                newObjs.push({ 
+                                    name: s.querySelector(".s-name").value, 
+                                    lat: parseFloat(s.querySelector(".s-lat").value), 
+                                    lon: parseFloat(s.querySelector(".s-lon").value), 
+                                    owner: "LIBERO" 
+                                });
                             }
                         });
                         record.objectives = newObjs;
@@ -357,11 +347,8 @@
             activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
             const scoreboard = document.getElementById("scoreboard");
             scoreboard.innerHTML = "";
-
-            const t1N = r.game?.t1 || "S1";
-            const t2N = r.game?.t2 || "S2";
-            document.getElementById("lblTeam1").innerText = t1N;
-            document.getElementById("lblTeam2").innerText = t2N;
+            const t1N = r.game?.t1 || "S1"; const t2N = r.game?.t2 || "S2";
+            document.getElementById("lblTeam1").innerText = t1N; document.getElementById("lblTeam2").innerText = t2N;
 
             (r.objectives || []).forEach(obj => {
                 let color = obj.owner === 'TEAM1' ? '#f00' : obj.owner === 'TEAM2' ? '#0ff' : '#fff';
@@ -375,7 +362,7 @@
 
             if(r.game) {
                 const remain = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start) / 1000);
-                document.getElementById("timer").innerText = remain > 0 ? `⏱️ ${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}` : "FINE GIOCO";
+                document.getElementById("timer").innerText = remain > 0 ? `⏱️ ${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}` : "FINITA";
                 document.getElementById("scoreRed").innerText = r.game.scoreRed;
                 document.getElementById("scoreBlue").innerText = r.game.scoreBlue;
             }
@@ -389,64 +376,26 @@
             });
         }
 
-        function startNavigation(obj) { 
-            state.targetObj = obj; 
-            document.getElementById("nav-overlay").style.display = "flex"; 
-            updateNavigationLine(); 
-        }
-
+        // --- LOGICA NAVIGAZIONE ---
+        function startNavigation(obj) { state.targetObj = obj; document.getElementById("nav-overlay").style.display = "flex"; updateNavigationLine(); }
         function stopNavigation() { state.targetObj = null; if(state.navLine) map.removeLayer(state.navLine); document.getElementById("nav-overlay").style.display = "none"; }
-
         function updateNavigationLine() {
             if(!state.targetObj || !state.playerMarker) return;
-            const p1 = state.playerMarker.getLatLng();
-            const p2 = [state.targetObj.lat, state.targetObj.lon];
-            const dist = getDist(p2[0], p2[1]);
-            document.getElementById("nav-text").innerHTML = `<b>${state.targetObj.name}</b>: ${dist}m`;
+            const p1 = state.playerMarker.getLatLng(); const p2 = [state.targetObj.lat, state.targetObj.lon];
+            document.getElementById("nav-text").innerHTML = `<b>${state.targetObj.name}</b>: ${getDist(p2[0], p2[1])}m`;
             if(state.navLine) map.removeLayer(state.navLine);
             state.navLine = L.polyline([p1, p2], {color: 'yellow', weight: 4, dashArray: '8, 8'}).addTo(map);
         }
 
         function getDist(lat2, lon2) {
             if(!state.playerMarker) return "?";
-            const p1 = state.playerMarker.getLatLng();
-            const R = 6371000;
-            const dLat = (lat2 - p1.lat) * Math.PI / 180;
-            const dLon = (lon2 - p1.lng) * Math.PI / 180;
+            const p1 = state.playerMarker.getLatLng(); const R = 6371000;
+            const dLat = (lat2 - p1.lat) * Math.PI / 180; const dLon = (lon2 - p1.lng) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(p1.lat * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
             return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
 
-        function checkMasterPass() {
-            if(document.getElementById("masterPass").value === PWD_MASTER) {
-                state.isMaster = true;
-                document.getElementById("masterTools").style.display = "block";
-                loadConfigFromServer();
-            }
-        }
-
-        async function loadConfigFromServer() {
-            try {
-                const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}});
-                const { record } = await res.json();
-                const container = document.getElementById("objSlotContainer");
-                container.innerHTML = "";
-                const currentObjs = record.objectives || [];
-                for (let i = 0; i < 8; i++) {
-                    let o = currentObjs[i] || { name: `OBJ${i+1}`, lat: "", lon: "" };
-                    container.innerHTML += `<div class="obj-slot"><input type="checkbox" class="s-active" ${o.lat?'checked':''}> <input type="text" class="s-name" value="${o.name}"> <input type="number" class="s-lat" value="${o.lat}" step="any"> <input type="number" class="s-lon" value="${o.lon}" step="any"></div>`;
-                }
-            } catch(e) {}
-        }
-
-        function selectGameMode(m) {
-            state.selectedMode = m;
-            document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-            document.getElementById(`btn${m.charAt(0) + m.slice(1).toLowerCase()}`).classList.add("active");
-            document.getElementById("random-config").style.display = (m === 'RANDOM') ? "block" : "none";
-            document.getElementById("objSlotContainer").style.display = (m === 'RANDOM') ? "none" : "block";
-        }
-
+        // --- MASTER TOOLS & AREA SELECTION ---
         function startAreaSelection() {
             document.getElementById("map-selection-overlay").style.display = "flex";
             if (!sMap) {
@@ -455,24 +404,78 @@
                 sRectangle = L.rectangle(sMap.getBounds().pad(-0.3), {color: "#0f0", weight: 3, fillOpacity: 0.2}).addTo(sMap);
                 sMap.on('move', () => sRectangle.setBounds(sMap.getBounds().pad(-0.25)));
             }
-            setTimeout(() => sMap.invalidateSize(), 300);
+            setTimeout(() => { sMap.invalidateSize(); centerSelectionOnPlayer(); }, 300);
         }
+
+        function centerSelectionOnPlayer() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(p => {
+                    sMap.setView([p.coords.latitude, p.coords.longitude], 18);
+                }, null, {enableHighAccuracy: true});
+            }
+        }
+
         function confirmArea() { customRandomBounds = sRectangle.getBounds(); document.getElementById("map-selection-overlay").style.display = "none"; }
         function cancelArea() { document.getElementById("map-selection-overlay").style.display = "none"; }
+
+        function checkMasterPass() { 
+            if(document.getElementById("masterPass").value === PWD_MASTER) { 
+                state.isMaster = true; 
+                document.getElementById("masterTools").style.display = "block"; 
+                loadConfigFromServer(); 
+            } 
+        }
+
+        async function loadConfigFromServer() {
+            const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}});
+            const { record } = await res.json();
+            const container = document.getElementById("objSlotContainer"); container.innerHTML = "";
+            const currentObjs = record.objectives || [];
+            // Carica 8 slot (anche vuoti se non esistono)
+            for (let i = 0; i < 8; i++) {
+                let o = currentObjs[i] || { name: `OBJ${i+1}`, lat: "", lon: "" };
+                container.innerHTML += `<div class="obj-slot">
+                    <input type="checkbox" class="s-active" ${o.lat?'checked':''}> 
+                    <input type="text" class="s-name" value="${o.name}"> 
+                    <input type="number" class="s-lat" value="${o.lat}" step="any"> 
+                    <input type="number" class="s-lon" value="${o.lon}" step="any">
+                </div>`;
+            }
+        }
+
+        function selectGameMode(m) {
+            state.selectedMode = m; document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+            document.getElementById(`btn${m.charAt(0) + m.slice(1).toLowerCase()}`).classList.add("active");
+            document.getElementById("random-config").style.display = (m === 'RANDOM') ? "block" : "none";
+            document.getElementById("objSlotContainer").style.display = (m === 'RANDOM') ? "none" : "block";
+        }
+
+        function updateTeamNames() {
+            const t1 = document.getElementById("nameTeam1").value.toUpperCase();
+            const t2 = document.getElementById("nameTeam2").value.toUpperCase();
+            document.getElementById("opt-team1").innerText = t1;
+            document.getElementById("opt-team2").innerText = t2;
+        }
+
         function generateRandomObjectives(count) {
-            const b = customRandomBounds || map.getBounds();
-            let o = [];
+            const b = customRandomBounds || map.getBounds(); let o = [];
             for(let i=0; i<count; i++) {
-                o.push({ name: `RND-${i+1}`, lat: b.getSouth() + Math.random() * (b.getNorth() - b.getSouth()), lon: b.getWest() + Math.random() * (b.getEast() - b.getWest()), owner: "LIBERO" });
+                o.push({ 
+                    name: `RND-${i+1}`, 
+                    lat: b.getSouth() + Math.random() * (b.getNorth() - b.getSouth()), 
+                    lon: b.getWest() + Math.random() * (b.getEast() - b.getWest()), 
+                    owner: "LIBERO" 
+                });
             }
             return o;
         }
 
-        function toggleHelp(s) { document.getElementById("help-overlay").style.display = s ? "flex" : "none"; }
+        function toggleTutorial(show) { document.getElementById("tutorial-overlay").style.display = show ? "block" : "none"; }
         function centerMap() { state.autoCenter = true; if(state.playerMarker) map.panTo(state.playerMarker.getLatLng()); }
-        function exitGame() { if(confirm("CHIUDERE LA SESSIONE?")) location.reload(); }
+        function exitGame() { if(confirm("CHIUDERE L'APP E TORNARE AL SETUP?")) location.reload(); }
+
         async function resetBin() {
-            if(confirm("AZZERARE IL SERVER? TUTTI I GIOCATORI VERRANNO ESPULSI.")) {
+            if(confirm("VUOI AZZERARE TUTTI I DATI DEL SERVER?")) {
                 await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{active:false,scoreRed:0,scoreBlue:0,t1:"ROSSI",t2:"BLU"},players:{},objectives:[]})});
                 location.reload();
             }
