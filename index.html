@@ -3,402 +3,456 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX VIGEVANO - OMNI v7.8</title>
+    <title>SIX VIGEVANO - COMMAND & CONTROL v8.0</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
-        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        :root {
+            --neon-green: #00ff00;
+            --dark-bg: #050505;
+            --panel-bg: rgba(15, 15, 15, 0.95);
+            --red-team: #ff3333;
+            --blue-team: #33ccff;
+        }
 
-        /* UI STRUTTURA */
-        .screen { display: none; height: 100%; flex-direction: column; padding: 10px; z-index: 10; }
-        .active { display: flex; }
-        .header { text-align: center; border-bottom: 2px solid #0f0; margin-bottom: 10px; padding-bottom: 5px; flex-shrink: 0; }
-        .header h1 { margin: 0; font-size: 1.8rem; text-shadow: 0 0 10px #0f0; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        .scroll-area { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; }
-        .box { background: #111; border: 1px solid #333; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-        .label { font-size: 0.7rem; color: #888; text-transform: uppercase; display: block; margin-bottom: 5px; }
-        
-        input, select { background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; border-radius: 5px; width: 100%; font-family: monospace; font-size: 1rem; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: var(--dark-bg); color: var(--neon-green);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
 
-        /* MAPPA E ROTAZIONE SATELLITARE */
-        .map-frame { flex-grow: 1; position: relative; border: 2px solid #0f0; border-radius: 15px; overflow: hidden; background: #050505; }
-        #map-rotate-container { 
-            position: absolute; 
-            top: 50%; left: 50%; 
-            width: 250%; height: 250%; /* Sovradimensionato per rotazione */
+        /* --- STRUTTURA SCHERMATE --- */
+        .screen { 
+            display: none; position: absolute; width: 100%; height: 100%; 
+            flex-direction: column; transition: opacity 0.3s; 
+        }
+        .screen.active { display: flex; opacity: 1; }
+
+        /* --- HEADER & DASHBOARD --- */
+        .main-header {
+            padding: 15px; background: #000; border-bottom: 2px solid var(--neon-green);
+            text-align: center; z-index: 100;
+        }
+        .main-header h1 { margin: 0; font-size: 1.5rem; letter-spacing: 3px; text-transform: uppercase; }
+
+        .server-status-box {
+            margin: 10px; padding: 15px; border: 1px solid #333; border-radius: 8px;
+            background: var(--panel-bg); display: flex; flex-direction: column; gap: 10px;
+        }
+        .status-row { display: flex; justify-content: space-between; align-items: center; }
+        .indicator { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .online { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+        .offline { background: #ff0000; }
+
+        /* --- MAPPA E NAVIGAZIONE (SISTEMA ESTESO) --- */
+        .navigation-container {
+            flex-grow: 1; position: relative; overflow: hidden;
+            background: #000; border: 1px solid #222;
+        }
+
+        /* Il contenitore che ruota deve essere ENORME per coprire la diagonale durante la rotazione */
+        #map-rotation-wrapper {
+            position: absolute; top: 50%; left: 50%;
+            width: 300vmax; height: 300vmax; /* Estensione massima */
+            transform: translate(-50%, -50%) rotate(0deg);
+            will-change: transform;
+        }
+        #map { width: 100%; height: 100%; z-index: 1; }
+
+        /* Overlay fissi (non ruotano con la mappa) */
+        .map-overlay {
+            position: absolute; inset: 0; pointer-events: none; z-index: 10;
+        }
+        .reticle {
+            position: absolute; top: 50%; left: 50%;
+            width: 60px; height: 60px; transform: translate(-50%, -50%);
+            border: 1px solid rgba(0, 255, 0, 0.2); border-radius: 50%;
+        }
+        .reticle::before, .reticle::after {
+            content: ''; position: absolute; background: var(--neon-green); opacity: 0.6;
+        }
+        .reticle::before { top: 50%; left: -10px; width: 80px; height: 1px; }
+        .reticle::after { left: 50%; top: -10px; width: 1px; height: 80px; }
+
+        #compass-arrow {
+            position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 1;
-        }
-        #map { width: 100%; height: 100%; }
-
-        /* OVERLAY FISSI */
-        .crosshair { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; transform: translate(-50%, -50%); z-index: 5000; pointer-events: none; border: 1px solid rgba(0,255,0,0.3); border-radius: 50%; }
-        .crosshair::before { content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: #0f0; }
-        .crosshair::after { content: ''; position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background: #0f0; }
-        
-        #player-pointer { 
-            position: absolute; top: 50%; left: 50%; 
-            transform: translate(-50%, -50%); 
-            z-index: 5001; font-size: 35px; color: #fff; 
-            text-shadow: 0 0 10px #000; pointer-events: none; 
+            font-size: 40px; color: #fff; text-shadow: 0 0 15px #000;
+            z-index: 11; transition: transform 0.1s;
         }
 
-        /* BOTTONI */
-        .btn { background: #0f0; color: #000; border: none; padding: 18px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; text-transform: uppercase; margin: 8px 0; font-size: 1rem; }
-        .btn:active { background: #0a0; }
-        .btn-sec { background: #000; color: #0f0; border: 1px solid #0f0; padding: 10px; }
-        .btn-loc { position: absolute; bottom: 15px; right: 15px; z-index: 5002; width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.85); border: 2px solid #0f0; color: #0f0; font-size: 2rem; display: flex; align-items: center; justify-content: center; }
+        /* --- CONTROLLI --- */
+        .controls-bottom {
+            padding: 10px; background: #000; border-top: 1px solid #222;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; z-index: 100;
+        }
+        .btn {
+            background: var(--neon-green); color: #000; border: none;
+            padding: 15px; border-radius: 5px; font-weight: bold;
+            text-transform: uppercase; font-size: 0.9rem; cursor: pointer;
+        }
+        .btn:disabled { background: #222; color: #444; }
+        .btn-admin { background: #000; color: var(--neon-green); border: 1px solid var(--neon-green); }
 
-        /* INFO GIOCO */
-        #coord-bar { font-size: 0.85rem; text-align: center; padding: 10px; color: #0f0; background: #111; border-top: 2px solid #333; font-weight: bold; letter-spacing: 1px; }
-        .game-header { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; background: #000; }
-        .score-box { padding: 5px 12px; border-radius: 5px; font-weight: bold; font-size: 1.1rem; min-width: 70px; text-align: center; }
-        
-        .admin-panel { display: none; border: 1px dashed #f00; padding: 10px; margin-top: 10px; }
-        .obj-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr 0.6fr; gap: 4px; margin-bottom: 5px; }
-        .obj-row input { padding: 5px; font-size: 0.7rem; height: 30px; }
+        /* --- INFO BAR --- */
+        .info-bar {
+            background: #111; padding: 8px; font-size: 0.8rem;
+            display: flex; justify-content: space-around; border-top: 1px solid #333;
+        }
+
+        .admin-section {
+            padding: 15px; border-top: 1px dashed #f00; margin-top: 10px; display: none;
+        }
     </style>
 </head>
 <body>
 
     <div id="screen-setup" class="screen active">
-        <div class="header"><h1>SIX VIGEVANO</h1><small>OPERATIONAL SYSTEM v7.8</small></div>
-        <div class="scroll-area">
-            <div class="box">
-                <span class="label">Operatore Scout</span>
-                <input id="playerName" type="text" placeholder="NOME OPERATORE" autocomplete="off">
-                <span class="label" style="margin-top:15px;">Fazione</span>
-                <select id="teamSelect">
-                    <option value="TEAM1">SQUADRA ROSSA (ATTACCO)</option>
-                    <option value="TEAM2">SQUADRA BLU (DIFESA)</option>
-                </select>
-            </div>
+        <header class="main-header">
+            <h1>SIX VIGEVANO</h1>
+            <div style="font-size: 0.6rem; color: #666;">TACTICAL NAVIGATOR v8.0</div>
+        </header>
 
-            <div class="box">
-                <span class="label">Comando Admin</span>
-                <input id="masterPass" type="password" placeholder="PASSWORD MASTER" oninput="checkAdmin()">
-                <div id="admin-ui" class="admin-panel">
-                    <span class="label">Configurazione Missione</span>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
-                        <div><span class="label">Gara (min)</span><input id="cfg-dur" type="number" value="45"></div>
-                        <div><span class="label">Conq (sec)</span><input id="cfg-conq" type="number" value="60"></div>
-                    </div>
-                    <span class="label">Obiettivi Manuali</span>
-                    <div id="obj-list-setup"></div>
-                    <button class="btn btn-sec" onclick="addObjRow()">+ AGGIUNGI OBJ</button>
-                    <button class="btn" onclick="serverInitialize()">🚀 INIZIALIZZA SERVER</button>
+        <div class="scroll-area" style="overflow-y: auto; flex-grow: 1;">
+            <div class="server-status-box">
+                <div class="status-row">
+                    <span>STATO SISTEMA:</span>
+                    <span id="srv-status-text"><span class="indicator offline"></span>OFFLINE</span>
+                </div>
+                <div class="status-row" style="font-size: 1.2rem; font-weight: bold;">
+                    <span style="color: var(--red-team)">ROSSI: <span id="srv-score-red">0</span></span>
+                    <span style="color: var(--blue-team)">BLU: <span id="srv-score-blue">0</span></span>
+                </div>
+                <div class="status-row">
+                    <span>TEMPO RIMANENTE:</span>
+                    <span id="srv-timer" style="color: #fff;">--:--</span>
                 </div>
             </div>
-            <button id="btn-join" class="btn" onclick="requestPermissionsAndStart()" disabled>SINCRONIZZAZIONE...</button>
-        </div>
-    </div>
 
-    <div id="screen-game" class="screen">
-        <div class="game-header">
-            <div id="timer" style="color:#fff; font-size:1.4rem; font-weight:bold;">--:--</div>
-            <div style="display:flex; gap:8px;">
-                <div id="score-red" class="score-box" style="color:#f00; border:1px solid #f00;">0</div>
-                <div id="score-blue" class="score-box" style="color:#0ff; border:1px solid #0ff;">0</div>
+            <div style="padding: 15px;">
+                <label style="font-size: 0.7rem;">NOMINATIVO OPERATORE</label>
+                <input id="in-name" type="text" style="width:100%; padding:12px; background:#111; border:1px solid var(--neon-green); color:#fff; margin-bottom:15px;" placeholder="ES. FULVIO">
+                
+                <label style="font-size: 0.7rem;">FAZIONE DI APPARTENENZA</label>
+                <select id="in-team" style="width:100%; padding:12px; background:#111; border:1px solid var(--neon-green); color:#fff;">
+                    <option value="TEAM1">ATTACCO (ROSSO)</option>
+                    <option value="TEAM2">DIFESA (BLU)</option>
+                </select>
+
+                <div style="margin-top: 20px;">
+                    <input id="admin-pass" type="password" placeholder="CODICE ADMIN" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:#444; font-size:0.7rem;" oninput="checkAdminCode(this.value)">
+                </div>
+
+                <div id="admin-controls" class="admin-section">
+                    <h3 style="color:red; font-size:0.8rem;">CONFIGURAZIONE MASTER</h3>
+                    <button class="btn btn-admin" style="width:100%; margin-bottom:10px;" onclick="createNewMatch()">CREA NUOVA PARTITA</button>
+                </div>
             </div>
         </div>
 
-        <div class="map-frame">
-            <div id="map-rotate-container">
+        <div class="controls-bottom">
+            <button id="btn-join" class="btn" style="grid-column: span 2;" onclick="startOperation()" disabled>CONNETTI AL SERVER</button>
+        </div>
+    </div>
+
+    <div id="screen-ops" class="screen">
+        <div class="info-bar" style="background: #000; font-weight: bold; font-size: 1rem;">
+            <span id="op-timer" style="color:#fff">--:--</span>
+            <span style="color:var(--red-team)">R: <span id="op-score-red">0</span></span>
+            <span style="color:var(--blue-team)">B: <span id="op-score-blue">0</span></span>
+        </div>
+
+        <div class="navigation-container">
+            <div id="map-rotation-wrapper">
                 <div id="map"></div>
             </div>
-            <div class="crosshair"></div>
-            <div id="player-pointer">▲</div>
-            <button class="btn-loc" onclick="state.autoCenter=true; recenter();">🎯</button>
+            
+            <div class="map-overlay">
+                <div class="reticle"></div>
+                <div id="compass-arrow">▲</div>
+            </div>
+
+            <button onclick="state.autoCenter=true; syncMap();" style="position:absolute; bottom:20px; right:20px; z-index:100; width:50px; height:50px; border-radius:50%; background:rgba(0,0,0,0.8); border:2px solid var(--neon-green); color:var(--neon-green); font-size:1.5rem;">🎯</button>
         </div>
 
-        <div id="coord-bar">GPS: ACQUISIZIONE...</div>
-        
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; height:100px; margin-top:5px;">
-            <div class="box" style="margin:0; overflow-y:auto; font-size:0.75rem;">
-                <b style="color:#555">STATUS OBJ</b>
-                <div id="ui-obj-list"></div>
-            </div>
-            <div class="box" style="margin:0; overflow-y:auto; font-size:0.75rem;">
-                <b style="color:#555">SQUADRE</b>
-                <div id="ui-player-list"></div>
-            </div>
+        <div id="utm-display" style="padding:10px; text-align:center; font-family:monospace; background:#111; font-size:0.9rem; border-top:1px solid #333;">
+            CALCOLO COORDINATE...
+        </div>
+
+        <div class="info-bar">
+            <span>OBJ: <span id="status-obj-summary">---</span></span>
+            <span>GPS: <span id="status-gps-accuracy">---</span></span>
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // CONFIGURAZIONE SERVER
-        const BIN_ID = "696d4940ae596e708fe53514";
-        const SECRET_KEY = "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e";
-        const URL_BIN = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
-        const MASTER_PASS = "71325";
+        // CONFIGURAZIONE DATI (JSONBIN)
+        const CONFIG = {
+            binId: "696d4940ae596e708fe53514",
+            apiKey: "$2a$10$8flpC9MOhAbyRpJOlsFLWO.Mb/virkFhLrl9MIFwETKeSkmBYiE2e",
+            adminKey: "71325"
+        };
 
-        let map, playerMarker;
+        const URL = `https://api.jsonbin.io/v3/b/${CONFIG.binId}`;
+
+        // STATO APPLICAZIONE
+        let map;
         let objLayers = [];
         let state = {
-            isAdmin: false,
-            currentPos: [45.2377, 8.8097],
-            autoCenter: true,
-            heading: 0,
             playerName: "",
-            gameActive: false
+            team: "",
+            isAdmin: false,
+            coords: [45.2377, 8.8097],
+            heading: 0,
+            autoCenter: true,
+            serverData: null
         };
 
+        // --- 1. INIZIALIZZAZIONE ---
         window.onload = () => {
-            initLeaflet();
-            for(let i=0; i<3; i++) addObjRow();
-            setInterval(checkServerStatus, 3000);
+            initMap();
+            startServerMonitoring();
         };
 
-        // 1. INIZIALIZZAZIONE MAPPA
-        function initLeaflet() {
-            map = L.map('map', { 
-                zoomControl: false, 
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: false,
                 attributionControl: false,
-                inertia: false 
-            }).setView(state.currentPos, 18);
+                maxZoom: 21
+            }).setView(state.coords, 18);
 
             L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
                 subdomains: ['mt0','mt1','mt2','mt3'],
                 maxZoom: 21
             }).addTo(map);
 
+            // Se l'utente trascina, fermiamo l'auto-centramento
             map.on('dragstart', () => state.autoCenter = false);
 
-            navigator.geolocation.watchPosition(
-                p => {
-                    state.currentPos = [p.coords.latitude, p.coords.longitude];
-                    updateCoordsDisplay();
-                    if(state.autoCenter) recenter();
-                },
-                e => console.error("GPS Error", e),
-                { enableHighAccuracy: true, timeout: 5000 }
-            );
+            // Geolocalizzazione continua
+            if("geolocation" in navigator) {
+                navigator.geolocation.watchPosition(
+                    pos => {
+                        state.coords = [pos.coords.latitude, pos.coords.longitude];
+                        updateUTM(pos.coords.latitude, pos.coords.longitude);
+                        document.getElementById('status-gps-accuracy').innerText = `±${Math.round(pos.coords.accuracy)}m`;
+                        if(state.autoCenter) syncMap();
+                    },
+                    err => console.error("GPS Error", err),
+                    { enableHighAccuracy: true }
+                );
+            }
         }
 
-        // 2. BUSSOLA E PERMESSI
-        async function requestPermissionsAndStart() {
-            state.playerName = document.getElementById('playerName').value.toUpperCase();
-            if(!state.playerName) return alert("Inserisci il tuo nome di battaglia!");
+        // --- 2. MONITORAGGIO SERVER (ESTESO) ---
+        async function startServerMonitoring() {
+            setInterval(async () => {
+                try {
+                    const res = await fetch(`${URL}/latest`, { headers: { "X-Master-Key": CONFIG.apiKey }, cache: 'no-store' });
+                    const { record } = await res.json();
+                    state.serverData = record;
+                    updateDashboardUI(record);
+                } catch (e) {
+                    console.error("Server Down");
+                    document.getElementById('srv-status-text').innerHTML = `<span class="indicator offline"></span>TIMEOUT`;
+                }
+            }, 3000);
+        }
 
+        function updateDashboardUI(data) {
+            const statusText = document.getElementById('srv-status-text');
+            const btnJoin = document.getElementById('btn-join');
+
+            if(data.game && data.game.active) {
+                statusText.innerHTML = `<span class="indicator online"></span>OPERATIVO`;
+                btnJoin.disabled = false;
+                
+                // Aggiorna punteggi e timer (Dashboard iniziale)
+                document.getElementById('srv-score-red').innerText = Math.floor(data.game.scoreRed / 10);
+                document.getElementById('srv-score-blue').innerText = Math.floor(data.game.scoreBlue / 10);
+                
+                // Aggiorna punteggi e timer (Interfaccia OPS)
+                document.getElementById('op-score-red').innerText = Math.floor(data.game.scoreRed / 10);
+                document.getElementById('op-score-blue').innerText = Math.floor(data.game.scoreBlue / 10);
+                
+                updateTimerUI(data.game.start, data.game.duration);
+            } else {
+                statusText.innerHTML = `<span class="indicator offline"></span>IN ATTESA`;
+                btnJoin.disabled = true;
+            }
+        }
+
+        function updateTimerUI(start, durationMin) {
+            const elapsedSec = Math.floor((Date.now() - start) / 1000);
+            const totalSec = durationMin * 60;
+            const remaining = Math.max(0, totalSec - elapsedSec);
+            
+            const m = Math.floor(remaining / 60);
+            const s = remaining % 60;
+            const timeStr = `${m}:${s.toString().padStart(2, '0')}`;
+            
+            document.getElementById('srv-timer').innerText = timeStr;
+            document.getElementById('op-timer').innerText = timeStr;
+        }
+
+        // --- 3. BUSSOLA (LOGICA ESTESA) ---
+        async function startOperation() {
+            state.playerName = document.getElementById('in-name').value.toUpperCase() || "SCOUT";
+            state.team = document.getElementById('in-team').value;
+
+            // Richiesta permessi bussola (iOS/Android)
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-                } catch (e) { alert("Permesso Bussola Negato"); }
+                    if(permission === 'granted') window.addEventListener('deviceorientation', handleRotation);
+                } catch(e) { alert("Bussola non autorizzata."); }
             } else {
-                window.addEventListener('deviceorientation', handleOrientation);
+                window.addEventListener('deviceorientation', handleRotation);
             }
+
+            document.getElementById('screen-setup').classList.remove('active');
+            document.getElementById('screen-ops').classList.add('active');
             
-            enterGame();
+            setTimeout(() => map.invalidateSize(), 400);
+            
+            // Loop di invio posizione
+            setInterval(pushDataToServer, 5000);
         }
 
-        function handleOrientation(e) {
-            let north = e.webkitCompassHeading || (360 - e.alpha);
-            if(north) {
-                state.heading = Math.round(north);
-                // Ruotiamo la mappa in senso opposto
-                document.getElementById('map-rotate-container').style.transform = `translate(-50%, -50%) rotate(${-state.heading}deg)`;
-                // La freccia punta sempre in alto (il nord della mappa ruotata)
-                document.getElementById('player-pointer').style.transform = `translate(-50%, -50%) rotate(0deg)`;
+        function handleRotation(e) {
+            // Estensione: Proviamo prima il nord magnetico assoluto
+            let heading = e.webkitCompassHeading || (360 - e.alpha);
+            if(heading !== undefined) {
+                state.heading = Math.round(heading);
+                // Ruotiamo il wrapper della mappa
+                document.getElementById('map-rotation-wrapper').style.transform = `translate(-50%, -50%) rotate(${-state.heading}deg)`;
+                // La freccia rimane fissa ma punta il nord della mappa ruotata
+                // In questo sistema, la freccia punta "Sempre Avanti" rispetto al telefono
             }
         }
 
-        // 3. LOGICA ADMIN
-        function checkAdmin() {
-            if(document.getElementById('masterPass').value === MASTER_PASS) {
-                state.isAdmin = true;
-                document.getElementById('admin-ui').style.display = 'block';
-            }
-        }
+        // --- 4. LOGICA DI GIOCO (SINCRONIZZAZIONE) ---
+        async function pushDataToServer() {
+            if(!state.serverData) return;
 
-        function addObjRow() {
-            const container = document.getElementById('obj-list-setup');
-            const div = document.createElement('div');
-            div.className = 'obj-row';
-            div.innerHTML = `
-                <input type="text" class="o-n" value="OBJ ${container.children.length + 1}">
-                <input type="text" class="o-lat" placeholder="Lat">
-                <input type="text" class="o-lon" placeholder="Lon">
-                <input type="number" class="o-r" value="20">
-            `;
-            container.appendChild(div);
-        }
-
-        // 4. SERVER SYNC
-        async function serverInitialize() {
-            let objs = [];
-            document.querySelectorAll('.obj-row').forEach(row => {
-                let lat = row.querySelector('.o-lat').value || (state.currentPos[0] + (Math.random()-0.5)*0.002);
-                let lon = row.querySelector('.o-lon').value || (state.currentPos[1] + (Math.random()-0.5)*0.002);
-                objs.push({
-                    name: row.querySelector('.o-n').value,
-                    lat: parseFloat(lat), lon: parseFloat(lon),
-                    radius: parseInt(row.querySelector('.o-r').value),
-                    owner: 'LIBERO', status: 'NORMAL', progress: 0
-                });
-            });
-
-            const initData = {
-                game: {
-                    active: true,
-                    start: Date.now(),
-                    duration: parseInt(document.getElementById('cfg-dur').value),
-                    conqTime: parseInt(document.getElementById('cfg-conq').value),
-                    scoreRed: 0, scoreBlue: 0
-                },
-                objectives: objs,
-                players: {}
+            // 1. Aggiorna la mia posizione nel record locale
+            state.serverData.players[state.playerName] = {
+                team: state.team,
+                lat: state.coords[0],
+                lon: state.coords[1],
+                lastSeen: Date.now()
             };
 
-            await fetch(URL_BIN, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-Master-Key': SECRET_KEY },
-                body: JSON.stringify(initData)
-            });
-            requestPermissionsAndStart();
-        }
+            // 2. Se sono Admin, calcola la conquista obiettivi
+            if(state.isAdmin) {
+                calculateObjectives();
+            }
 
-        async function checkServerStatus() {
+            // 3. Spedisci al server
             try {
-                const res = await fetch(`${URL_BIN}/latest`, { headers: { 'X-Master-Key': SECRET_KEY } });
-                const { record } = await res.json();
-                document.getElementById('btn-join').disabled = !record.game.active;
-                document.getElementById('btn-join').innerText = record.game.active ? "CONNETTI AL CAMPO" : "ATTESA AVVIO ADMIN...";
-            } catch(e) {}
+                await fetch(URL, {
+                    method: 'PUT',
+                    headers: { "Content-Type": "application/json", "X-Master-Key": CONFIG.apiKey },
+                    body: JSON.stringify(state.serverData)
+                });
+                renderGameAssets(state.serverData);
+            } catch(e) { console.error("Sync Error"); }
         }
 
-        function enterGame() {
-            document.getElementById('screen-setup').classList.remove('active');
-            document.getElementById('screen-game').classList.add('active');
-            setTimeout(() => map.invalidateSize(), 500);
-            setInterval(syncLoop, 4000);
-        }
+        function calculateObjectives() {
+            const data = state.serverData;
+            const loopSec = 5;
 
-        async function syncLoop() {
-            try {
-                const res = await fetch(`${URL_BIN}/latest`, { headers: { 'X-Master-Key': SECRET_KEY }, cache: 'no-store' });
-                let { record } = await res.json();
-
-                // Aggiorna mia posizione
-                record.players[state.playerName] = {
-                    team: document.getElementById('teamSelect').value,
-                    lat: state.currentPos[0], lon: state.currentPos[1],
-                    last: Date.now()
-                };
-
-                // Se sono admin, elaboro la conquista degli obiettivi
-                if(state.isAdmin) {
-                    processGameLogic(record);
-                    await fetch(URL_BIN, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json', 'X-Master-Key': SECRET_KEY },
-                        body: JSON.stringify(record)
-                    });
-                }
-                updateGameUI(record);
-            } catch(e) {}
-        }
-
-        function processGameLogic(r) {
-            const now = Date.now();
-            const step = 4; // secondi per ogni loop
-
-            r.objectives.forEach(obj => {
-                let pRed = 0, pBlue = 0;
-                Object.values(r.players).forEach(p => {
-                    if(now - p.last < 10000 && getDistance(p.lat, p.lon, obj.lat, obj.lon) < obj.radius) {
-                        p.team === 'TEAM1' ? pRed++ : pBlue++;
+            data.objectives.forEach(obj => {
+                let rCount = 0, bCount = 0;
+                
+                Object.values(data.players).forEach(p => {
+                    if(Date.now() - p.lastSeen < 15000) {
+                        let dist = getDistance(p.lat, p.lon, obj.lat, obj.lon);
+                        if(dist <= obj.radius) {
+                            p.team === 'TEAM1' ? rCount++ : bCount++;
+                        }
                     }
                 });
 
-                if(pRed > 0 && pBlue > 0) {
+                if(rCount > 0 && bCount > 0) {
                     obj.status = "CONTESTED";
                 } else {
                     obj.status = "NORMAL";
-                    // Punti nel tempo
-                    if(obj.owner === 'TEAM1') r.game.scoreRed += step;
-                    if(obj.owner === 'TEAM2') r.game.scoreBlue += step;
+                    // Punti per chi possiede
+                    if(obj.owner === 'TEAM1') data.game.scoreRed += loopSec;
+                    if(obj.owner === 'TEAM2') data.game.scoreBlue += loopSec;
 
-                    // Conquista
-                    let currentCaptor = pRed > 0 ? 'TEAM1' : (pBlue > 0 ? 'TEAM2' : null);
-                    if(currentCaptor && currentCaptor !== obj.owner) {
-                        obj.progress += step;
-                        if(obj.progress >= r.game.conqTime) {
-                            obj.owner = currentCaptor;
+                    // Avanzamento conquista
+                    let activeTeam = rCount > 0 ? 'TEAM1' : (bCount > 0 ? 'TEAM2' : null);
+                    if(activeTeam && activeTeam !== obj.owner) {
+                        obj.progress += loopSec;
+                        if(obj.progress >= data.game.conqTime) {
+                            obj.owner = activeTeam;
                             obj.progress = 0;
                         }
                     } else {
-                        obj.progress = Math.max(0, obj.progress - step);
+                        obj.progress = Math.max(0, obj.progress - loopSec);
                     }
                 }
             });
         }
 
-        function updateGameUI(r) {
-            // Rimuovi vecchi cerchi
-            objLayers.forEach(l => map.removeLayer(l));
+        function renderGameAssets(data) {
+            objLayers.forEach(layer => map.removeLayer(layer));
             objLayers = [];
 
-            const objListUI = document.getElementById('ui-obj-list');
-            objListUI.innerHTML = "";
-
-            r.objectives.forEach(obj => {
+            data.objectives.forEach(obj => {
                 let color = "#fff";
                 if(obj.status === "CONTESTED") color = "#ff0";
-                else if(obj.owner === "TEAM1") color = "#f00";
-                else if(obj.owner === "TEAM2") color = "#0ff";
+                else if(obj.owner === "TEAM1") color = "red";
+                else if(obj.owner === "TEAM2") color = "cyan";
 
                 let circle = L.circle([obj.lat, obj.lon], {
-                    radius: obj.radius, color: color, weight: 2, fillOpacity: 0.2
+                    radius: obj.radius,
+                    color: color,
+                    fillOpacity: 0.2,
+                    weight: 2
                 }).addTo(map);
                 objLayers.push(circle);
-
-                objListUI.innerHTML += `<div>${obj.name}: <span style="color:${color}">${obj.owner}</span> (${obj.progress}s)</div>`;
             });
-
-            // Timer e Score
-            document.getElementById('score-red').innerText = Math.floor(r.game.scoreRed / 10);
-            document.getElementById('score-blue').innerText = Math.floor(r.game.scoreBlue / 10);
             
-            let elapsed = Math.floor((Date.now() - r.game.start) / 1000);
-            let total = r.game.duration * 60;
-            let rem = Math.max(0, total - elapsed);
-            document.getElementById('timer').innerText = `${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')}`;
+            document.getElementById('status-obj-summary').innerText = `${data.objectives.length} ATTIVI`;
         }
 
-        // 5. UTILITY CARTOGRAFICHE PER GEOMETRA
-        function updateCoordsDisplay() {
-            let lat = state.currentPos[0], lon = state.currentPos[1];
-            // Conversione rapida UTM Zona 32 (Vigevano)
-            let utm = wgs84ToUTM32(lat, lon);
-            document.getElementById('coord-bar').innerText = `32T E:${utm.e} N:${utm.n}`;
-        }
-
-        function wgs84ToUTM32(lat, lon) {
-            // Formule semplificate per zona 32T (Italia Nord-Ovest)
+        // --- 5. FORMULE GEOMETRA (UTM ESTESO) ---
+        function updateUTM(lat, lon) {
+            // Proiezione Transversa di Mercatore (Semplificata ma accurata per Zona 32)
             const a = 6378137;
-            const f = 1 / 298.257223563;
+            const f = 1/298.257;
             const k0 = 0.9996;
-            const FE = 500000;
-            const rad = Math.PI / 180;
+            const rad = Math.PI/180;
+            
             let phi = lat * rad;
-            let lambda = lon * rad;
-            let lambda0 = 9 * rad; // Meridiano centrale Zona 32
+            let L = lon * rad;
+            let L0 = 9 * rad; // Meridiano centrale Zona 32
+            
             let e2 = 2*f - f*f;
-            let n = a / Math.sqrt(1 - e2 * Math.sin(phi)**2);
+            let ep2 = e2 / (1 - e2);
+            let N = a / Math.sqrt(1 - e2 * Math.sin(phi)**2);
             let T = Math.tan(phi)**2;
-            let C = (e2/(1-e2)) * Math.cos(phi)**2;
-            let A = (lambda - lambda0) * Math.cos(phi);
-            let M = a * (1 - e2/4 - 3*e2*e2/64) * phi - a * (3*e2/8 + 3*e2*e2/32) * Math.sin(2*phi);
+            let C = ep2 * Math.cos(phi)**2;
+            let A = (L - L0) * Math.cos(phi);
             
-            let easting = FE + k0 * n * (A + (1-T+C)*A**3/6);
-            let northing = k0 * (M + n * Math.tan(phi) * (A**2/2));
+            let M = a * ( (1 - e2/4 - 3*e2*e2/64) * phi - (3*e2/8 + 3*e2*e2/32) * Math.sin(2*phi) + (15*e2*e2/256) * Math.sin(4*phi) );
             
-            return { e: Math.round(easting), n: Math.round(northing) };
+            let E = 500000 + k0 * N * (A + (1-T+C)*A**3/6 + (5-18*T+T*T+72*C)*A**5/120);
+            let Nor = k0 * (M + N * Math.tan(phi) * (A**2/2 + (5-T+9*C+4*C*C)*A**4/24));
+            
+            document.getElementById('utm-display').innerText = `UTM-32T E: ${Math.round(E)} N: ${Math.round(Nor)}`;
         }
 
+        // --- UTILS ---
         function getDistance(la1, lo1, la2, lo2) {
             const R = 6371000;
             const dLat = (la2-la1)*Math.PI/180;
@@ -407,8 +461,28 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        function recenter() { map.setView(state.currentPos, 19); }
+        function checkAdminCode(val) {
+            if(val === CONFIG.adminKey) {
+                state.isAdmin = true;
+                document.getElementById('admin-controls').style.display = 'block';
+            }
+        }
 
+        function syncMap() { map.setView(state.coords, 19); }
+
+        async function createNewMatch() {
+            const newMatch = {
+                game: { active: true, start: Date.now(), duration: 60, conqTime: 60, scoreRed: 0, scoreBlue: 0 },
+                objectives: [
+                    { name: "HQ-RED", lat: state.coords[0]+0.001, lon: state.coords[1], radius: 25, owner: "TEAM1", status: "NORMAL", progress: 0 },
+                    { name: "CENTRO", lat: state.coords[0], lon: state.coords[1], radius: 20, owner: "LIBERO", status: "NORMAL", progress: 0 },
+                    { name: "HQ-BLUE", lat: state.coords[0]-0.001, lon: state.coords[1], radius: 25, owner: "TEAM2", status: "NORMAL", progress: 0 }
+                ],
+                players: {}
+            };
+            await fetch(URL, { method: 'PUT', headers: { "Content-Type": "application/json", "X-Master-Key": CONFIG.apiKey }, body: JSON.stringify(newMatch) });
+            alert("Nuovo Match Creato!");
+        }
     </script>
 </body>
 </html>
