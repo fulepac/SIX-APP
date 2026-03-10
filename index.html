@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=any">
-    <title>SIX APP v.6.0 - ULTIMATE</title>
+    <title>SIX APP v.6.5 - ULTIMATE</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         /* --- STILE CSS --- */
@@ -81,7 +81,7 @@
     <div id="setup-screen">
         <header>
             <h1 class="brand-title">SIX APP</h1>
-            <div class="credits">SVILUPPO PRO - v.6.0</div>
+            <div class="credits">SVILUPPO PRO - v.6.5</div>
         </header>
 
         <div id="server-status-box">
@@ -157,7 +157,7 @@
 
     <div id="help-overlay">
         <div style="color:#ccc; line-height:1.6;">
-            <h2 style="color:#0f0">GUIDA SIX APP 6.0</h2>
+            <h2 style="color:#0f0">GUIDA SIX APP 6.5</h2>
             <p>1. <b>Conquista:</b> Entra nel raggio dell'obiettivo. Se sei solo (o con compagni), il tempo di cattura scorre. Se ci sono nemici, l'obiettivo diventa <b>CONTESO</b> e il tempo si ferma finché un team non viene eliminato dall'area.</p>
             <p>2. <b>Difesa:</b> Chi arriva per primo mantiene il possesso in caso di contesa.</p>
             <button class="btn-start" style="margin-top:20px" onclick="toggleHelp(false)">CHIUDI</button>
@@ -261,13 +261,26 @@
 
         function handleOrientation(e) {
             let heading = e.webkitCompassHeading || (360 - e.alpha);
+            
+            // Gestione rotazione schermo per modalità Orizzontale (Landscape)
             let screenAngle = 0;
-            if (window.screen && window.screen.orientation) screenAngle = window.screen.orientation.angle;
+            if (window.screen && window.screen.orientation) {
+                screenAngle = window.screen.orientation.angle;
+            } else if (typeof window.orientation !== 'undefined') {
+                screenAngle = window.orientation;
+            }
+
+            // Calcolo direzione corretta rispetto al dispositivo
             let correctedHeading = (heading + screenAngle) % 360;
-            if(Math.abs(correctedHeading - lastCompass) > 0.8) {
+
+            if(Math.abs(correctedHeading - lastCompass) > 0.5) {
                 lastCompass = correctedHeading;
+                // Ruotiamo il contenitore della mappa in senso inverso alla bussola
                 document.getElementById("map-rotate").style.transform = `rotate(${-correctedHeading}deg)`;
-                document.getElementById("player-pointer").style.transform = `translate(-50%, -50%) rotate(${correctedHeading}deg)`;
+                // Il puntatore rimane fisso puntando "in su" rispetto allo schermo, 
+                // ma lo ruotiamo di 'correctedHeading' se vogliamo che punti fisicamente al Nord 
+                // In questo assetto (mappa ruotata), il puntatore deve restare ▲ fisso verso l'alto.
+                document.getElementById("player-pointer").style.transform = `translate(-50%, -50%)`;
             }
         }
 
@@ -342,27 +355,25 @@
                         }
                     }
 
-                    // LOGICA DI CONQUISTA (Solo se Master aggiorna)
                     record.objectives.forEach(obj => {
                         let playersInArea = Object.values(record.players).filter(p => (now - p.last < 10000) && getDistRaw(p.lat, p.lon, obj.lat, obj.lon) <= record.game.objRadius);
                         let t1Present = playersInArea.some(p => p.team === 'TEAM1');
                         let t2Present = playersInArea.some(p => p.team === 'TEAM2');
 
                         if (t1Present && t2Present) {
-                            obj.status = "CONTESO"; // Entrambi presenti, blocco
+                            obj.status = "CONTESO";
                         } else if (t1Present || t2Present) {
                             let activeTeam = t1Present ? 'TEAM1' : 'TEAM2';
                             if (obj.owner === "LIBERO") {
                                 if (obj.claimingTeam !== activeTeam) { obj.progress = 0; obj.claimingTeam = activeTeam; }
-                                obj.progress += 4; // Avanzamento (basato su intervallo sync)
+                                obj.progress += 4;
                                 if (obj.progress >= record.game.conqSec) { obj.owner = activeTeam; obj.progress = 0; }
                             } else if (obj.owner !== activeTeam) {
-                                // Riconquista: deve esserci SOLO il team che riconquista
                                 if (obj.claimingTeam !== activeTeam) { obj.progress = 0; obj.claimingTeam = activeTeam; }
                                 obj.progress += 4;
                                 if (obj.progress >= record.game.reconqSec) { obj.owner = activeTeam; obj.progress = 0; }
                             } else {
-                                obj.progress = 0; // Stesso team proprietario, reset progresso nemico
+                                obj.progress = 0;
                             }
                             obj.status = "IN_CATTURA";
                         } else {
@@ -370,7 +381,6 @@
                             obj.progress = 0;
                         }
                         
-                        // Incremento Punteggio
                         if(obj.owner === 'TEAM1') record.game.scoreRed += 1;
                         if(obj.owner === 'TEAM2') record.game.scoreBlue += 1;
                     });
