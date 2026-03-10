@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=any">
-    <title>SIX APP v.6.7 - TEAM CONNECT</title>
+    <title>SIX APP v.6.9 - FULL CODE</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- STILE CSS COMPLETO --- */
+        /* --- STILE CSS INTEGRALE --- */
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
         body { background: #000; color: #0f0; font-family: monospace; margin: 0; padding: 5px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
@@ -62,7 +62,6 @@
         .info-section h3 { font-size: 0.65rem; margin: 0 0 5px 0; color: #555; border-bottom: 1px solid #222; text-transform: uppercase; }
         .data-list { list-style: none; padding: 0; margin: 0; font-size: 0.7rem; }
         .data-list li { padding: 6px 0; border-bottom: 1px solid #111; display: flex; justify-content: space-between; cursor: pointer; }
-        .data-list li:active { background: #111; }
 
         .btn-start, .btn-start-master { background: #0f0; color: #000; padding: 15px; font-weight: bold; border-radius: 10px; border: none; width: 100%; cursor: pointer; text-transform: uppercase; }
         .btn-start:disabled { background: #222; color: #444; cursor: not-allowed; border: 1px solid #333; }
@@ -85,7 +84,7 @@
     <div id="setup-screen">
         <header>
             <h1 class="brand-title">SIX APP</h1>
-            <div class="credits">SVILUPPO PRO - v.6.7</div>
+            <div class="credits">SVILUPPO PRO - v.6.9</div>
         </header>
 
         <div id="server-status-box">
@@ -161,10 +160,10 @@
 
     <div id="help-overlay">
         <div style="color:#ccc; line-height:1.6;">
-            <h2 style="color:#0f0">GUIDA SIX APP 6.7</h2>
+            <h2 style="color:#0f0">GUIDA SIX APP 6.9</h2>
             <p>1. <b>Navigazione:</b> La mappa ruota col telefono. Lo scorrimento segue la visuale.</p>
-            <p>2. <b>Team Radar:</b> Clicca sul nome di un compagno nella lista per tracciare il percorso verso di lui.</p>
-            <p>3. <b>Obiettivi:</b> Clicca su un obiettivo (mappa o lista) per navigare verso il punto.</p>
+            <p>2. <b>Team Nav:</b> Clicca sui nomi dei compagni nel radar per tracciare il percorso.</p>
+            <p>3. <b>Centratura:</b> Se ti perdi, il tasto 🎯 in alto o nella selezione area ti riporta sulla tua posizione GPS.</p>
             <button class="btn-start" style="margin-top:20px" onclick="toggleHelp(false)">CHIUDI</button>
         </div>
     </div>
@@ -216,14 +215,20 @@
         let state = { 
             isMaster: false, playerName: "", playerTeam: "", playerMarker: null, 
             autoCenter: true, selectedMode: "DOMINATION", targetObj: null, navLine: null, 
-            startTime: null, gameRunning: false, currentPos: [45.2377, 8.8097],
-            lastUpdate: {} // Per tenere traccia dei compagni
+            startTime: null, gameRunning: false, currentPos: [45.2377, 8.8097]
         };
 
         window.onload = () => {
             initMap();
             updateTeamNames();
             setInterval(checkServerStatus, 3000);
+            
+            // Posizione iniziale rapida
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(p => {
+                    state.currentPos = [p.coords.latitude, p.coords.longitude];
+                });
+            }
         };
 
         function initMap() {
@@ -270,13 +275,10 @@
             let heading = e.webkitCompassHeading || (360 - (e.alpha || 0));
             let screenAngle = window.orientation || (window.screen.orientation ? window.screen.orientation.angle : 0);
             let finalHeading = (heading + screenAngle) % 360;
-
             if (Math.abs(finalHeading - lastHeading) > 0.8) {
                 lastHeading = finalHeading;
                 document.getElementById("map-wrapper").style.transform = `rotate(${-finalHeading}deg)`;
-                document.querySelectorAll('.obj-label').forEach(l => {
-                    l.style.transform = `rotate(${finalHeading}deg)`;
-                });
+                document.querySelectorAll('.obj-label').forEach(l => { l.style.transform = `rotate(${finalHeading}deg)`; });
             }
         }
 
@@ -284,12 +286,10 @@
             state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
             state.playerTeam = document.getElementById("teamSelect").value;
             if(!state.playerName) return alert("INSERISCI NOME!");
-
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const res = await DeviceOrientationEvent.requestPermission();
                 if(res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
             } else { window.addEventListener('deviceorientation', handleOrientation); }
-            
             isMasterAction ? saveAndStart() : startGame();
         }
 
@@ -303,7 +303,6 @@
             document.getElementById("setup-screen").style.display = "none";
             document.getElementById("game-ui").style.display = "block";
             map.invalidateSize();
-
             if ("geolocation" in navigator) {
                 navigator.geolocation.watchPosition((p) => {
                     state.currentPos = [p.coords.latitude, p.coords.longitude];
@@ -324,7 +323,6 @@
             try {
                 const res = await fetch(`${URL}/latest`, { headers: {"X-Master-Key":SECRET_KEY}, cache:'no-store'});
                 let { record } = await res.json();
-                
                 if(!record.players) record.players = {};
                 record.players[state.playerName] = { team: state.playerTeam, lat: state.currentPos[0], lon: state.currentPos[1], last: Date.now() };
 
@@ -352,39 +350,32 @@
                         }
                         record.objectives = newObjs;
                     }
-
+                    
+                    // Logica punteggi obiettivi
                     record.objectives.forEach(obj => {
                         let playersInArea = Object.values(record.players).filter(p => (now - p.last < 10000) && getDistRaw(p.lat, p.lon, obj.lat, obj.lon) <= record.game.objRadius);
-                        let t1Present = playersInArea.some(p => p.team === 'TEAM1');
-                        let t2Present = playersInArea.some(p => p.team === 'TEAM2');
-
-                        if (t1Present && t2Present) { obj.status = "CONTESO"; } 
-                        else if (t1Present || t2Present) {
-                            let activeTeam = t1Present ? 'TEAM1' : 'TEAM2';
-                            if (obj.owner === "LIBERO" || obj.owner !== activeTeam) {
-                                if (obj.claimingTeam !== activeTeam) { obj.progress = 0; obj.claimingTeam = activeTeam; }
+                        let t1P = playersInArea.some(p => p.team === 'TEAM1');
+                        let t2P = playersInArea.some(p => p.team === 'TEAM2');
+                        if (t1P && t2P) { obj.status = "CONTESO"; } 
+                        else if (t1P || t2P) {
+                            let activeT = t1P ? 'TEAM1' : 'TEAM2';
+                            if (obj.owner === "LIBERO" || obj.owner !== activeT) {
+                                if (obj.claimingTeam !== activeT) { obj.progress = 0; obj.claimingTeam = activeT; }
                                 obj.progress += 4;
-                                if (obj.progress >= (obj.owner === "LIBERO" ? record.game.conqSec : record.game.reconqSec)) { 
-                                    obj.owner = activeTeam; obj.progress = 0; 
-                                }
+                                if (obj.progress >= (obj.owner === "LIBERO" ? record.game.conqSec : record.game.reconqSec)) { obj.owner = activeT; obj.progress = 0; }
                             }
                         } else { obj.progress = 0; }
-                        
                         if(obj.owner === 'TEAM1') record.game.scoreRed += 1;
                         if(obj.owner === 'TEAM2') record.game.scoreBlue += 1;
                     });
                 }
-                
                 await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify(record)});
                 updateUI(record);
                 
-                // Se stiamo navigando verso un compagno, aggiorniamo il target in tempo reale
+                // Navigazione dinamica compagni
                 if(state.targetObj && state.targetObj.isPlayer) {
-                    const pData = record.players[state.targetObj.name];
-                    if(pData) {
-                        state.targetObj.lat = pData.lat;
-                        state.targetObj.lon = pData.lon;
-                    }
+                    const pd = record.players[state.targetObj.name];
+                    if(pd) { state.targetObj.lat = pd.lat; state.targetObj.lon = pd.lon; }
                 }
             } catch(e) {}
         }
@@ -393,9 +384,8 @@
             activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
             const scoreboard = document.getElementById("scoreboard");
             const pList = document.getElementById("playerList");
-            scoreboard.innerHTML = "";
-            pList.innerHTML = "";
-
+            scoreboard.innerHTML = ""; pList.innerHTML = "";
+            
             (r.objectives || []).forEach(obj => {
                 let color = obj.owner === 'TEAM1' ? '#f00' : obj.owner === 'TEAM2' ? '#0ff' : '#fff';
                 let m = L.circle([obj.lat, obj.lon], {radius: r.game.objRadius, color: color, weight: 3, fillOpacity: 0.2}).addTo(map);
@@ -404,7 +394,7 @@
                 activeMarkers.push(m);
                 scoreboard.innerHTML += `<li onclick='startNavigation(${JSON.stringify(obj)})'><span>${obj.name}</span><span style="color:${color}">${obj.owner}</span></li>`;
             });
-
+            
             Object.entries(r.players || {}).forEach(([name, p]) => {
                 if(Date.now() - p.last < 30000 && p.team === state.playerTeam && name !== state.playerName) {
                     const dist = getDist(p.lat, p.lon);
@@ -413,10 +403,10 @@
                     activeMarkers.push(L.circleMarker([p.lat, p.lon], {radius: 6, color: p.team==='TEAM1'?'#f00':'#0ff', fillColor: p.team==='TEAM1'?'#f00':'#0ff', fillOpacity:0.8}).addTo(map));
                 }
             });
-
+            
             if(r.game) {
-                const remain = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start) / 1000);
-                document.getElementById("timer").innerText = remain > 0 ? `⏱️ ${Math.floor(remain/60)}:${(remain%60).toString().padStart(2,'0')}` : "FINE";
+                const rem = (r.game.duration * 60) - Math.floor((Date.now() - r.game.start) / 1000);
+                document.getElementById("timer").innerText = rem > 0 ? `⏱️ ${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')}` : "FINE";
                 document.getElementById("scoreRed").innerText = Math.floor(r.game.scoreRed/10);
                 document.getElementById("scoreBlue").innerText = Math.floor(r.game.scoreBlue/10);
                 document.getElementById("lblTeam1").innerText = r.game.t1 || "S1";
@@ -431,7 +421,6 @@
             const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
             return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
-
         function getDist(lat2, lon2) { return getDistRaw(state.currentPos[0], state.currentPos[1], lat2, lon2); }
 
         function startNavigation(obj) { 
@@ -439,18 +428,12 @@
             document.getElementById("nav-overlay").style.display = "flex"; 
             updateNavigationLine(); 
         }
-
-        function stopNavigation() { 
-            state.targetObj = null; 
-            if(state.navLine) map.removeLayer(state.navLine); 
-            document.getElementById("nav-overlay").style.display = "none"; 
-        }
-
+        function stopNavigation() { state.targetObj = null; if(state.navLine) map.removeLayer(state.navLine); document.getElementById("nav-overlay").style.display = "none"; }
         function updateNavigationLine() {
             if(!state.targetObj) return;
             const p2 = [state.targetObj.lat, state.targetObj.lon];
-            const prefix = state.targetObj.isPlayer ? "👥 " : "📍 ";
-            document.getElementById("nav-text").innerHTML = `${prefix}${state.targetObj.name}: ${getDist(p2[0], p2[1])}m`;
+            const px = state.targetObj.isPlayer ? "👥 " : "📍 ";
+            document.getElementById("nav-text").innerHTML = `${px}${state.targetObj.name}: ${getDist(p2[0], p2[1])}m`;
             if(state.navLine) map.removeLayer(state.navLine);
             state.navLine = L.polyline([state.currentPos, p2], {color: 'yellow', weight: 4, dashArray: '8, 8'}).addTo(map);
         }
@@ -482,6 +465,7 @@
             document.getElementById("objSlotContainer").style.display = (m === 'RANDOM') ? "none" : "block";
         }
 
+        // --- GESTIONE SELEZIONE AREA ---
         function startAreaSelection() {
             document.getElementById("map-selection-overlay").style.display = "flex";
             if (!sMap) {
@@ -489,8 +473,23 @@
                 L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21 }).addTo(sMap);
                 sRectangle = L.rectangle(sMap.getBounds().pad(-0.3), {color: "#0f0", weight: 3, fillOpacity: 0.2}).addTo(sMap);
                 sMap.on('move', () => sRectangle.setBounds(sMap.getBounds().pad(-0.25)));
+            } else {
+                sMap.setView(state.currentPos, 17);
             }
             setTimeout(() => sMap.invalidateSize(), 300);
+        }
+
+        function centerSelectionMap() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(p => {
+                    const myPos = [p.coords.latitude, p.coords.longitude];
+                    state.currentPos = myPos;
+                    if(sMap) {
+                        sMap.setView(myPos, 17);
+                        if(sRectangle) sRectangle.setBounds(sMap.getBounds().pad(-0.25));
+                    }
+                }, null, {enableHighAccuracy: true});
+            }
         }
 
         function confirmArea() { customRandomBounds = sRectangle.getBounds(); document.getElementById("map-selection-overlay").style.display = "none"; }
@@ -515,7 +514,6 @@
         function toggleHelp(s) { document.getElementById("help-overlay").style.display = s ? "flex" : "none"; }
         function centerMap() { state.autoCenter = true; map.panTo(state.currentPos); }
         function exitGame() { if(confirm("ESCI?")) location.reload(); }
-        
         async function resetBin() {
             if(confirm("RESET TOTALE?")) {
                 await fetch(URL, { method:"PUT", headers:{"Content-Type":"application/json","X-Master-Key":SECRET_KEY}, body: JSON.stringify({game:{active:false},players:{},objectives:[]})});
