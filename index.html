@@ -48,8 +48,23 @@
 
         .map-system { flex-grow: 1; position: relative; display: flex; gap: 5px; min-height: 300px; }
         .map-main-container { flex-grow: 1; border: 2px solid #0f0; border-radius: 15px; overflow: hidden; position: relative; background: #000; }
-        #map-rotate, #map { width: 100%; height: 100%; }
-        #player-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; color: #fff; font-size: 30px; pointer-events: none; text-shadow: 0 0 5px #000; }
+        
+        /* Contenitore rotante */
+        #map-wrapper { width: 100%; height: 100%; transition: transform 0.1s linear; }
+        #map { width: 100%; height: 100%; }
+        
+        /* Puntatore fisso al centro dello schermo */
+        #player-pointer { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            z-index: 5000; 
+            color: #fff; 
+            font-size: 35px; 
+            pointer-events: none; 
+            text-shadow: 0 0 8px #000; 
+        }
         
         .map-controls-external { display: flex; flex-direction: column; gap: 8px; }
         .ext-btn { flex: 1; background: #111; border: 1.5px solid #0f0; color: #0f0; border-radius: 10px; width: 50px; font-size: 1.2rem; cursor: pointer; }
@@ -64,7 +79,7 @@
         .btn-start:disabled { background: #222; color: #444; cursor: not-allowed; border: 1px solid #333; }
         .btn-danger { background: #300; color: #f00; border: 1px solid red; width: 100%; padding: 12px; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
         
-        .exit-btn { position: absolute; top: 65px; left: 15px; background: rgba(50,50,50,0.8); color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; z-index: 5000; font-size: 0.7rem; }
+        .exit-btn { position: absolute; top: 65px; left: 15px; background: rgba(50,50,50,0.8); color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; z-index: 6000; font-size: 0.7rem; }
 
         .nav-hud { position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.9); border: 2px solid yellow; padding: 10px; border-radius: 12px; z-index: 4000; display: flex; justify-content: space-between; align-items: center; color: yellow; font-size: 0.8rem; }
         .obj-label { background: transparent !important; border: none !important; color: white !important; font-weight: bold; text-shadow: 2px 2px 2px #000; font-size: 10px !important; }
@@ -158,8 +173,8 @@
     <div id="help-overlay">
         <div style="color:#ccc; line-height:1.6;">
             <h2 style="color:#0f0">GUIDA SIX APP 6.5</h2>
-            <p>1. <b>Conquista:</b> Entra nel raggio dell'obiettivo. Se sei solo (o con compagni), il tempo di cattura scorre. Se ci sono nemici, l'obiettivo diventa <b>CONTESO</b> e il tempo si ferma finché un team non viene eliminato dall'area.</p>
-            <p>2. <b>Difesa:</b> Chi arriva per primo mantiene il possesso in caso di contesa.</p>
+            <p>1. <b>Conquista:</b> Entra nel raggio dell'obiettivo. Se sei solo, il tempo scorre. Se ci sono nemici, l'obiettivo diventa <b>CONTESO</b>.</p>
+            <p>2. <b>Navigazione:</b> Clicca un obiettivo sulla mappa o in lista per attivare la linea gialla.</p>
             <button class="btn-start" style="margin-top:20px" onclick="toggleHelp(false)">CHIUDI</button>
         </div>
     </div>
@@ -175,7 +190,7 @@
         </div>
         <div class="map-system">
             <div class="map-main-container">
-                <div id="map-rotate"><div id="map"></div></div>
+                <div id="map-wrapper"><div id="map"></div></div>
                 <div id="player-pointer">▲</div>
                 <div id="nav-overlay" class="nav-hud" style="display:none;">
                     <div id="nav-text">...</div>
@@ -204,11 +219,11 @@
         let map, sMap, sRectangle;
         let activeMarkers = [];
         let customRandomBounds = null;
-        let lastCompass = 0;
+        let lastHeading = 0;
         let state = { 
             isMaster: false, playerName: "", playerTeam: "", playerMarker: null, 
             autoCenter: true, selectedMode: "DOMINATION", targetObj: null, navLine: null, 
-            startTime: null, gameRunning: false 
+            startTime: null, gameRunning: false, currentPos: [45.2377, 8.8097]
         };
 
         window.onload = () => {
@@ -218,8 +233,9 @@
         };
 
         function initMap() {
-            map = L.map("map", { zoomControl: false, attributionControl: false }).setView([45.2377, 8.8097], 18);
+            map = L.map("map", { zoomControl: false, attributionControl: false, scrollWheelZoom: true, dragging: true }).setView(state.currentPos, 18);
             L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21 }).addTo(map);
+            
             map.on('dragstart', () => state.autoCenter = false);
         }
 
@@ -259,10 +275,16 @@
             document.getElementById("opt-team2").innerText = t2;
         }
 
+        // --- GESTIONE ORIENTAMENTO E ROTAZIONE ---
         function handleOrientation(e) {
-            let heading = e.webkitCompassHeading || (360 - e.alpha);
-            
-            // Gestione rotazione schermo per modalità Orizzontale (Landscape)
+            let heading = 0;
+            if (e.webkitCompassHeading) {
+                heading = e.webkitCompassHeading; // iOS
+            } else if (e.alpha) {
+                heading = 360 - e.alpha; // Android
+            }
+
+            // Calcolo rotazione schermo (per Landscape)
             let screenAngle = 0;
             if (window.screen && window.screen.orientation) {
                 screenAngle = window.screen.orientation.angle;
@@ -270,17 +292,20 @@
                 screenAngle = window.orientation;
             }
 
-            // Calcolo direzione corretta rispetto al dispositivo
-            let correctedHeading = (heading + screenAngle) % 360;
+            // Direzione finale compensata
+            let finalHeading = (heading + screenAngle) % 360;
 
-            if(Math.abs(correctedHeading - lastCompass) > 0.5) {
-                lastCompass = correctedHeading;
-                // Ruotiamo il contenitore della mappa in senso inverso alla bussola
-                document.getElementById("map-rotate").style.transform = `rotate(${-correctedHeading}deg)`;
-                // Il puntatore rimane fisso puntando "in su" rispetto allo schermo, 
-                // ma lo ruotiamo di 'correctedHeading' se vogliamo che punti fisicamente al Nord 
-                // In questo assetto (mappa ruotata), il puntatore deve restare ▲ fisso verso l'alto.
-                document.getElementById("player-pointer").style.transform = `translate(-50%, -50%)`;
+            if (Math.abs(finalHeading - lastHeading) > 1) {
+                lastHeading = finalHeading;
+                // Ruotiamo il wrapper della mappa. 
+                // Questo mantiene l'orientamento "avanti" rispetto all'utente.
+                document.getElementById("map-wrapper").style.transform = `rotate(${-finalHeading}deg)`;
+                
+                // Ruotiamo inversamente le etichette per lasciarle leggibili (opzionale)
+                const labels = document.querySelectorAll('.obj-label');
+                labels.forEach(l => {
+                    l.style.transform = `rotate(${finalHeading}deg)`;
+                });
             }
         }
 
@@ -288,10 +313,16 @@
             state.playerName = document.getElementById("playerName").value.trim().toUpperCase();
             state.playerTeam = document.getElementById("teamSelect").value;
             if(!state.playerName) return alert("INSERISCI NOME OPERATORE!");
+
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                const res = await DeviceOrientationEvent.requestPermission();
-                if(res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-            } else { window.addEventListener('deviceorientation', handleOrientation); }
+                try {
+                    const res = await DeviceOrientationEvent.requestPermission();
+                    if(res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+                } catch(e) { console.error(e); }
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+            
             isMasterAction ? saveAndStart() : startGame();
         }
 
@@ -305,15 +336,19 @@
             document.getElementById("setup-screen").style.display = "none";
             document.getElementById("game-ui").style.display = "block";
             map.invalidateSize();
+
             if ("geolocation" in navigator) {
                 navigator.geolocation.watchPosition((p) => {
-                    const pos = [p.coords.latitude, p.coords.longitude];
+                    state.currentPos = [p.coords.latitude, p.coords.longitude];
+                    
                     if(!state.playerMarker) {
-                        state.playerMarker = L.circleMarker(pos, {radius: 9, color: '#fff', fillColor: '#007bff', fillOpacity: 1, weight: 3}).addTo(map);
-                        map.setView(pos, 19);
+                        // Il puntatore fisico è l'elemento HTML fisso #player-pointer. 
+                        // Creiamo un marker invisibile o molto piccolo solo per logica/radar.
+                        state.playerMarker = L.circleMarker(state.currentPos, {radius: 5, color: 'transparent', fillColor: 'transparent'}).addTo(map);
+                        map.setView(state.currentPos, 19);
                     } else {
-                        state.playerMarker.setLatLng(pos);
-                        if(state.autoCenter) map.panTo(pos);
+                        state.playerMarker.setLatLng(state.currentPos);
+                        if(state.autoCenter) map.panTo(state.currentPos);
                     }
                     updateNavigationLine();
                 }, null, { enableHighAccuracy: true });
@@ -327,7 +362,12 @@
                 let { record } = await res.json();
                 
                 if(!record.players) record.players = {};
-                record.players[state.playerName] = { team: state.playerTeam, lat: state.playerMarker?.getLatLng().lat || 0, lon: state.playerMarker?.getLatLng().lng || 0, last: Date.now() };
+                record.players[state.playerName] = { 
+                    team: state.playerTeam, 
+                    lat: state.currentPos[0], 
+                    lon: state.currentPos[1], 
+                    last: Date.now() 
+                };
 
                 if(state.isMaster || forceMaster) {
                     const now = Date.now();
@@ -360,26 +400,18 @@
                         let t1Present = playersInArea.some(p => p.team === 'TEAM1');
                         let t2Present = playersInArea.some(p => p.team === 'TEAM2');
 
-                        if (t1Present && t2Present) {
-                            obj.status = "CONTESO";
-                        } else if (t1Present || t2Present) {
+                        if (t1Present && t2Present) { obj.status = "CONTESO"; } 
+                        else if (t1Present || t2Present) {
                             let activeTeam = t1Present ? 'TEAM1' : 'TEAM2';
-                            if (obj.owner === "LIBERO") {
+                            if (obj.owner === "LIBERO" || obj.owner !== activeTeam) {
                                 if (obj.claimingTeam !== activeTeam) { obj.progress = 0; obj.claimingTeam = activeTeam; }
                                 obj.progress += 4;
-                                if (obj.progress >= record.game.conqSec) { obj.owner = activeTeam; obj.progress = 0; }
-                            } else if (obj.owner !== activeTeam) {
-                                if (obj.claimingTeam !== activeTeam) { obj.progress = 0; obj.claimingTeam = activeTeam; }
-                                obj.progress += 4;
-                                if (obj.progress >= record.game.reconqSec) { obj.owner = activeTeam; obj.progress = 0; }
-                            } else {
-                                obj.progress = 0;
+                                if (obj.progress >= (obj.owner === "LIBERO" ? record.game.conqSec : record.game.reconqSec)) { 
+                                    obj.owner = activeTeam; obj.progress = 0; 
+                                }
                             }
                             obj.status = "IN_CATTURA";
-                        } else {
-                            obj.status = "STABILE";
-                            obj.progress = 0;
-                        }
+                        } else { obj.status = "STABILE"; obj.progress = 0; }
                         
                         if(obj.owner === 'TEAM1') record.game.scoreRed += 1;
                         if(obj.owner === 'TEAM2') record.game.scoreBlue += 1;
@@ -395,19 +427,18 @@
             activeMarkers.forEach(m => map.removeLayer(m)); activeMarkers = [];
             const scoreboard = document.getElementById("scoreboard");
             scoreboard.innerHTML = "";
-            const t1N = r.game?.t1 || "S1";
-            const t2N = r.game?.t2 || "S2";
 
             (r.objectives || []).forEach(obj => {
                 let color = obj.owner === 'TEAM1' ? '#f00' : obj.owner === 'TEAM2' ? '#0ff' : '#fff';
                 let circleColor = obj.status === "CONTESO" ? "#ffff00" : color;
                 let m = L.circle([obj.lat, obj.lon], {radius: r.game.objRadius, color: circleColor, weight: 3, fillOpacity: 0.2}).addTo(map);
-                m.bindTooltip(`${obj.name} ${obj.progress > 0 ? '('+obj.progress+'s)' : ''}`, {permanent:true, direction:'top', className:'obj-label'});
+                
+                m.bindTooltip(`${obj.name} ${obj.progress > 0 ? '('+obj.progress+'s)' : ''}`, {
+                    permanent:true, direction:'top', className:'obj-label'
+                });
                 m.on('click', () => startNavigation(obj));
                 activeMarkers.push(m);
-                let oTxt = obj.owner === 'TEAM1' ? t1N : obj.owner === 'TEAM2' ? t2N : "LIBERO";
-                if(obj.status === "CONTESO") oTxt = "!!! CONTESO !!!";
-                scoreboard.innerHTML += `<li onclick='startNavigation(${JSON.stringify(obj)})'><span>${obj.name}</span><span style="color:${circleColor}">${oTxt}</span></li>`;
+                scoreboard.innerHTML += `<li onclick='startNavigation(${JSON.stringify(obj)})'><span>${obj.name}</span><span style="color:${circleColor}">${obj.owner}</span></li>`;
             });
 
             if(r.game) {
@@ -421,7 +452,7 @@
             Object.entries(r.players || {}).forEach(([name, p]) => {
                 if(Date.now() - p.last < 30000 && p.team === state.playerTeam && name !== state.playerName) {
                     pList.innerHTML += `<li>${name} <span>${getDist(p.lat, p.lon)}m</span></li>`;
-                    activeMarkers.push(L.circleMarker([p.lat, p.lon], {radius: 7, color: p.team==='TEAM1'?'#f00':'#0ff', fillColor: p.team==='TEAM1'?'#f00':'#0ff', fillOpacity:0.8}).addTo(map));
+                    activeMarkers.push(L.circleMarker([p.lat, p.lon], {radius: 6, color: p.team==='TEAM1'?'#f00':'#0ff', fillColor: p.team==='TEAM1'?'#f00':'#0ff', fillOpacity:0.8}).addTo(map));
                 }
             });
         }
@@ -435,20 +466,18 @@
         }
 
         function getDist(lat2, lon2) {
-            if(!state.playerMarker) return "?";
-            const p1 = state.playerMarker.getLatLng();
-            return getDistRaw(p1.lat, p1.lng, lat2, lon2);
+            return getDistRaw(state.currentPos[0], state.currentPos[1], lat2, lon2);
         }
 
         function startNavigation(obj) { state.targetObj = obj; document.getElementById("nav-overlay").style.display = "flex"; updateNavigationLine(); }
         function stopNavigation() { state.targetObj = null; if(state.navLine) map.removeLayer(state.navLine); document.getElementById("nav-overlay").style.display = "none"; }
+        
         function updateNavigationLine() {
-            if(!state.targetObj || !state.playerMarker) return;
-            const p1 = state.playerMarker.getLatLng();
+            if(!state.targetObj) return;
             const p2 = [state.targetObj.lat, state.targetObj.lon];
             document.getElementById("nav-text").innerHTML = `<b>${state.targetObj.name}</b>: ${getDist(p2[0], p2[1])}m`;
             if(state.navLine) map.removeLayer(state.navLine);
-            state.navLine = L.polyline([p1, p2], {color: 'yellow', weight: 4, dashArray: '8, 8'}).addTo(map);
+            state.navLine = L.polyline([state.currentPos, p2], {color: 'yellow', weight: 4, dashArray: '8, 8'}).addTo(map);
         }
 
         function checkMasterPass() {
@@ -484,7 +513,7 @@
         function startAreaSelection() {
             document.getElementById("map-selection-overlay").style.display = "flex";
             if (!sMap) {
-                sMap = L.map("selection-map", { attributionControl: false }).setView([45.2377, 8.8097], 17);
+                sMap = L.map("selection-map", { attributionControl: false }).setView(state.currentPos, 17);
                 L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 21 }).addTo(sMap);
                 sRectangle = L.rectangle(sMap.getBounds().pad(-0.3), {color: "#0f0", weight: 3, fillOpacity: 0.2}).addTo(sMap);
                 sMap.on('move', () => sRectangle.setBounds(sMap.getBounds().pad(-0.25)));
@@ -512,7 +541,7 @@
         }
 
         function toggleHelp(s) { document.getElementById("help-overlay").style.display = s ? "flex" : "none"; }
-        function centerMap() { state.autoCenter = true; if(state.playerMarker) map.panTo(state.playerMarker.getLatLng()); }
+        function centerMap() { state.autoCenter = true; map.panTo(state.currentPos); }
         function exitGame() { if(confirm("CHIUDERE LA SESSIONE?")) location.reload(); }
         async function resetBin() {
             if(confirm("AZZERARE IL SERVER?")) {
